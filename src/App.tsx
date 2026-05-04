@@ -5,6 +5,7 @@ type ContractId = 'radio_voice' | 'silent_shape' | 'abandoned_ai_navi';
 type EntityTone = 'hostile' | 'curious' | 'hungry' | 'lonely' | 'machine';
 type NegotiationApproach = 'offer' | 'sync' | 'threaten' | 'listen';
 type NegotiationResult = 'contract' | 'trade' | 'pass' | 'hostile';
+type TerminalLogKind = 'warning' | 'contract' | 'damage' | 'system';
 
 type Contract = { id: ContractId; name: string; effect: string };
 type EntityProfile = { name: string; tone: EntityTone; hint: string };
@@ -65,6 +66,17 @@ const toneAffinity: Record<EntityTone, Partial<Record<NegotiationApproach, numbe
   curious: { offer: 10, sync: 10, listen: 5, threaten: -5 },
 };
 
+const nodeIcons: Record<NodeType, string> = {
+  start: '●',
+  road: '─',
+  unknown: '?',
+  entity: '◇',
+  combat: '☠',
+  wreck: '▣',
+  signal: '◎',
+  return_gate: '▲',
+};
+
 const initialState = (): State => ({
   phase: 'map',
   nodes: baseNodes,
@@ -89,6 +101,13 @@ const getNegotiationChance = (state: State, approach: NegotiationApproach): numb
   return Math.max(5, Math.min(95, baseRate + signalBonus + radioBonus + failPenalty + contractLoadPenalty + toneBonus));
 };
 
+const classifyLog = (log: string): TerminalLogKind => {
+  if (log.includes('CONTRACT') || log.includes('契約')) return 'contract';
+  if (log.includes('Armor-') || log.includes('損耗') || log.includes('HOSTILE') || log.includes('Run Lost')) return 'damage';
+  if (log.includes('低下') || log.includes('Unknown') || log.includes('警告')) return 'warning';
+  return 'system';
+};
+
 function reducer(state: State, action: Action): State {
   if (action.type === 'RETRY') return initialState();
 
@@ -98,7 +117,8 @@ function reducer(state: State, action: Action): State {
     case 'MOVE': {
       const current = state.nodes.find((n) => n.id === state.currentId)!;
       if (!current.next.includes(action.nodeId)) return state;
-      return { ...state, currentId: action.nodeId, phase: 'node', logs: [...state.logs, `Move: ${action.nodeId}へ進行。`] };
+      const nodes = state.nodes.map((node) => (node.id === state.currentId ? { ...node, done: true } : node));
+      return { ...state, currentId: action.nodeId, phase: 'node', nodes, logs: [...state.logs, `Move: ${action.nodeId}へ進行。`] };
     }
     case 'RESOLVE_NODE': {
       const node = state.nodes.find((n) => n.id === state.currentId)!;
@@ -215,17 +235,40 @@ export function App() {
   const current = state.nodes.find((n) => n.id === state.currentId)!;
   const nextNodes = useMemo(() => current.next.map((id) => state.nodes.find((n) => n.id === id)!), [current.next, state.nodes]);
   const offerChance = getNegotiationChance(state, 'offer');
+  const terminalLogs = state.logs.filter((log) => !log.startsWith('M.O.E.:'));
+  const moeLogs = state.logs.filter((log) => log.startsWith('M.O.E.:'));
 
   return <div className="ui">
-    <header><h1>DEMON TERMINAL DRIVE / MVP</h1><div>NODE: {current.name}</div></header>
-    <aside><h3>Vehicle</h3><p>Fuel: {state.fuel}</p><p>Armor: {state.armor}</p><p>Signal: {state.signal}</p>
-      <h3>Contracts</h3>{state.contracts.length === 0 ? <p>None</p> : state.contracts.map((c) => <p key={c.id}>{c.name}</p>)}</aside>
-    <main>
-      {state.phase === 'map' && !state.outcome && <div><h2>Route Map</h2>{nextNodes.map((n) => <button key={n.id} onClick={() => dispatch({ type: 'MOVE', nodeId: n.id })}>{n.type.toUpperCase()} / {n.name}</button>)}</div>}
-      {state.phase === 'node' && <div><h2>{current.type.toUpperCase()}</h2><p>{current.detail}</p><button onClick={() => dispatch({ type: 'RESOLVE_NODE' })}>Resolve</button></div>}
-      {state.phase === 'negotiation' && state.pendingContract && <div><h2>Negotiation</h2><p>Target: {state.pendingContract.name}</p><p>Tone Hint: {state.pendingEntity?.tone}</p><p>Success(Offer): {offerChance}%</p><p>Fail Penalty: Armor -3</p><p>Reward: {state.pendingContract.effect}</p><button onClick={() => dispatch({ type: 'NEGOTIATE', approach: 'offer' })}>Offer Deal</button><button onClick={() => dispatch({ type: 'NEGOTIATE', approach: 'sync' })}>Sync Logic</button><button onClick={() => dispatch({ type: 'NEGOTIATE', approach: 'threaten' })}>Threaten / Flash</button><button onClick={() => dispatch({ type: 'NEGOTIATE', approach: 'listen' })}>Answer / Listen</button></div>}
-      {state.phase === 'result' && <div><h2>{state.outcome === 'win' ? 'RUN COMPLETE' : 'RUN LOST'}</h2><button onClick={() => dispatch({ type: 'RETRY' })}>Retry</button></div>}
+    <header className="panel header-panel"><h1>DEMON TERMINAL DRIVE</h1><div className="run-status">Run Status: {state.outcome ? state.outcome.toUpperCase() : state.phase.toUpperCase()} / NODE: {current.name}</div></header>
+
+    <aside className="panel route-panel"><h2>Route Map</h2><div className="route-grid">{state.nodes.map((node) => {
+      const isCurrent = node.id === state.currentId;
+      const isSelectable = current.next.includes(node.id) && state.phase === 'map' && !state.outcome;
+      const isRevealed = node.done || node.id === state.currentId || current.next.includes(node.id);
+      const statusClass = isCurrent ? 'current' : isSelectable ? 'selectable' : node.done ? 'reached' : isRevealed ? 'revealed' : 'unreached';
+      return <button key={node.id} className={`route-node ${statusClass}`} disabled={!isSelectable} onClick={() => dispatch({ type: 'MOVE', nodeId: node.id })}>
+        <span className="icon">{nodeIcons[node.type]}</span><span>{node.name}</span>
+      </button>;
+    })}</div></aside>
+
+    <main className="panel center-panel">
+      {state.phase === 'map' && !state.outcome && <div className="card"><h2>Current Event</h2><p>次のノードを選択してください。</p>{nextNodes.map((n) => <p key={n.id}>{n.type.toUpperCase()} / {n.name}</p>)}</div>}
+      {state.phase === 'node' && <div className="card"><h2>{current.type.toUpperCase()}</h2><p>{current.detail}</p><button onClick={() => dispatch({ type: 'RESOLVE_NODE' })}>Resolve Node</button></div>}
+      {state.phase === 'negotiation' && state.pendingContract && <div className="card"><h2>Negotiation Console</h2><p>Target: {state.pendingContract.name}</p><p>Tone Hint: {state.pendingEntity?.tone}</p><p>Success(Offer): {offerChance}%</p><p>Fail Penalty: Armor -3</p><p>Reward: {state.pendingContract.effect}</p><div className="actions"><button onClick={() => dispatch({ type: 'NEGOTIATE', approach: 'offer' })}>Offer Deal</button><button onClick={() => dispatch({ type: 'NEGOTIATE', approach: 'sync' })}>Sync Logic</button><button onClick={() => dispatch({ type: 'NEGOTIATE', approach: 'threaten' })}>Threaten / Flash</button><button onClick={() => dispatch({ type: 'NEGOTIATE', approach: 'listen' })}>Answer / Listen</button></div></div>}
+      {state.phase === 'result' && <div className="card"><h2>{state.outcome === 'win' ? 'RUN COMPLETE' : 'RUN LOST'}</h2><button onClick={() => dispatch({ type: 'RETRY' })}>Retry</button></div>}
     </main>
-    <section><h3>M.O.E. Log</h3><ul>{state.logs.slice(-10).map((log, i) => <li key={`${log}-${i}`}>{log}</li>)}</ul></section>
+
+    <section className="panel dashboard-panel"><h2>Dashboard</h2>
+      {[{ label: 'Fuel', value: state.fuel, max: 12 }, { label: 'Armor', value: state.armor, max: 12 }, { label: 'Signal', value: state.signal, max: 10 }].map((meter) => {
+        const pct = Math.max(0, Math.min(100, (meter.value / meter.max) * 100));
+        return <div key={meter.label} className="meter"><div className="meter-head"><span>{meter.label}</span><span>{meter.value}</span></div><div className="meter-bar"><span style={{ width: `${pct}%` }} /></div></div>;
+      })}
+      <h3>Modules</h3>{state.contracts.length === 0 ? <p>None</p> : state.contracts.map((c) => <p key={c.id}>{c.name}</p>)}
+    </section>
+
+    <footer className="panel log-panel">
+      <div className="terminal"><h3>Demon Terminal Log</h3><ul>{terminalLogs.slice(-12).map((log, i) => <li key={`${log}-${i}`} className={`log-${classifyLog(log)}`}>{`> ${log}`}</li>)}</ul></div>
+      <div className="moe-card"><h3>M.O.E. Dialogue</h3><ul>{moeLogs.slice(-4).map((log, i) => <li key={`${log}-${i}`}>{log.replace('M.O.E.: ', '')}</li>)}</ul></div>
+    </footer>
   </div>;
 }
