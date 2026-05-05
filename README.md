@@ -30,6 +30,15 @@ npm run dev
 npm run build
 ```
 
+## ビルドしてローカル起動
+
+```bash
+npm run start
+```
+
+`build` 後に `vite preview` でローカルホストを起動します（通常 `http://localhost:4173`）。
+もし `4173` が使用中なら `start` はエラーで停止するため、先に既存プロセスを終了してください。
+
 ## ドキュメント
 
 - 詳細仕様: `docs/game-design.md`
