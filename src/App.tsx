@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { defaultAssetManifest, loadAssetManifest, resolveAssetUrl, type AssetManifest } from './assetManifest';
+import { defaultBalanceConfig, getBalanceConfig, loadBalanceConfig, type BalanceConfig } from './balanceConfig';
 
 type ContractId = 'radio_voice' | 'silent_shape' | 'abandoned_ai_navi';
 type TerminalLogKind = 'warning' | 'contract' | 'damage' | 'system' | 'route';
@@ -137,6 +139,19 @@ type AutoPlayReport = {
   counts: Record<ResultType, number>;
 };
 
+type SfxCue =
+  | 'run_start'
+  | 'scan_ok'
+  | 'scan_fail'
+  | 'command'
+  | 'hit'
+  | 'contract'
+  | 'warning'
+  | 'reward'
+  | 'result'
+  | 'game_over'
+  | 'garage_enter';
+
 type StoryLogId = 'LOG_00' | 'LOG_01' | 'LOG_02' | 'LOG_03' | 'LOG_04';
 type StoryLogEntry = { id: StoryLogId; title: string; text: string };
 type StoryState = {
@@ -270,6 +285,38 @@ const specialEquipmentCatalog: Record<SpecialEquipmentId, SpecialEquipment> = {
   signal_harpoon: { id: 'signal_harpoon', name: 'Signal Harpoon', damage: 2, seAmmoCost: 1, ammo: 4, effect: 'interest', description: '契約を狙うための特殊兵装。' },
   micro_missile: { id: 'micro_missile', name: 'Micro Missile', damage: 3, seAmmoCost: 1, ammo: 3, effect: 'all_damage', description: '全体攻撃。契約より撃破向き。' },
   emp_flare: { id: 'emp_flare', name: 'EMP Flare', damage: 1, seAmmoCost: 1, ammo: 4, effect: 'emp', description: '機械霊対策。AI系の行動を鈍らせる。' },
+};
+
+const getMainGunSpec = (id: MainGunId): MainGun => {
+  const base = mainGunCatalog[id];
+  const tuned = getBalanceConfig().weapons.mainGun[id];
+  return {
+    ...base,
+    damage: tuned?.damage ?? base.damage,
+    ammo: tuned?.ammo ?? base.ammo,
+  };
+};
+
+const getSubGunSpec = (id: SubGunId): SubGun => {
+  const base = subGunCatalog[id];
+  const tuned = getBalanceConfig().weapons.subGun[id];
+  return {
+    ...base,
+    damage: tuned?.damage ?? base.damage,
+    hits: tuned?.hits ?? base.hits,
+    softenChance: tuned?.softenChance ?? base.softenChance,
+  };
+};
+
+const getSpecialEquipmentSpec = (id: SpecialEquipmentId): SpecialEquipment => {
+  const base = specialEquipmentCatalog[id];
+  const tuned = getBalanceConfig().weapons.specialEquipment[id];
+  return {
+    ...base,
+    damage: tuned?.damage ?? base.damage,
+    ammo: tuned?.ammo ?? base.ammo,
+    seAmmoCost: tuned?.seAmmoCost ?? base.seAmmoCost,
+  };
 };
 
 const contractSupportCatalog: Record<ContractSupportId, ContractSupport> = {
@@ -454,13 +501,13 @@ const vehicleUpgradeLabels: Record<VehicleUpgradeId, string> = {
 const hasAiNaviContract = (contracts: ContractModule[]) => contracts.some((module) => module.id === 'abandoned_ai_navi');
 
 const getRunStartResources = (loadout: Loadout, vehicleUpgrades: VehicleUpgradeLevels = defaultVehicleUpgrades) => ({
-  fuel: 12 + vehicleUpgrades.fuel_tank,
-  armor: 12 + vehicleUpgrades.armor_plating,
-  signal: 5,
-  mainAmmo: mainGunCatalog[loadout.mainGunId].ammo + vehicleUpgrades.ammo_rack,
-  maxMainAmmo: mainGunCatalog[loadout.mainGunId].ammo + vehicleUpgrades.ammo_rack,
-  seAmmo: specialEquipmentCatalog[loadout.specialEquipmentId].ammo + vehicleUpgrades.se_rack,
-  maxSeAmmo: specialEquipmentCatalog[loadout.specialEquipmentId].ammo + vehicleUpgrades.se_rack,
+  fuel: getBalanceConfig().resources.baseFuel + vehicleUpgrades.fuel_tank,
+  armor: getBalanceConfig().resources.baseArmor + vehicleUpgrades.armor_plating,
+  signal: getBalanceConfig().resources.baseSignal,
+  mainAmmo: getMainGunSpec(loadout.mainGunId).ammo + vehicleUpgrades.ammo_rack,
+  maxMainAmmo: getMainGunSpec(loadout.mainGunId).ammo + vehicleUpgrades.ammo_rack,
+  seAmmo: getSpecialEquipmentSpec(loadout.specialEquipmentId).ammo + vehicleUpgrades.se_rack,
+  maxSeAmmo: getSpecialEquipmentSpec(loadout.specialEquipmentId).ammo + vehicleUpgrades.se_rack,
 });
 
 const lineupByKind = (kind: ApproachKind): EncounterId[] =>
@@ -480,12 +527,13 @@ const createEmptyEncounterPrep = (): EncounterPrep => ({
 });
 
 const getScanChance = (state: State, kind: ApproachKind, lineup: EncounterId[]): number => {
-  let chance = 60;
-  if (state.selectedLoadout.contractSupportId === 'abandoned_ai_navi') chance += 20;
-  if (state.signal >= 4) chance += 10;
-  if (kind === 'boss') chance -= 15;
-  if (lineup.includes('silent_shape')) chance -= 15;
-  chance += state.skillLevels.scan_boost * 5;
+  const scan = getBalanceConfig().scan;
+  let chance = scan.baseChance;
+  if (state.selectedLoadout.contractSupportId === 'abandoned_ai_navi') chance += scan.aiSupportBonus;
+  if (state.signal >= scan.highSignalThreshold) chance += scan.highSignalBonus;
+  if (kind === 'boss') chance -= scan.bossPenalty;
+  if (lineup.includes('silent_shape')) chance -= scan.stealthPenalty;
+  chance += state.skillLevels.scan_boost * scan.scanBoostPerLevel;
   return clamp(chance, 15, 95);
 };
 
@@ -649,9 +697,10 @@ const bossIntel = {
 };
 
 const computeAffinityDamage = (baseDamage: number, rating: AffinityRating) => {
+  const affinity = getBalanceConfig().affinity;
   if (baseDamage <= 0) return 0;
-  if (rating === 'weak') return Math.max(1, Math.floor(baseDamage * 1.5));
-  if (rating === 'resist') return Math.max(1, Math.floor(baseDamage * 0.5));
+  if (rating === 'weak') return Math.max(1, Math.floor(baseDamage * affinity.weakMultiplier));
+  if (rating === 'resist') return Math.max(1, Math.floor(baseDamage * affinity.resistMultiplier));
   return baseDamage;
 };
 
@@ -724,6 +773,21 @@ const getPseudoTimecode = (index: number, total: number, wave: number, turn: num
   const localOrder = Math.max(0, index - recentStart);
   const elapsedSec = wave * 22 + Math.max(0, turn - 1) * 3 + localOrder * 0.6;
   return `+${elapsedSec.toFixed(1)}s`;
+};
+
+const pickSfxCueFromLog = (log: string, phase: GamePhase): SfxCue | undefined => {
+  if (phase === 'garage') return 'garage_enter';
+  if (phase === 'game_over') return 'game_over';
+  if (log.includes('RUN START')) return 'run_start';
+  if (log.includes('APPROACH WINDOW OPEN') || log.includes('CONTACT DETECTED')) return 'scan_ok';
+  if (log.includes('NAVI SCAN FAILED') || log.includes('AMBUSH')) return 'scan_fail';
+  if (log.includes('CONTRACT REGISTERED') || log.includes('MODULE SLOT UPDATED')) return 'contract';
+  if (log.includes('IMPACT CONFIRMED') || log.includes('MULTI TARGET HIT')) return 'hit';
+  if (log.includes('WARNING')) return 'warning';
+  if (log.includes('SALVAGE RESULT READY') || log.includes('REWARD APPLIED') || log.includes('SALVAGE APPLIED')) return 'reward';
+  if (log.includes('RUN COMPLETE') || log.includes('RETURN GATE ROUTE OPEN')) return 'result';
+  if (log.includes('COMMAND:') || log.includes('MAIN GUN:') || log.includes('SUB GUN:') || log.includes('S-E:') || log.includes('DRIVE COMMAND')) return 'command';
+  return undefined;
 };
 
 const initState = (): State => {
@@ -928,12 +992,13 @@ const chooseAutoplayReward = (state: State): RewardOption => {
 };
 
 const chooseAutoplayRoute = (state: State, strategy: AutoPlayStrategy): 'salvage' | 'signal' | 'push_forward' | 'return_gate' => {
+  const auto = getBalanceConfig().autoplay;
   if (strategy === 'safe' && (state.armor <= 3 || state.fuel <= 2)) return 'return_gate';
   if (state.signal <= 2) return 'signal';
   if (state.armor <= 5 || state.fuel <= 3 || state.mainAmmo <= 1) return 'salvage';
   if (strategy === 'aggressive') return 'push_forward';
   if (strategy === 'contract') return 'signal';
-  if (Math.random() < 0.35) return 'push_forward';
+  if (Math.random() < auto.pushForwardChance) return 'push_forward';
   return 'salvage';
 };
 
@@ -945,11 +1010,12 @@ const chooseAutoplayBossPreview = (state: State, strategy: AutoPlayStrategy): 'c
 };
 
 const chooseAutoplayCommand = (state: State, strategy: AutoPlayStrategy): CommandId => {
+  const auto = getBalanceConfig().autoplay;
   const selected = getSelectedEnemy(state.encounter);
   const alive = state.encounter.enemies.filter(isAlive);
   if (!selected || alive.length === 0) return 'guard';
-  const mainGun = mainGunCatalog[state.selectedLoadout.mainGunId];
-  const se = specialEquipmentCatalog[state.selectedLoadout.specialEquipmentId];
+  const mainGun = getMainGunSpec(state.selectedLoadout.mainGunId);
+  const se = getSpecialEquipmentSpec(state.selectedLoadout.specialEquipmentId);
 
   if (selected.contractWindow && selected.contractable) return 'contract';
   if ((!selected.revealed || !state.encounter.analyzedEnemyIds.includes(selected.id)) && state.signal > 0) return 'analyze';
@@ -957,7 +1023,7 @@ const chooseAutoplayCommand = (state: State, strategy: AutoPlayStrategy): Comman
     if (state.seAmmo >= se.seAmmoCost) return 'se_harpoon';
     return 'talk';
   }
-  if (selected.contractable && selected.pressure <= 1 && selected.hp > 2 && Math.random() < 0.35) return 'talk';
+  if (selected.contractable && selected.pressure <= 1 && selected.hp > 2 && Math.random() < auto.talkProbeChance) return 'talk';
   if (state.gamePhase === 'boss_encounter' && state.mainAmmo > 0) return 'main_gun';
   if (state.mainAmmo > 0 && selected.hp >= mainGun.damage) return 'main_gun';
   if (alive.length >= 2) return 'sub_gun';
@@ -1141,9 +1207,9 @@ function reducer(state: State, action: Action): State {
     if (state.gamePhase !== 'garage') return state;
     return initRunWithLoadout(state, [
       '> GARAGE: MIDNIGHT BAY ONLINE',
-      `> MAIN GUN SELECTED: ${mainGunCatalog[state.selectedLoadout.mainGunId].name.toUpperCase()}`,
-      `> SUB GUN SELECTED: ${subGunCatalog[state.selectedLoadout.subGunId].name.toUpperCase()}`,
-      `> S-E SELECTED: ${specialEquipmentCatalog[state.selectedLoadout.specialEquipmentId].name.toUpperCase()}`,
+      `> MAIN GUN SELECTED: ${getMainGunSpec(state.selectedLoadout.mainGunId).name.toUpperCase()}`,
+      `> SUB GUN SELECTED: ${getSubGunSpec(state.selectedLoadout.subGunId).name.toUpperCase()}`,
+      `> S-E SELECTED: ${getSpecialEquipmentSpec(state.selectedLoadout.specialEquipmentId).name.toUpperCase()}`,
       `> CONTRACT SUPPORT: ${contractSupportCatalog[state.selectedLoadout.contractSupportId].name.toUpperCase()}`,
       '> DEEP SIGNAL DETECTED: TOLL GATE SAINT',
     ]);
@@ -1285,7 +1351,7 @@ function reducer(state: State, action: Action): State {
       const target = encounter.enemies.findIndex(isAlive);
       if (target >= 0) {
         mainAmmo -= 1;
-        const gunDmg = mainGunCatalog[state.selectedLoadout.mainGunId].damage + state.skillLevels.gunnery;
+        const gunDmg = getMainGunSpec(state.selectedLoadout.mainGunId).damage + state.skillLevels.gunnery;
         encounter.enemies[target].hp = Math.max(0, encounter.enemies[target].hp - gunDmg);
         encounter.enemies[target].pressure += 1;
         encounter.enemies[target].intent = 'guard';
@@ -1304,7 +1370,12 @@ function reducer(state: State, action: Action): State {
       armor = Math.max(0, armor - 1);
       fuel = Math.max(0, fuel - 1);
       logs.push('> APPROACH: HIT-AND-RUN RAM', '> CHASSIS IMPACT');
-      const successRate = clamp(0.6 + state.skillLevels.ram_control * 0.05, 0.6, 0.9);
+      const approach = getBalanceConfig().approach;
+      const successRate = clamp(
+        approach.hitAndRunBaseChance + state.skillLevels.ram_control * approach.ramControlBonusPerLevel,
+        approach.minChance,
+        approach.maxChance,
+      );
       if (Math.random() < successRate) {
         logs.push('> BYPASS SUCCESS');
         const clearedEncounter = {
@@ -1668,9 +1739,9 @@ function reducer(state: State, action: Action): State {
   let moeLine = '次の手を選んで。';
   let skipEnemyResolution = false;
   let escaped = false;
-  const selectedMainGun = mainGunCatalog[state.selectedLoadout.mainGunId];
-  const selectedSubGun = subGunCatalog[state.selectedLoadout.subGunId];
-  const selectedSE = specialEquipmentCatalog[state.selectedLoadout.specialEquipmentId];
+  const selectedMainGun = getMainGunSpec(state.selectedLoadout.mainGunId);
+  const selectedSubGun = getSubGunSpec(state.selectedLoadout.subGunId);
+  const selectedSE = getSpecialEquipmentSpec(state.selectedLoadout.specialEquipmentId);
   const logAffinityReaction = (enemy: Devil, affinityType: AffinityType) => {
     const rating = enemy.affinities[affinityType];
     if (rating === 'weak') {
@@ -1866,12 +1937,22 @@ function reducer(state: State, action: Action): State {
   if (command === 'talk' && selectedEnemy) {
     const idx = encounter.enemies.findIndex((enemy) => enemy.id === selectedEnemy.id);
     if (idx >= 0) {
-      const analyzedBonus = encounter.analyzedEnemyIds.includes(selectedEnemy.id) || encounter.enemies[idx].revealed ? 0.15 : 0;
+      const talkCfg = getBalanceConfig().talk;
+      const analyzedBonus = encounter.analyzedEnemyIds.includes(selectedEnemy.id) || encounter.enemies[idx].revealed ? talkCfg.analyzeBonus : 0;
       const supportBonus = state.selectedLoadout.contractSupportId === 'radio_voice' ? 0.05 : 0;
       const firstTalkBonus = encounterPrep.firstTalkPending ? encounterPrep.firstTalkBonus : 0;
       const affinity = logAffinityReaction(encounter.enemies[idx], 'talk');
       const affinityRateBonus = affinity === 'weak' ? 0.1 : affinity === 'resist' ? -0.15 : 0;
-      const successRate = clamp(0.7 + analyzedBonus + supportBonus + firstTalkBonus + affinityRateBonus - encounter.enemies[idx].pressure * 0.1, 0.1, 0.95);
+      const successRate = clamp(
+        talkCfg.baseSuccess
+          + analyzedBonus
+          + supportBonus
+          + firstTalkBonus
+          + affinityRateBonus
+          - encounter.enemies[idx].pressure * talkCfg.pressurePenaltyPerStack,
+        talkCfg.minSuccess,
+        talkCfg.maxSuccess,
+      );
       logs.push('> TALK CHANNEL OPEN');
       if (Math.random() < successRate) {
         encounter.enemies[idx] = applyTalkTemperament(encounter.enemies[idx]);
@@ -1937,8 +2018,14 @@ function reducer(state: State, action: Action): State {
         }
         moeLine = buildMoeActionLine('契約失敗', '条件不足。反動が来る。', target.name);
       } else {
-        const analyzedBonus = encounter.analyzedEnemyIds.includes(target.id) || target.revealed ? 0.1 : 0;
-        const successRate = clamp((target.profile === 'toll_gate_saint' ? 0.45 : 0.8) + analyzedBonus - target.pressure * 0.1, 0.1, 0.95);
+        const contractCfg = getBalanceConfig().contract;
+        const analyzedBonus = encounter.analyzedEnemyIds.includes(target.id) || target.revealed ? contractCfg.analyzeBonus : 0;
+        const baseSuccess = target.profile === 'toll_gate_saint' ? contractCfg.bossBaseSuccess : contractCfg.normalBaseSuccess;
+        const successRate = clamp(
+          baseSuccess + analyzedBonus - target.pressure * contractCfg.pressurePenaltyPerStack,
+          contractCfg.minSuccess,
+          contractCfg.maxSuccess,
+        );
         logs.push('> CONTRACT PROTOCOL START');
         if (Math.random() < successRate) {
           logs.push('> ENTITY SIGNATURE CAPTURED');
@@ -2006,7 +2093,8 @@ function reducer(state: State, action: Action): State {
   if (command === 'escape' && fuel > 0) {
     fuel = Math.max(0, fuel - 1);
     const reaperLike = encounter.enemies.some((enemy) => isAlive(enemy) && (enemy.profile === 'road_reaper' || enemy.profile === 'toll_gate_saint'));
-    const successRate = reaperLike ? 0.55 : 0.7;
+    const escapeCfg = getBalanceConfig().escape;
+    const successRate = reaperLike ? Math.max(0.01, escapeCfg.baseChance - escapeCfg.reaperPenalty) : escapeCfg.baseChance;
     logs.push('> DRIVE COMMAND: ESCAPE');
     logs.push('> THROTTLE OVERRIDE');
     if (Math.random() < successRate) {
@@ -2280,18 +2368,37 @@ function renderDevilArt(profile: EncounterId) {
   </svg>;
 }
 
+function AssetFigure({
+  src,
+  alt,
+  className,
+  fallback,
+}: {
+  src?: string;
+  alt: string;
+  className?: string;
+  fallback: JSX.Element;
+}) {
+  const [broken, setBroken] = useState(false);
+  useEffect(() => setBroken(false), [src]);
+  if (!src || broken) return fallback;
+  return <img className={className} src={src} alt={alt} loading="lazy" decoding="async" onError={() => setBroken(true)} />;
+}
+
 function BattleDevilSprite({
   devil,
   focused,
   lane,
   analyzed,
   onSelect,
+  imageSrc,
 }: {
   devil: Devil;
   focused: boolean;
   lane: 'left' | 'center' | 'right';
   analyzed: boolean;
   onSelect: () => void;
+  imageSrc?: string;
 }) {
   const profile = encounterProfiles[devil.profile];
   const hpPct = Math.max(0, (devil.hp / devil.maxHp) * 100);
@@ -2308,7 +2415,14 @@ function BattleDevilSprite({
     }}
   >
     <div className="battle-devil__body">
-      <div className="battle-devil__art">{renderDevilArt(devil.profile)}</div>
+      <div className="battle-devil__art">
+        <AssetFigure
+          src={imageSrc}
+          alt={`${profile.label} visual`}
+          className="battle-devil__asset"
+          fallback={renderDevilArt(devil.profile)}
+        />
+      </div>
       <div className="battle-devil__label">
         <strong>{analyzed ? devil.name.toUpperCase() : 'UNKNOWN SIGN'}</strong>
         <span>{profile.contractable ? 'CONTRACTABLE' : 'HOSTILE'} / {profile.threat}</span>
@@ -2345,14 +2459,23 @@ function ApproachContactMarker({
   profile,
   lane,
   scanSuccess,
+  imageSrc,
 }: {
   profile: EncounterId;
   lane: 'left' | 'center' | 'right';
   scanSuccess: boolean;
+  imageSrc?: string;
 }) {
   const info = encounterProfiles[profile];
   return <article className={`approach-contact approach-contact--${lane}`}>
-    <div className="approach-contact__sigil">?</div>
+    <div className="approach-contact__sigil">
+      <AssetFigure
+        src={imageSrc}
+        alt={`${info.label} contact`}
+        className="approach-contact__asset"
+        fallback={<span className="approach-contact__fallback">?</span>}
+      />
+    </div>
     <div className="approach-contact__meta">
       <strong>{scanSuccess ? info.label : 'UNKNOWN CONTACT'}</strong>
       <small>{scanSuccess ? `suggested: ${getLikelyWeaknessSummary(profile)}` : 'suggested: Analyze / Guard'}</small>
@@ -2363,15 +2486,28 @@ function ApproachContactMarker({
 
 export function App() {
   const [state, dispatch] = useReducer(reducer, undefined, initState);
-  const [autoplayRuns, setAutoplayRuns] = useState(120);
+  const [balanceConfig, setBalanceConfig] = useState<BalanceConfig>(defaultBalanceConfig);
+  const [autoplayRuns, setAutoplayRuns] = useState(() => defaultBalanceConfig.autoplay.defaultRuns);
   const [autoplayStrategy, setAutoplayStrategy] = useState<AutoPlayStrategy>('balanced');
   const [autoplayReport, setAutoplayReport] = useState<AutoPlayReport | null>(null);
+  const [assetManifest, setAssetManifest] = useState<AssetManifest>(defaultAssetManifest);
+  const [assetManifestLoaded, setAssetManifestLoaded] = useState(false);
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
   const terminalLogRef = useRef<HTMLUListElement | null>(null);
-  const selectedMainGun = mainGunCatalog[state.selectedLoadout.mainGunId];
-  const selectedSubGun = subGunCatalog[state.selectedLoadout.subGunId];
-  const selectedSE = specialEquipmentCatalog[state.selectedLoadout.specialEquipmentId];
+  const bgmRef = useRef<HTMLAudioElement | null>(null);
+  const lastSfxAtRef = useRef(0);
+  const selectedMainGun = getMainGunSpec(state.selectedLoadout.mainGunId);
+  const selectedSubGun = getSubGunSpec(state.selectedLoadout.subGunId);
+  const selectedSE = getSpecialEquipmentSpec(state.selectedLoadout.specialEquipmentId);
   const selectedSupport = contractSupportCatalog[state.selectedLoadout.contractSupportId];
   const nextRunPreview = getRunStartResources(state.selectedLoadout, state.vehicleUpgrades);
+  const balance = getBalanceConfig();
+  const dashboardFuelCapBase = balance.resources.baseFuel + state.vehicleUpgrades.fuel_tank;
+  const dashboardArmorCapBase = balance.resources.baseArmor + state.vehicleUpgrades.armor_plating;
+  const dashboardSignalCapBase = balance.resources.baseSignal;
+  const dashboardFuelMax = Math.max(dashboardFuelCapBase, state.fuel);
+  const dashboardArmorMax = Math.max(dashboardArmorCapBase, state.armor);
+  const dashboardSignalMax = Math.max(dashboardSignalCapBase, state.signal);
   const skillOrder: UpgradeId[] = ['ram_control', 'gunnery', 'scan_boost', 'translation_assist'];
   const vehicleUpgradeOrder: VehicleUpgradeId[] = ['fuel_tank', 'armor_plating', 'ammo_rack', 'se_rack'];
 
@@ -2395,6 +2531,13 @@ export function App() {
   const isRoadStopped = isBattlePhase || state.gamePhase === 'garage' || state.gamePhase === 'result' || state.gamePhase === 'game_over';
   const isEncounterActive = (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && state.encounter.phase === 'command';
   const speed = isBattlePhase ? 0 : isRoadMoving ? 122 : state.gamePhase === 'prologue' ? 64 : 8;
+  const enemyAssetMap = assetManifest.images.enemies ?? {};
+  const playerAsset = resolveAssetUrl(assetManifest.images.player);
+  const moeAsset = resolveAssetUrl(assetManifest.images.moe);
+  const logoAsset = resolveAssetUrl(assetManifest.images.logo);
+  const windshieldImage = resolveAssetUrl(assetManifest.images.ui?.windshield);
+  const roadOverlayImage = resolveAssetUrl(assetManifest.images.ui?.roadOverlay);
+  const shellClassName = assetManifest.ui.shellClass?.trim() ?? '';
 
   const terminalStatus = [
     state.signal <= 1 ? 'SIGNAL WEAK' : 'SIGNAL LOCKED',
@@ -2403,6 +2546,7 @@ export function App() {
     `MAIN AMMO ${state.mainAmmo}/${state.maxMainAmmo}`,
     `S-E AMMO ${state.seAmmo}/${state.maxSeAmmo}`,
     `MAIN ${selectedMainGun.name.toUpperCase()}`,
+    assetManifestLoaded ? `ASSET ${assetManifest.version.toUpperCase()}` : 'ASSET DEFAULT',
   ];
 
   const tacticalLines = [
@@ -2429,6 +2573,94 @@ export function App() {
     guard: state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter',
     escape: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && state.fuel > 0,
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      const loaded = await loadAssetManifest();
+      if (!cancelled) {
+        setAssetManifest(loaded);
+        setAssetManifestLoaded(true);
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      const loaded = await loadBalanceConfig();
+      if (!cancelled) {
+        setBalanceConfig(loaded);
+        setAutoplayRuns((prev) => (prev === defaultBalanceConfig.autoplay.defaultRuns ? loaded.autoplay.defaultRuns : prev));
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const cssVars = assetManifest.ui.cssVars ?? {};
+    const root = document.documentElement;
+    const touched: string[] = [];
+    for (const [rawKey, value] of Object.entries(cssVars)) {
+      const key = rawKey.startsWith('--') ? rawKey : `--${rawKey}`;
+      root.style.setProperty(key, value);
+      touched.push(key);
+    }
+    return () => {
+      for (const key of touched) root.style.removeProperty(key);
+    };
+  }, [assetManifest.ui.cssVars]);
+
+  useEffect(() => {
+    const unlock = () => setAudioUnlocked(true);
+    window.addEventListener('pointerdown', unlock, { once: true });
+    window.addEventListener('keydown', unlock, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+  }, []);
+
+  useEffect(() => {
+    const bgmUrl = resolveAssetUrl(assetManifest.media.bgm);
+    if (bgmRef.current) {
+      bgmRef.current.pause();
+      bgmRef.current = null;
+    }
+    if (!bgmUrl) return;
+    const audio = new Audio(bgmUrl);
+    audio.loop = true;
+    audio.preload = 'auto';
+    audio.volume = 0.35;
+    bgmRef.current = audio;
+    if (audioUnlocked) void audio.play().catch(() => undefined);
+    return () => {
+      audio.pause();
+    };
+  }, [assetManifest.media.bgm, audioUnlocked]);
+
+  useEffect(() => {
+    if (!audioUnlocked) return;
+    const log = state.logs[state.logs.length - 1] ?? '';
+    const cue = pickSfxCueFromLog(log, state.gamePhase);
+    if (!cue) return;
+    const sfxMap = assetManifest.media.sfx ?? {};
+    const src = resolveAssetUrl(sfxMap[cue]);
+    if (!src) return;
+    const now = Date.now();
+    if (now - lastSfxAtRef.current < 80) return;
+    lastSfxAtRef.current = now;
+    const audio = new Audio(src);
+    audio.volume = 0.45;
+    void audio.play().catch(() => undefined);
+  }, [state.logs, state.gamePhase, assetManifest.media.sfx, audioUnlocked]);
 
   useEffect(() => {
     if (!terminalLogRef.current) return;
@@ -2479,14 +2711,17 @@ export function App() {
   const runAutoplay = () => {
     setAutoplayReport(runAutoplayBatch(state.selectedLoadout, autoplayRuns, autoplayStrategy));
   };
-  const showFirstGarageGuide = state.gamePhase === 'prologue'
-    && !state.previousRun
-    && state.driverXpBank === 0
-    && state.moeSyncBank === 0
-    && state.creditBank === 0;
+  const showFirstGarageGuide = state.gamePhase === 'prologue' && !state.previousRun;
 
-  return <div className={`dashboard-shell ${isEncounterActive ? 'is-encounter' : ''}`}>
-    <div className="road-runner-bg" aria-hidden="true">
+  return <div className={`dashboard-shell ${isEncounterActive ? 'is-encounter' : ''} ${shellClassName}`.trim()}>
+    <div
+      className="road-runner-bg"
+      aria-hidden="true"
+      style={{
+        ['--asset-windshield-bg' as string]: windshieldImage ? `url("${windshieldImage}")` : 'none',
+        ['--asset-road-overlay' as string]: roadOverlayImage ? `url("${roadOverlayImage}")` : 'none',
+      }}
+    >
       <span className="road-runner-bg__lane" />
       <span className="road-runner-bg__lights" />
       <span className="road-runner-bg__fog" />
@@ -2513,6 +2748,7 @@ export function App() {
     <div className="cockpit-frame">
       <header className="cockpit-header panel">
         <div className="brand-stack" aria-label="Devil Drive Midnight Terminal">
+          {logoAsset && <img src={logoAsset} alt="Midnight Terminal logo" className="brand-stack__logo" loading="lazy" decoding="async" />}
           <span>DEVIL DRIVE</span>
           <strong>MIDNIGHT TERMINAL</strong>
         </div>
@@ -2568,6 +2804,7 @@ export function App() {
               lane={index === 0 ? 'left' : index === 1 ? 'center' : 'right'}
               focused={enemy.id === state.encounter.selectedEnemyId}
               analyzed={state.encounter.analyzedEnemyIds.includes(enemy.id) || enemy.revealed}
+              imageSrc={resolveAssetUrl(enemyAssetMap[enemy.profile])}
               onSelect={() => dispatch({ type: 'SELECT_ENEMY', enemyId: enemy.id })}
             />)}
             {state.gamePhase === 'approach' && approachLineup.map((profile, index) => <ApproachContactMarker
@@ -2575,6 +2812,7 @@ export function App() {
               profile={profile}
               lane={index === 0 ? 'left' : index === 1 ? 'center' : 'right'}
               scanSuccess={!!state.approach?.scanSuccess}
+              imageSrc={resolveAssetUrl(enemyAssetMap[profile])}
             />)}
           </div>
         </section>
@@ -2605,7 +2843,10 @@ export function App() {
 
             <section className="radio-panel">
               <div className="radio-panel__head">
-                <span>RADIO // M.O.E.</span>
+                <span>
+                  {moeAsset && <img src={moeAsset} alt="M.O.E." className="radio-panel__avatar" loading="lazy" decoding="async" />}
+                  RADIO // M.O.E.
+                </span>
                 <small>{state.gamePhase.toUpperCase()} / {state.signal <= 2 ? 'NOISY' : 'CLEAR'}</small>
               </div>
               <div className="radio-bubble">
@@ -2744,13 +2985,16 @@ export function App() {
 
           <section className="vehicle-panel vehicle-panel--inline panel">
             <div className="panel-title">
-              <span>VEHICLE DASHBOARD</span>
+              <span>
+                {playerAsset && <img src={playerAsset} alt="Driver unit" className="vehicle-panel__avatar" loading="lazy" decoding="async" />}
+                VEHICLE DASHBOARD
+              </span>
               <small>SPD {String(speed).padStart(3, '0')} km/h</small>
             </div>
             <div className="vehicle-panel__meters">
-              <ResourceMeter label="Fuel" value={state.fuel} max={12} tone="fuel" />
-              <ResourceMeter label="Armor" value={state.armor} max={12} tone="armor" />
-              <ResourceMeter label="Signal" value={state.signal} max={10} tone="signal" />
+              <ResourceMeter label="Fuel" value={state.fuel} max={dashboardFuelMax} tone="fuel" />
+              <ResourceMeter label="Armor" value={state.armor} max={dashboardArmorMax} tone="armor" />
+              <ResourceMeter label="Signal" value={state.signal} max={dashboardSignalMax} tone="signal" />
               <ResourceMeter label="Main Ammo" value={state.mainAmmo} max={state.maxMainAmmo} tone="ammo" />
               <ResourceMeter label="S-E Ammo" value={state.seAmmo} max={state.maxSeAmmo} tone="seammo" />
             </div>
@@ -2894,16 +3138,23 @@ export function App() {
                 <p>TOLL GATE SAINT // armored / bargain / guard / toll demand</p>
                 <p>M.O.E.: 「料金所型の強い反応。主砲弾かS-E弾、どっちかは残しておきたいね。」</p>
                 <h3>AUTOPLAY LAB</h3>
+                <p>Balance Profile: {balanceConfig.version}</p>
                 <div className="autoplay-controls">
                   <label>
                     Runs
                     <input
                       type="number"
-                      min={10}
-                      max={1000}
+                      min={balanceConfig.autoplay.minRuns}
+                      max={balanceConfig.autoplay.maxRuns}
                       step={10}
                       value={autoplayRuns}
-                      onChange={(event) => setAutoplayRuns(clamp(Number(event.target.value) || 10, 10, 1000))}
+                      onChange={(event) => setAutoplayRuns(
+                        clamp(
+                          Number(event.target.value) || balanceConfig.autoplay.minRuns,
+                          balanceConfig.autoplay.minRuns,
+                          balanceConfig.autoplay.maxRuns,
+                        ),
+                      )}
                     />
                   </label>
                   <label>

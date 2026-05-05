@@ -1,124 +1,164 @@
-# Game Design: Devil Drive: Midnight with terminal
+# Game Design (Current MVP)
 
-本書はMVP実装用の設計ドキュメント。雰囲気説明よりも、実装判断に必要な仕様粒度を優先する。
+このドキュメントは「現在の実装に合っている仕様」を簡潔にまとめたものです。  
+将来構想ではなく、`src/App.tsx` ベースの現行挙動を優先して記述します。
 
-## Core Pillars
-- **Drive to Decide**
-  - 走行中の分岐選択がラン結果を決める。
-- **Negotiate for Power**
-  - 強化の主軸はドロップではなく契約交渉。
-- **Dashboard Clarity**
-  - 重要情報はダッシュボードUIに集約し、判断コストを下げる。
-- **Risk-backed Buildcraft**
-  - 全モジュールに利益と代償を持たせ、単純な上位互換を作らない。
+## 1. コンセプト
 
-## Player Fantasy
-- プレイヤーが感じるべき体験:
-  - 危険地帯を走り抜ける「深夜ドライバー」感
-  - 化け物相手に取引条件を通す「交渉人」感
-  - その場で機材構成を組み替える「現場エンジニア」感
-- 体験を支える最小要素:
-  - 分岐マップ、交渉選択肢、スロット装着の3点を必ず1ラン内で複数回発生させる。
+- 舞台: 東京深夜道路網の異界「夜環 / Night Loop」
+- 体験: 車載ダッシュボードUIで、接敵・交渉・契約・帰還判断を短いRunで繰り返す
+- 進行: **Run-first**（初回に即プレイ、Result後にGarageで調整）
 
-## Main Loop
-- 1. ガレージで出撃準備
-- 2. ノード選択で進行
-- 3. 戦闘または交渉イベント解決
-- 4. 報酬/契約でモジュール取得
-- 5. スロット再構成
-- 6. 次ノードへ
-- 7. ボス撃破後に帰還判定
+## 2. 現在のフェーズ遷移
 
-## Run Structure
-- 章構成（MVP）:
-  - Chapter 1: 導入（難度低）
-  - Chapter 2: 中盤（交渉リスク増）
-  - Chapter 3: 終盤（高圧戦闘 + ボス）
-- ノード総数目安: 15〜21
-- 各章の終端に固定ボスノード1つ
-- 失敗条件:
-  - 耐久が0以下
-  - 熱が上限を超えて暴走（即敗北 or 大ダメージは実装選択）
-- 成功条件:
-  - 最終ボス撃破後、脱出ノード到達
+主要フェーズ:
 
-## Resource Design
-- MVPリソース:
-  - **耐久（HP）**
-    - 0で敗北
-  - **電力（Energy）**
-    - アクティブモジュール/一部行動のコスト
-  - **熱（Heat）**
-    - 高いほどデバフ、上限超過で重大ペナルティ
-- 初期値（調整前提）:
-  - 耐久: 100
-  - 電力: 3/ターン回復
-  - 熱上限: 10
-- 設計ルール:
-  - 高性能効果は熱増加を伴わせる。
-  - 電力不足と熱過多が同時に起きるよう設計し、選択ジレンマを生む。
+- `prologue`
+- `approach`
+- `encounter`
+- `reward`
+- `route_choice`
+- `salvage`
+- `signal`
+- `boss_preview`
+- `boss_encounter`
+- `return_gate`
+- `result`
+- `garage`
+- `game_over`
 
-## Module Design
-- レアリティ: Common / Uncommon / Rare
-- スロット種別（MVP）:
-  - Engine
-  - Shield
-  - Utility
-  - Contract
-- 仕様:
-  - 各モジュールは `即時効果` と `常在効果` のどちらか、または両方を持つ。
-  - 各モジュールは必ず `代償タグ`（熱増、初動損耗、交渉脆弱化など）を1つ以上持つ。
-- データ定義（推奨）:
-  - id, name, rarity, slot, effect_text, numeric_effects, drawback, trigger_timing
+基本導線:
 
-## Negotiation Design
-- 発生タイミング:
-  - 交渉ノード、特定戦闘後、ランダムイベント
-- フロー:
-  1. 相手要求の提示（例: 耐久の一部提供）
-  2. プレイヤー提案の選択（受諾/条件変更/拒否）
-  3. 成否判定（確率 + 状態補正）
-  4. 結果反映（契約成立 or 反動イベント）
-- 成否に影響する要素（MVP）:
-  - 現在熱（高いほど不利）
-  - 装着中Contract系モジュール
-  - そのランでの失敗回数ペナルティ
-- UI表示必須情報:
-  - 成功率（%）
-  - 失敗時ペナルティ（具体値）
-  - 契約成立時報酬（モジュール名/効果）
+1. `prologue`（START ENGINE）
+2. `approach`（NAVI Scan + 接敵前選択）
+3. `encounter`（コマンド戦闘/交渉）
+4. `reward`
+5. `route_choice`
+6. 2nd `encounter`
+7. `boss_preview`
+8. `boss_encounter` または早期帰還
+9. `return_gate`
+10. `result`
+11. `garage`（次Run準備）
 
-## Combat Design
-- 戦闘形式: ターン制コマンド（MVP）
-- プレイヤー基本行動:
-  - Drive Attack（低コスト攻撃）
-  - Guard（被ダメ軽減）
-  - Coolant Purge（熱減少）
-  - Module Skill（装着モジュール固有行動）
-- 敵設計方針:
-  - 1章ごとに主ギミックを1つ導入（例: 熱蓄積攻撃）
-- バランス目標:
-  - 通常戦闘は3〜5ターンで決着
-  - ボス戦は6〜10ターンで決着
+## 3. リソース
 
-## UI Concept
-- 画面は「車内ダッシュボード」一貫で設計。
-- 共通UI領域:
-  - 上部: 速度/章/時刻
-  - 左部: 自車ステータス（耐久・電力・熱）
-  - 中央: メインビュー（マップ/戦闘/交渉）
-  - 右部: 通信ログ（M.O.E.メッセージ）
-  - 下部: 選択コマンド
-- 実装優先:
-  - まずは情報可読性。アニメーションや凝った演出は後回し。
+- `Fuel`
+- `Armor`
+- `Signal`
+- `Main Ammo`
+- `S-E Ammo`
 
-## MVP Acceptance Criteria
-- ラン開始から終了（成功/失敗）まで、進行不能にならない。
-- ノード選択、戦闘、交渉、モジュール装着、リザルト遷移が一通り動作する。
-- 交渉結果によって取得モジュールが変わる。
-- モジュール装着で戦闘または探索挙動が変化する。
-- 主要リソース（耐久・電力・熱）がUI上で常時確認できる。
-- M.O.E.が以下3種のガイドを出す:
-  - 初回交渉時の説明
-  - 熱危険域到達時の警告
-  - ボス前の最終確認
+敗北条件:
+
+- `Fuel <= 0` または `Armor <= 0`
+
+## 4. コマンド体系
+
+WEAPON:
+
+- `Main Gun`（単体高火力、Main Ammo消費）
+- `Sub Gun`（全体/ランダム複数ヒット）
+- `S-E`（選択S-E挙動、S-E Ammo消費）
+
+TERMINAL:
+
+- `Analyze`（敵情報/相性開示、Signal消費）
+- `Talk`（trust/interest/pressure操作）
+- `Contract`（契約窓が開いている対象のみ有効）
+
+DRIVE:
+
+- `Ram`（体当たり、Armor消費）
+- `Guard`
+- `Escape`
+
+UI仕様:
+
+- コマンドはクリックで**即実行**
+- キーボード: `↑↓` コマンド / `←→` ターゲット / `Enter` 実行
+
+## 5. Affinity
+
+属性軸:
+
+- `ballistic`
+- `suppressive`
+- `impact`
+- `signal`
+- `talk`
+
+評価:
+
+- `weak`
+- `normal`
+- `resist`
+
+Analyze済み敵は相性が表示され、戦闘判断（ダメージ/交渉効率）に影響します。
+
+## 6. Approach Phase
+
+接敵前に `NAVI Scan` を実行し、成功時は以下を選択:
+
+- `Preemptive Main Gun`
+- `Hit-and-Run Ram`
+- `Silent Coast`
+- `Open Channel`
+
+失敗時は不利状態で接敵（Ambush系ペナルティ）。
+
+## 7. Devil / Encounter
+
+現在の敵プロファイル（EncounterId）:
+
+- `whisper_broker`
+- `roadside_phone`
+- `pixie_shibuya_glow`
+- `foxfire_navi`
+- `no_face_taxi_passenger`
+- `silent_shape`
+- `abandoned_ai_navi`
+- `road_reaper`
+- `toll_gate_saint`
+
+敵は `HP / temperament / intent / trust / pressure / interest / affinity` を持ちます。
+
+## 8. Garage / Midnight Bay
+
+Result後に遷移可能。主機能:
+
+- Loadout選択（Main Gun / Sub Gun / S-E / Contract Support）
+- Growth購入
+  - Skill: `ram_control / gunnery / scan_boost / translation_assist`
+  - Vehicle: `fuel_tank / armor_plating / ammo_rack / se_rack`
+- 次Run開始時の初期リソースプレビュー
+- Story Log Archive
+- Autoplay Lab
+
+## 9. Story Progression（軽量）
+
+StoryState:
+
+- `chapter`
+- `recoveredLogs`
+- `moeMemory`
+- `previousDriverClues`
+
+Resultで回収ログを表示し、Garageでアーカイブ参照可能。
+
+## 10. Autoplay Lab
+
+Garage内で複数Runを自動実行し、バランス検証用集計を出力:
+
+- 勝率
+- Result内訳
+- 平均リソース残量
+- 平均Encounter/Contract/Salvage
+
+## 11. 非スコープ（現状）
+
+- 長編ADV分岐
+- 永続セーブ（localStorage）
+- 複雑なショップ/経済
+- 属性の反射/吸収/無効
+- 悪魔合体や大規模育成ツリー

@@ -44,6 +44,30 @@ body {
   inset: 0;
   pointer-events: none;
   z-index: 0;
+  --asset-windshield-bg: none;
+  --asset-road-overlay: none;
+}
+
+.road-runner-bg::before,
+.road-runner-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  pointer-events: none;
+}
+
+.road-runner-bg::before {
+  background-image: var(--asset-windshield-bg);
+  opacity: 0.22;
+}
+
+.road-runner-bg::after {
+  background-image: var(--asset-road-overlay);
+  opacity: 0.26;
+  mix-blend-mode: screen;
 }
 
 .road-runner-bg__lane,
@@ -234,6 +258,15 @@ body {
 .brand-stack {
   display: grid;
   line-height: 1.15;
+}
+
+.brand-stack__logo {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  border: 1px solid #4a3c2d;
+  background: #0e141d;
+  padding: 2px;
 }
 
 .brand-stack span {
@@ -854,6 +887,12 @@ body {
   height: 100%;
 }
 
+.battle-devil__asset {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 .battle-devil__label {
   display: grid;
   gap: 2px;
@@ -1000,6 +1039,19 @@ body {
   background: radial-gradient(circle at 50% 50%, rgba(216, 169, 99, 0.2), rgba(11, 15, 22, 0.3));
 }
 
+.approach-contact__asset {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.approach-contact__fallback {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+
 .approach-contact__meta {
   display: grid;
   gap: 3px;
@@ -1093,6 +1145,16 @@ body {
   color: #e6c98f;
   font-size: 0.74rem;
   letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.radio-panel__avatar {
+  width: 20px;
+  height: 20px;
+  border: 1px solid #5b4a36;
+  object-fit: cover;
 }
 
 .radio-panel__head small {
@@ -2198,7 +2260,7 @@ body {
     grid-column: 1;
   }
 
-  .vehicle-panel--inline {
+.vehicle-panel--inline {
     grid-column: 2;
   }
 
@@ -2251,6 +2313,15 @@ body {
   .prologue-actions {
     grid-template-columns: 1fr;
   }
+}
+
+.vehicle-panel__avatar {
+  width: 20px;
+  height: 20px;
+  object-fit: cover;
+  border: 1px solid #524131;
+  margin-right: 6px;
+  vertical-align: middle;
 }
 
 @media (max-width: 900px) {

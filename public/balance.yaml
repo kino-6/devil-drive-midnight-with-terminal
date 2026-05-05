@@ -1,0 +1,86 @@
+# Runtime balance profile
+version: "tokyo-night-v1"
+
+resources:
+  baseFuel: 12
+  baseArmor: 12
+  baseSignal: 5
+
+scan:
+  baseChance: 60
+  aiSupportBonus: 20
+  highSignalThreshold: 4
+  highSignalBonus: 10
+  bossPenalty: 15
+  stealthPenalty: 15
+  scanBoostPerLevel: 5
+
+affinity:
+  weakMultiplier: 1.5
+  resistMultiplier: 0.5
+
+talk:
+  baseSuccess: 0.7
+  analyzeBonus: 0.15
+  pressurePenaltyPerStack: 0.1
+  minSuccess: 0.1
+  maxSuccess: 0.95
+
+contract:
+  normalBaseSuccess: 0.8
+  bossBaseSuccess: 0.45
+  analyzeBonus: 0.1
+  pressurePenaltyPerStack: 0.1
+  minSuccess: 0.1
+  maxSuccess: 0.95
+
+escape:
+  baseChance: 0.7
+  reaperPenalty: 0.15
+
+approach:
+  hitAndRunBaseChance: 0.6
+  ramControlBonusPerLevel: 0.05
+  minChance: 0.6
+  maxChance: 0.9
+
+autoplay:
+  defaultRuns: 120
+  minRuns: 10
+  maxRuns: 1000
+  pushForwardChance: 0.35
+  talkProbeChance: 0.35
+
+weapons:
+  mainGun:
+    rusted_cannon:
+      damage: 4
+      ammo: 8
+    light_cannon:
+      damage: 3
+      ammo: 12
+    heavy_cannon:
+      damage: 6
+      ammo: 5
+  subGun:
+    hood_mg:
+      damage: 1
+    twin_mg:
+      damage: 1
+      hits: 2
+    suppression_mg:
+      damage: 1
+      softenChance: 0.4
+  specialEquipment:
+    signal_harpoon:
+      damage: 2
+      ammo: 4
+      seAmmoCost: 1
+    micro_missile:
+      damage: 3
+      ammo: 3
+      seAmmoCost: 1
+    emp_flare:
+      damage: 1
+      ammo: 4
+      seAmmoCost: 1
