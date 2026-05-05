@@ -172,6 +172,35 @@ body {
   gap: 8px;
 }
 
+.prologue-guide {
+  margin-top: 8px;
+  border: 1px solid #5a4732;
+  background: linear-gradient(180deg, rgba(18, 23, 33, 0.94), rgba(13, 18, 26, 0.94));
+  padding: 8px 10px;
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+}
+
+.prologue-guide strong {
+  color: #d9b77f;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+}
+
+.prologue-guide span {
+  color: #c4ccd2;
+  font-size: 0.72rem;
+}
+
+.prologue-guide em {
+  color: #79b8c5;
+  font-style: normal;
+  font-size: 0.74rem;
+  letter-spacing: 0.05em;
+  animation: garageGuidePulse 1.1s ease-in-out infinite alternate;
+}
+
 .cockpit-frame {
   width: min(1480px, 100%);
   border: 1px solid var(--line);
@@ -496,10 +525,11 @@ body {
   );
   transform: perspective(320px) rotateX(66deg);
   transform-origin: bottom;
+  will-change: transform;
 }
 
 .battle-view.is-cruising .battle-view__roadline {
-  animation: laneFlow 1.35s linear infinite;
+  animation: laneFlow 0.58s linear infinite;
 }
 
 .battle-view__rail {
@@ -565,13 +595,14 @@ body {
     rgba(132, 160, 182, 0.12) 0 2px,
     transparent 2px 14px
   );
-  opacity: 0.23;
-  animation: speedLineSweep 9s linear infinite;
+  opacity: 0.2;
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
 }
 
 .battle-view.is-cruising .battle-view__speedlines {
-  opacity: 0.32;
-  animation-duration: 2.8s;
+  opacity: 0.42;
+  animation: speedLineSweep 0.85s cubic-bezier(0.22, 0.61, 0.36, 1) infinite;
 }
 
 .battle-view__mist {
@@ -601,7 +632,7 @@ body {
 
 .battle-view.is-stopped .battle-view__speedlines,
 .battle-view.is-stopped .battle-view__roadline {
-  animation-play-state: paused;
+  animation: none;
   opacity: 0.12;
 }
 
@@ -619,6 +650,37 @@ body {
 .battle-view__hud strong {
   color: #e4bc83;
   font-size: 0.78rem;
+}
+
+.battle-view__ingress {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  top: 36px;
+  z-index: 6;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.battle-view__ingress-step {
+  border: 1px solid #3f3226;
+  background: rgba(13, 18, 27, 0.82);
+  color: #8f9dad;
+  font-size: 0.58rem;
+  letter-spacing: 0.05em;
+  padding: 3px 5px;
+  text-align: center;
+}
+
+.battle-view__ingress-step.is-done {
+  border-color: #537f92;
+  color: #86c2cf;
+}
+
+.battle-view__ingress-step.is-current {
+  border-color: #8a6b4c;
+  color: #e1bc86;
 }
 
 .battle-view__navi-select {
@@ -898,6 +960,60 @@ body {
 
 .battle-devil.is-defeated .battle-devil__target {
   display: none;
+}
+
+.approach-contact {
+  position: absolute;
+  width: min(29%, 200px);
+  border: 1px solid #4f3d2e;
+  background: linear-gradient(180deg, rgba(15, 20, 28, 0.82), rgba(10, 15, 22, 0.82));
+  padding: 8px 7px;
+  display: grid;
+  gap: 6px;
+  box-shadow: 0 0 28px rgba(24, 36, 48, 0.5);
+}
+
+.approach-contact--left {
+  left: 3%;
+  bottom: 8%;
+}
+
+.approach-contact--center {
+  left: 50%;
+  bottom: 4%;
+  transform: translateX(-50%);
+}
+
+.approach-contact--right {
+  right: 3%;
+  bottom: 10%;
+}
+
+.approach-contact__sigil {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #6e543d;
+  color: #e2b676;
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
+  background: radial-gradient(circle at 50% 50%, rgba(216, 169, 99, 0.2), rgba(11, 15, 22, 0.3));
+}
+
+.approach-contact__meta {
+  display: grid;
+  gap: 3px;
+}
+
+.approach-contact__meta strong {
+  color: #d8dde2;
+  font-size: 0.7rem;
+}
+
+.approach-contact__meta small {
+  color: #9eabb9;
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
 }
 
 .command-core {
@@ -1634,6 +1750,10 @@ body {
   background: linear-gradient(90deg, #7c6a4a, #d2ba8c);
 }
 
+.resource-meter--seammo .resource-meter__bar span {
+  background: linear-gradient(90deg, #6b5a90, #a790de);
+}
+
 .resource-meter--low .resource-meter__head {
   color: var(--red);
 }
@@ -1668,6 +1788,10 @@ body {
 
 .resource-meter--ammo .resource-meter__blocks .is-filled {
   background: #d2ba8c;
+}
+
+.resource-meter--seammo .resource-meter__blocks .is-filled {
+  background: #a790de;
 }
 
 .contract-slots {
@@ -1978,10 +2102,10 @@ body {
 
 @keyframes laneFlow {
   from {
-    transform: translateY(0);
+    transform: perspective(320px) rotateX(66deg) translate3d(0, 0, 0);
   }
   to {
-    transform: translateY(34px);
+    transform: perspective(320px) rotateX(66deg) translate3d(0, 54px, 0);
   }
 }
 
@@ -1996,10 +2120,10 @@ body {
 
 @keyframes speedLineSweep {
   from {
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
   }
   to {
-    transform: translateX(42px);
+    transform: translate3d(72px, 22px, 0);
   }
 }
 
@@ -2040,6 +2164,17 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes garageGuidePulse {
+  from {
+    transform: translateY(0);
+    opacity: 0.72;
+  }
+  to {
+    transform: translateY(2px);
+    opacity: 1;
   }
 }
 
