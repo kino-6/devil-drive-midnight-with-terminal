@@ -35,6 +35,58 @@ body {
   padding: 16px;
   display: grid;
   place-items: center;
+  position: relative;
+}
+
+.prologue-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background:
+    linear-gradient(180deg, rgba(5, 7, 11, 0.82), rgba(3, 5, 8, 0.9)),
+    repeating-linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.03) 0 1px,
+      transparent 1px 3px
+    );
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.prologue-card {
+  width: min(760px, 100%);
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(16, 19, 25, 0.98), rgba(9, 12, 16, 0.98));
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.prologue-kicker {
+  color: var(--amber);
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+}
+
+.prologue-card h2 {
+  margin: 0;
+  font-size: 1.24rem;
+  color: var(--text);
+}
+
+.prologue-card p {
+  margin: 0;
+  color: #d0d1cc;
+  line-height: 1.55;
+  font-size: 0.9rem;
+}
+
+.prologue-actions {
+  margin-top: 4px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(160px, 1fr));
+  gap: 8px;
 }
 
 .cockpit-frame {
@@ -394,6 +446,33 @@ body {
   opacity: 0.5;
 }
 
+.command-button--ghost {
+  border-color: #4a3f34;
+  color: var(--muted);
+}
+
+.event-layer {
+  border: 1px solid #413123;
+  background: #161a21;
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+}
+
+.event-layer p {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.event-layer__system {
+  color: #cfa568;
+}
+
+.event-layer__moe {
+  color: #c8ccc7;
+}
+
 .vehicle-panel {
   grid-area: vehicle;
 }
@@ -639,6 +718,10 @@ body {
   line-height: 1.5;
 }
 
+.moe-live {
+  color: #dfb879;
+}
+
 @media (max-width: 1220px) {
   .cockpit-frame {
     grid-template-columns: 1fr;
@@ -660,6 +743,10 @@ body {
 
   .command-window--grid,
   .negotiation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .prologue-actions {
     grid-template-columns: 1fr;
   }
 }

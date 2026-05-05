@@ -1,4 +1,4 @@
-import { useMemo, useReducer } from 'react';
+import { useMemo, useReducer, useState } from 'react';
 
 type NodeType = 'start' | 'road' | 'entity' | 'wreck' | 'combat' | 'signal' | 'return_gate' | 'unknown';
 type ContractId = 'radio_voice' | 'silent_shape' | 'abandoned_ai_navi';
@@ -83,6 +83,41 @@ const contractLabels: Record<ContractId, string> = {
   abandoned_ai_navi: 'AI NAVI',
 };
 
+const nodeNarratives: Record<NodeType, { system: string; moe: string }> = {
+  start: {
+    system: 'D-COMP: ENTRY RAMP LINK STABLE. MIDNIGHT WINDOW ACTIVE.',
+    moe: '最初の一歩が一番危ない。迷ったら、迷わない方を選んで。',
+  },
+  road: {
+    system: 'SYS: LONG BYPASS OPEN. FUEL BURN RATE ELEVATED.',
+    moe: '真っ直ぐな道ほど、何かを置いていくのが夜環の流儀。',
+  },
+  entity: {
+    system: 'SYS: UNKNOWN ENTITY SIGNATURE WITHIN HAIL RANGE.',
+    moe: '交渉は会話じゃなくて握手。先にどこを差し出すか、だけ。',
+  },
+  wreck: {
+    system: 'SYS: WRECK CLUSTER DETECTED. SALVAGE PROTOCOL ENABLED.',
+    moe: '拾えるものは拾おう。代わりに何か削れるけど、それも込みで。',
+  },
+  combat: {
+    system: 'SYS: HOSTILE CONTACT CLOSING. IMPACT WINDOW IMMINENT.',
+    moe: '来るよ。ハンドルは渡さないで、目だけは私に預けて。',
+  },
+  signal: {
+    system: 'SYS: SIGNAL RELAY FOUND. HANDSHAKE CHANNEL OPEN.',
+    moe: '雑音が減る。今のうちに深いところの声を拾っておこう。',
+  },
+  return_gate: {
+    system: 'SYS: RETURN GATE LOCK DETECTED. EXIT VECTOR AVAILABLE.',
+    moe: '帰るなら今。欲張るなら、その代償も今夜払う。',
+  },
+  unknown: {
+    system: 'WARNING: BLIND TUNNEL PHASE SHIFT. TELEMETRY UNRELIABLE.',
+    moe: 'ここは地図が嘘をつく区画。嘘でも進むなら、速度は落とさないで。',
+  },
+};
+
 const initialState = (): State => ({
   phase: 'map',
   nodes: baseNodes,
@@ -91,7 +126,14 @@ const initialState = (): State => ({
   armor: 12,
   signal: 5,
   contracts: [],
-  logs: ['M.O.E.: ルートを選択して夜環へ進入してください。'],
+  logs: [
+    '> DEMON TERMINAL: ONLINE',
+    '> MIDNIGHT WINDOW: OPEN',
+    '> DRIVER PROFILE: NOVICE SALVAGER',
+    '> NIGHT LOOP NAVIGATION READY',
+    'M.O.E.: 午前0時。夜環が開いたよ。今夜も潜ろう、ドライバー。',
+    'M.O.E.: ルートを選択して。帰る道は、帰るって決めた人にしか見えない。',
+  ],
   failedNegotiations: 0,
 });
 
@@ -129,6 +171,22 @@ const getNodeClass = (node: NodeData, state: State, current: NodeData) => {
   ].filter(Boolean).join(' ');
 };
 
+const getMoeLiveLine = (state: State, current: NodeData, depth: number): string => {
+  if (state.outcome === 'win') return '門が閉じる前に戻れた。いい夜だった、って言っておく？';
+  if (state.outcome === 'lose') return 'ここで停止か。次は私の警告を半分くらい信じて。';
+  if (state.phase === 'negotiation') return '相手の欲しいものを当てて。正解はいつも一つじゃない。';
+  if (state.phase === 'node') {
+    if (current.type === 'combat') return '衝突まで数秒。恐怖より先に操作して。';
+    if (current.type === 'unknown') return '未知位相。計器が黙っても、私の声は拾って。';
+    if (current.type === 'entity') return '交渉圏内。言葉より代価が効く相手だよ。';
+    if (current.type === 'return_gate') return '出口が見えてる。ここで終えるか、もう一歩か。';
+    return nodeNarratives[current.type].moe;
+  }
+  if (state.negotiationResult === 'contract') return '契約完了。車が少しだけ、夜環の住人になったね。';
+  if (depth === 0) return '新人ドライバー向けの夜はない。あるのは今夜だけ。';
+  return '次の分岐を選んで。深く潜るほど、帰還ログの価値が上がる。';
+};
+
 function StatusLamp({ label, active = false, tone = 'green' }: { label: string; active?: boolean; tone?: 'green' | 'red' | 'amber' | 'cyan' }) {
   return <span className={`status-lamp status-lamp--${tone} ${active ? 'is-active' : ''}`}>
     <span className="status-lamp__bulb" />
@@ -164,7 +222,13 @@ function reducer(state: State, action: Action): State {
       const current = state.nodes.find((n) => n.id === state.currentId)!;
       if (!current.next.includes(action.nodeId)) return state;
       const nodes = state.nodes.map((node) => (node.id === state.currentId ? { ...node, done: true } : node));
-      return { ...state, currentId: action.nodeId, phase: 'node', nodes, logs: [...state.logs, `Move: ${action.nodeId}へ進行。`] };
+      return {
+        ...state,
+        currentId: action.nodeId,
+        phase: 'node',
+        nodes,
+        logs: [...state.logs, `> NAVI ROUTE CONFIRMED: ${action.nodeId.toUpperCase()}`],
+      };
     }
     case 'RESOLVE_NODE': {
       const node = state.nodes.find((n) => n.id === state.currentId)!;
@@ -177,38 +241,67 @@ function reducer(state: State, action: Action): State {
       let pendingEntity = state.pendingEntity;
       if (node.type === 'road') {
         fuel -= Math.max(0, 2 - (hasContract(state, 'abandoned_ai_navi') ? 1 : 0));
-        logs.push('Road: Fuel消費。');
+        logs.push('> ROAD SEGMENT ENGAGED: FUEL DRAW REGISTERED');
+        logs.push('M.O.E.: 直線区間を通過。燃料は予定どおり削れてる。');
       } else if (node.type === 'signal') {
         signal += 2;
-        logs.push('Signal: 通信状態改善。');
+        logs.push('> SIGNAL HANDSHAKE ACCEPTED');
+        logs.push('M.O.E.: 通信が澄んだ。交渉ログの解像度が戻ったよ。');
       } else if (node.type === 'wreck') {
         fuel += 1;
         armor -= 1;
-        logs.push('Wreck: Fuel+1 / Armor-1');
+        logs.push('> SALVAGE EXTRACTED: Fuel+1 / Armor-1');
+        logs.push('M.O.E.: 残骸から回収成功。車体は少し擦れたけどね。');
       } else if (node.type === 'combat') {
         armor -= hasContract(state, 'silent_shape') ? 2 : 6;
         fuel -= 1;
-        logs.push('Combat: 交戦で損耗。');
+        logs.push('> HOSTILE IMPACT: Armor LOSS / Fuel-1');
+        logs.push('M.O.E.: 交戦終了。大破じゃないだけ、まだ運がある。');
       } else if (node.type === 'unknown') {
         fuel -= 1;
         signal -= 1;
-        logs.push('Unknown: 位相乱れ。Fuel-1 / Signal-1');
+        logs.push('> WARNING: UNKNOWN PHASE DRIFT');
+        logs.push('> TELEMETRY NOISE: Fuel-1 / Signal-1');
+        logs.push('M.O.E.: 観測が乱れてる。見えてるもの全部は信じないで。');
       } else if (node.type === 'entity') {
         phase = 'negotiation';
         const pool = contracts.filter((c) => !state.contracts.some((owned) => owned.id === c.id));
         pendingContract = pool[0] ?? contracts[0];
         pendingEntity = entityProfiles.find((e) => e.name === node.name) ?? entityProfiles[0];
-        logs.push('M.O.E.: 交渉開始。成功率と失敗時ペナルティを確認してください。');
+        logs.push('> UNKNOWN ENTITY DETECTED');
+        logs.push('> NEGOTIATION CHANNEL OPEN');
+        logs.push('M.O.E.: 交渉開始。成功率と失敗時ペナルティを確認して。');
         logs.push(pendingEntity.hint);
       } else if (node.type === 'return_gate') {
-        return { ...state, phase: 'result', outcome: 'win', logs: [...logs, 'Return Gate到達。帰還成功。'] };
+        return {
+          ...state,
+          phase: 'result',
+          outcome: 'win',
+          logs: [
+            ...logs,
+            '> RETURN GATE LOCK ACQUIRED',
+            '> EXIT VECTOR CONFIRMED',
+            'M.O.E.: 帰還ライン確保。ログと契約、ちゃんと持ち帰ろう。',
+          ],
+        };
       }
 
       if (fuel <= 0 || armor <= 0) {
-        return { ...state, fuel, armor, signal, phase: 'result', outcome: 'lose', logs: [...logs, '車両機能停止。Run Lost。'] };
+        return {
+          ...state,
+          fuel,
+          armor,
+          signal,
+          phase: 'result',
+          outcome: 'lose',
+          logs: [...logs, '> CRITICAL FAILURE: VEHICLE OFFLINE', 'M.O.E.: ここで途切れた。次はもう少しだけ、慎重に。'],
+        };
       }
 
-      if (signal <= 1) logs.push('M.O.E.: Signal低下。交渉難度が上昇。');
+      if (signal <= 1) {
+        logs.push('> WARNING: SIGNAL BELOW SAFE THRESHOLD');
+        logs.push('M.O.E.: Signal低下。交渉難度が上がる、気をつけて。');
+      }
 
       return { ...state, fuel, armor, signal, phase, pendingContract, pendingEntity, logs };
     }
@@ -231,8 +324,10 @@ function reducer(state: State, action: Action): State {
               ...baseLogs,
               '> CONTRACT PROTOCOL START',
               '> ENTITY SIGNATURE CAPTURED',
+              '> SIGNAL HANDSHAKE ACCEPTED',
               '> MODULE SLOT UPDATED',
               `> CONTRACT REGISTERED: ${state.pendingContract.name}`,
+              'M.O.E.: 契約成立。いい取引だよ、たぶんね。',
             ],
             pendingContract: undefined,
             pendingEntity: undefined,
@@ -245,7 +340,7 @@ function reducer(state: State, action: Action): State {
             phase: 'map',
             fuel: state.fuel + 1,
             signal: state.signal + 1,
-            logs: [...baseLogs, '取引成立。Fuel+1 / Signal+1'],
+            logs: [...baseLogs, '> LIMITED TRADE ACCEPTED: Fuel+1 / Signal+1', 'M.O.E.: 契約までは届かない。でも悪くない交換だった。'],
             pendingContract: undefined,
             pendingEntity: undefined,
             negotiationResult,
@@ -254,7 +349,7 @@ function reducer(state: State, action: Action): State {
         return {
           ...state,
           phase: 'map',
-          logs: [...baseLogs, '相手は観測のみで離脱。今回は契約なし。'],
+          logs: [...baseLogs, '> CONTACT ENDED: NO CONTRACT BOUND', 'M.O.E.: 今日は観測だけ。次はもう少し深く踏み込もう。'],
           pendingContract: undefined,
           pendingEntity: undefined,
           negotiationResult,
@@ -266,7 +361,7 @@ function reducer(state: State, action: Action): State {
         phase: 'map',
         armor: state.armor - 3,
         failedNegotiations: state.failedNegotiations + 1,
-        logs: [...state.logs, `交渉結果: HOSTILE / ${state.pendingEntity.tone}`, '交渉失敗。Armor-3。'],
+        logs: [...state.logs, `交渉結果: HOSTILE / ${state.pendingEntity.tone}`, '> NEGOTIATION COLLAPSE: Armor-3', 'M.O.E.: 交渉決裂。次は強気か、静かに寄るかを先に決めよう。'],
         pendingContract: undefined,
         pendingEntity: undefined,
         negotiationResult: 'hostile',
@@ -277,6 +372,7 @@ function reducer(state: State, action: Action): State {
 }
 
 export function App() {
+  const [showPrologue, setShowPrologue] = useState(true);
   const [state, dispatch] = useReducer(reducer, undefined, initialState);
   const current = state.nodes.find((n) => n.id === state.currentId)!;
   const nextNodes = useMemo(() => current.next.map((id) => state.nodes.find((n) => n.id === id)!), [current.next, state.nodes]);
@@ -291,8 +387,24 @@ export function App() {
   const depth = state.nodes.filter((node) => node.done).length;
   const runStatus = state.outcome ? state.outcome.toUpperCase() : state.phase.toUpperCase();
   const linkLabel = state.signal <= 1 ? 'SIGNAL WEAK' : state.contracts.some((c) => c.id === 'radio_voice') ? 'LINK: AM 666.0' : 'SIGNAL LOCKED';
+  const liveMoeLine = getMoeLiveLine(state, current, depth);
+  const currentNarrative = nodeNarratives[current.type];
 
   return <div className="dashboard-shell">
+    {showPrologue && <section className="prologue-overlay" role="dialog" aria-label="Night Loop Prologue">
+      <div className="prologue-card">
+        <div className="prologue-kicker">00:00 / MIDNIGHT WINDOW</div>
+        <h2>NIGHT LOOP BRIEFING</h2>
+        <p>午前0時。巨大道路迷宮「夜環」が開く。通常車両では入口から戻れない。</p>
+        <p>あなたは新米サルベージドライバー。持ち帰るのは異界部品、契約存在、そして生きて帰った記録。</p>
+        <p>車載端末 <strong>Demon Terminal</strong> を起動。交渉回線は M.O.E. が握る。</p>
+        <p>「今夜も潜ろう。帰還ログは、夜を越えた人にだけ残る。」</p>
+        <div className="prologue-actions">
+          <button className="command-button" onClick={() => setShowPrologue(false)}>ENTER NIGHT LOOP</button>
+          <button className="command-button command-button--ghost" onClick={() => setShowPrologue(false)}>START RUN</button>
+        </div>
+      </div>
+    </section>}
     <div className="cockpit-frame">
       <header className="cockpit-header panel">
         <div className="brand-stack" aria-label="Devil Drive Midnight Terminal">
@@ -346,8 +458,12 @@ export function App() {
 
         {state.phase === 'map' && !state.outcome && <section className="event-card">
           <div className="event-kicker">NAVI SELECT</div>
-          <h2>夜間道路迷宮の分岐を捕捉</h2>
-          <p>次のノードを選択してください。端末が接続可能な出口だけを琥珀色で照合しています。</p>
+          <h2>夜環 深度 {String(depth).padStart(2, '0')} // 進行ルート選択</h2>
+          <p>サルベージ対象ログを回収しつつ、帰還可能な経路を維持してください。接続可能な出口のみ琥珀色で照合中。</p>
+          <div className="event-layer">
+            <p className="event-layer__system">SYS: NAVIGATION GRID STABLE / DRIVER DISCRETION ADVISED</p>
+            <p className="event-layer__moe">M.O.E.: 最短は安全じゃないし、安全は無料じゃない。どっちで行く？</p>
+          </div>
           <div className="next-node-list">
             {nextNodes.map((n) => <div key={n.id} className={`next-node next-node--${n.type}`}>
               <span>{nodeIcons[n.type]}</span>
@@ -361,6 +477,10 @@ export function App() {
           <div className="event-kicker">NODE CONTACT</div>
           <h2>{current.name}</h2>
           <p>{current.detail}</p>
+          <div className="event-layer">
+            <p className="event-layer__system">SYS: {currentNarrative.system}</p>
+            <p className="event-layer__moe">M.O.E.: {currentNarrative.moe}</p>
+          </div>
           <div className="command-window">
             <button className="command-button" onClick={() => dispatch({ type: 'RESOLVE_NODE' })}>Resolve Node</button>
           </div>
@@ -369,6 +489,11 @@ export function App() {
         {state.phase === 'negotiation' && state.pendingContract && <section className="event-card">
           <div className="event-kicker">ENTITY NEGOTIATION</div>
           <h2>{state.pendingEntity?.name ?? current.name}</h2>
+          <p>端末経由の交渉は短時間で決着します。提案を選び、失敗時の装甲損耗に備えてください。</p>
+          <div className="event-layer">
+            <p className="event-layer__system">SYS: DEMON TERMINAL CHANNEL STABLE / CONTRACT BUS STANDBY</p>
+            <p className="event-layer__moe">M.O.E.: 交渉は優しさでも暴力でもなく、相手の欲望に名前をつける作業だよ。</p>
+          </div>
           <div className="negotiation-grid">
             <p><span>Tone</span><strong>{state.pendingEntity?.tone.toUpperCase()}</strong></p>
             <p><span>Target Module</span><strong>{state.pendingContract.name}</strong></p>
@@ -386,7 +511,11 @@ export function App() {
         {state.phase === 'result' && <section className="event-card event-card--result">
           <div className="event-kicker">RUN RESULT</div>
           <h2>{state.outcome === 'win' ? 'RUN COMPLETE' : 'RUN LOST'}</h2>
-          <p>{state.outcome === 'win' ? 'Return Gateを通過。午前0時の接続が閉じる前に帰還しました。' : 'FuelまたはArmorが限界を下回り、車両端末は夜環内で停止しました。'}</p>
+          <p>{state.outcome === 'win' ? 'Return Gateを通過。契約モジュールと回収ログを保持したまま帰還。' : 'FuelまたはArmorが限界を下回り、車両端末は夜環内で停止。回収ログは断片のみ。'}</p>
+          <div className="event-layer">
+            <p className="event-layer__system">SYS: {state.outcome === 'win' ? 'RETURN CYCLE COMPLETE / ARCHIVE READY' : 'RUN INTERRUPTED / RECOVERY REQUIRED'}</p>
+            <p className="event-layer__moe">M.O.E.: {state.outcome === 'win' ? 'おかえり、ドライバー。次はもう少し深く行ける。' : 'まだ終わってない。次の夜環で、続きを拾いに行こう。'}</p>
+          </div>
           <div className="command-window">
             <button className="command-button" onClick={() => dispatch({ type: 'RETRY' })}>Retry</button>
           </div>
@@ -436,8 +565,9 @@ export function App() {
             <i aria-hidden="true" />
           </div>
           <div className="moe-dialogue">
+            <p className="moe-live">「{liveMoeLine}」</p>
             {moeLogs.length === 0
-              ? <p>午前0時。夜環、開いたよ。今日はどこまで潜る？</p>
+              ? <p>「午前0時。夜環、開いたよ。今日はどこまで潜る？」</p>
               : moeLogs.slice(-3).map((log, i) => <p key={`${log}-${i}`}>「{log.replace('M.O.E.: ', '')}」</p>)}
           </div>
         </section>

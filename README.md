@@ -14,6 +14,8 @@
 - Return Gate到達で勝利
 - FuelまたはArmorが0以下で敗北
 - Retryで再挑戦
+- ラン開始時のプロローグ演出（Night Loop導入）
+- M.O.E.のフェーズ別台詞と、端末ログ文面の強化
 
 ## 起動方法
 
@@ -42,3 +44,9 @@ npm run start
 ## ドキュメント
 
 - 詳細仕様: `docs/game-design.md`
+
+## Narrative TODO
+
+- ノードごとの分岐台詞バリエーション拡張（ラン内ランダム）
+- 契約モジュールに応じたM.O.E.反応差分
+- Return後の短いリザルトレポート演出
