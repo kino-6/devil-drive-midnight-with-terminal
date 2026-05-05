@@ -6,7 +6,8 @@ type EntityTone = 'hostile' | 'curious' | 'hungry' | 'lonely' | 'machine';
 type NegotiationApproach = 'offer' | 'sync' | 'threaten' | 'listen';
 type NegotiationResult = 'contract' | 'trade' | 'pass' | 'hostile';
 type TerminalLogKind = 'warning' | 'contract' | 'damage' | 'system' | 'route';
-type EncounterId = 'roadside_phone' | 'silent_shape' | 'abandoned_ai_navi' | 'road_reaper';
+type EncounterId = 'whisper_broker' | 'roadside_phone' | 'silent_shape' | 'abandoned_ai_navi' | 'road_reaper';
+type CommandId = 'attack' | 'talk' | 'analyze' | 'guard' | 'contract' | 'escape';
 
 type Contract = { id: ContractId; name: string; effect: string };
 type EntityProfile = { name: string; tone: EntityTone; hint: string };
@@ -120,6 +121,13 @@ const nodeNarratives: Record<NodeType, { system: string; moe: string }> = {
 };
 
 const encounterProfiles: Record<EncounterId, { label: string; subtitle: string; threat: 'LOW' | 'MED' | 'HIGH' | 'CRITICAL'; signal: string; contractable: boolean }> = {
+  whisper_broker: {
+    label: 'WHISPER BROKER',
+    subtitle: 'A slim broker exchanging routes for promises.',
+    threat: 'MED',
+    signal: 'CONTRACT TRACE / VIOLET BAND',
+    contractable: true,
+  },
   roadside_phone: {
     label: 'ROADSIDE PHONE',
     subtitle: 'Ringing public line with an impossible child voice.',
@@ -150,6 +158,57 @@ const encounterProfiles: Record<EncounterId, { label: string; subtitle: string; 
   },
 };
 
+const commandOptions: { id: CommandId; label: string; tone: 'danger' | 'contract' | 'route' | 'system' }[] = [
+  { id: 'attack', label: 'Attack', tone: 'danger' },
+  { id: 'talk', label: 'Talk', tone: 'route' },
+  { id: 'analyze', label: 'Analyze', tone: 'system' },
+  { id: 'guard', label: 'Guard', tone: 'system' },
+  { id: 'contract', label: 'Contract', tone: 'contract' },
+  { id: 'escape', label: 'Escape', tone: 'route' },
+];
+
+const commandDescriptions: Record<CommandId, { description: string; terminal: string; moe: string }> = {
+  attack: {
+    description: '前方の敵へ攻撃ルーチンを実行する。',
+    terminal: 'COMBAT ROUTINE READY',
+    moe: '中央から行く？ 了解、照準合わせる。',
+  },
+  talk: {
+    description: '交渉可能な悪魔へ呼びかける。',
+    terminal: 'NEGOTIATION CHANNEL OPEN',
+    moe: '左のやつなら会話に乗るかも。',
+  },
+  analyze: {
+    description: '敵の危険度と傾向を解析する。',
+    terminal: 'SIGNATURE SCAN START',
+    moe: '少し待って。署名を読む。',
+  },
+  contract: {
+    description: '条件が揃っていれば契約を試みる。',
+    terminal: 'CONTRACT PROTOCOL STANDBY',
+    moe: '条件が揃えば積めるよ。',
+  },
+  guard: {
+    description: '装甲姿勢を取り、被害を抑える。',
+    terminal: 'DEFENSIVE POSTURE LOCKED',
+    moe: '守りに入るね。衝撃を吸収する。',
+  },
+  escape: {
+    description: '速度を上げて遭遇圏から離脱する。',
+    terminal: 'THROTTLE OVERRIDE READY',
+    moe: '逃げるなら今。ラインを開ける。',
+  },
+};
+
+const getEncounterSquad = (activeEncounterId: EncounterId | null): EncounterId[] => {
+  if (activeEncounterId === 'road_reaper') return ['silent_shape', 'road_reaper', 'roadside_phone'];
+  if (activeEncounterId === 'silent_shape') return ['whisper_broker', 'silent_shape', 'roadside_phone'];
+  if (activeEncounterId === 'whisper_broker') return ['silent_shape', 'whisper_broker', 'abandoned_ai_navi'];
+  if (activeEncounterId === 'abandoned_ai_navi') return ['abandoned_ai_navi', 'roadside_phone', 'silent_shape'];
+  if (activeEncounterId === 'roadside_phone') return ['roadside_phone', 'silent_shape', 'abandoned_ai_navi'];
+  return ['whisper_broker', 'silent_shape', 'road_reaper'];
+};
+
 const initialState = (): State => ({
   phase: 'map',
   nodes: baseNodes,
@@ -159,7 +218,7 @@ const initialState = (): State => ({
   signal: 5,
   contracts: [],
   logs: [
-    '> DEMON TERMINAL: ONLINE',
+    '> DEVIL TERMINAL: ONLINE',
     '> MIDNIGHT WINDOW: OPEN',
     '> DRIVER PROFILE: NOVICE SALVAGER',
     '> NIGHT LOOP NAVIGATION READY',
@@ -213,21 +272,6 @@ const getMoeMood = (state: State, current: NodeData) => {
   return 'GUIDING';
 };
 
-const getNodeClass = (node: NodeData, state: State, current: NodeData) => {
-  const isCurrent = node.id === state.currentId;
-  const isAvailable = current.next.includes(node.id) && state.phase === 'map' && !state.outcome;
-  const isRevealed = node.done || isCurrent || current.next.includes(node.id);
-  return [
-    'route-node',
-    `node--${node.type}`,
-    node.type === 'return_gate' ? 'node--gate' : '',
-    isCurrent ? 'node--current' : '',
-    isAvailable ? 'node--available' : '',
-    node.done ? 'node--done' : '',
-    !isRevealed ? 'node--locked' : '',
-  ].filter(Boolean).join(' ');
-};
-
 const getMoeLiveLine = (state: State, current: NodeData, depth: number): string => {
   if (state.outcome === 'win') return '門が閉じる前に戻れた。いい夜だった、って言っておく？';
   if (state.outcome === 'lose') return 'ここで停止か。次は私の警告を半分くらい信じて。';
@@ -254,7 +298,9 @@ function StatusLamp({ label, active = false, tone = 'green' }: { label: string; 
 function ResourceMeter({ label, value, max, tone }: { label: string; value: number; max: number; tone: 'fuel' | 'armor' | 'signal' }) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100));
   const isLow = tone !== 'signal' && pct <= 35;
-  const blocks = Array.from({ length: max }, (_, index) => index < Math.max(0, Math.min(max, value)));
+  const blockCount = Math.min(max, 12);
+  const filledBlocks = Math.round((pct / 100) * blockCount);
+  const blocks = Array.from({ length: blockCount }, (_, index) => index < filledBlocks);
   return <div className={`resource-meter resource-meter--${tone} ${isLow ? 'resource-meter--low' : ''}`}>
     <div className="resource-meter__head">
       <span>{label.toUpperCase()}</span>
@@ -283,7 +329,17 @@ function EncounterVisual({ profile, pulse }: { profile: EncounterId; pulse: bool
         <path d="M71 48c-6 13-10 30-10 46" opacity=".55" />
       </g>
     </svg>
-    : profile === 'silent_shape'
+    : profile === 'whisper_broker'
+      ? <svg viewBox="0 0 220 150" role="img" aria-label="Whisper Broker silhouette">
+        <g fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M110 24c10 0 18 8 18 18v12H92V42c0-10 8-18 18-18z" />
+          <path d="M84 60c8-9 44-9 52 0l-9 66H93z" fill="currentColor" fillOpacity=".26" />
+          <path d="M95 78c7-5 24-5 31 0M97 94c6-5 22-5 28 0" />
+          <path d="M110 126v28m0-19l-22 19m22-15l22 19" />
+          <path d="M76 73l-18 25m86-25l18 25" opacity=".6" />
+        </g>
+      </svg>
+      : profile === 'silent_shape'
       ? <svg viewBox="0 0 220 150" role="img" aria-label="Silent Shape silhouette">
         <defs>
           <radialGradient id="silentMist" cx="50%" cy="50%" r="50%">
@@ -337,6 +393,83 @@ function EncounterVisual({ profile, pulse }: { profile: EncounterId; pulse: bool
     </div>
     <div className="encounter-visual__noise" aria-hidden="true" />
   </section>;
+}
+
+function BattleDevilSprite({ profile, focused, lane, onSelect }: { profile: EncounterId; focused: boolean; lane: 'left' | 'center' | 'right'; onSelect: () => void }) {
+  const data = encounterProfiles[profile];
+  const art = profile === 'whisper_broker'
+    ? <svg viewBox="0 0 180 180" role="img" aria-label="Whisper Broker silhouette">
+      <g fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M90 28c10 0 18 8 18 18v10h-36V46c0-10 8-18 18-18z" />
+        <path d="M68 62c8-8 36-8 44 0l-8 64H76z" fill="currentColor" fillOpacity=".3" />
+        <path d="M76 74c6-5 22-5 28 0M78 90c6-5 20-5 26 0" />
+        <path d="M90 126v34m0-22l-20 20m20-16l20 20" />
+        <path d="M58 74l-18 26m82-26l18 26" opacity=".6" />
+      </g>
+    </svg>
+    : profile === 'road_reaper'
+      ? <svg viewBox="0 0 180 180" role="img" aria-label="Road Reaper silhouette">
+        <g fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M88 18h4v20h-4z" />
+          <rect x="64" y="40" width="52" height="34" />
+          <path d="M90 74v52m0-30l-26 26m26-22l26 26" />
+          <path d="M72 52h36m-36 8h36" />
+          <path d="M50 138h80" />
+          <path d="M62 40l-22 16m78-16l22 16" opacity=".6" />
+        </g>
+      </svg>
+      : profile === 'silent_shape'
+        ? <svg viewBox="0 0 180 180" role="img" aria-label="Silent Shape silhouette">
+          <defs>
+            <radialGradient id="silentMass" cx="50%" cy="48%" r="58%">
+              <stop offset="0%" stopColor="currentColor" stopOpacity=".62" />
+              <stop offset="100%" stopColor="currentColor" stopOpacity=".05" />
+            </radialGradient>
+          </defs>
+          <ellipse cx="90" cy="94" rx="62" ry="52" fill="url(#silentMass)" />
+          <path d="M62 136c11-25-8-43 15-74 9-12 25-12 34 0 24 31 5 48 17 74-17-10-34-12-66 0z" fill="currentColor" fillOpacity=".4" />
+        </svg>
+        : profile === 'roadside_phone'
+          ? <svg viewBox="0 0 180 180" role="img" aria-label="Roadside Phone silhouette">
+            <g fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="64" y="36" width="52" height="88" rx="5" />
+              <rect x="74" y="48" width="32" height="26" rx="2" />
+              <path d="M58 48c7-10 16-10 22 0m20 0c7-10 16-10 22 0" />
+              <path d="M90 74v34m0 0c-11 7-20 20-22 34m22-34c11 7 20 20 22 34" />
+              <path d="M52 144h76" />
+            </g>
+          </svg>
+          : <svg viewBox="0 0 180 180" role="img" aria-label="Abandoned AI Navi silhouette">
+            <g fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="40" y="44" width="100" height="70" rx="9" />
+              <path d="M54 58h72v42H54z" opacity=".45" />
+              <path d="M66 86l22-16 16 8 18-14" />
+              <path d="M123 66l10-6-2 12z" fill="currentColor" />
+              <path d="M60 64l15 15m24-18l20 24" opacity=".5" />
+            </g>
+          </svg>;
+
+  return <article
+    className={`battle-devil battle-devil--${lane} ${focused ? 'is-focused' : ''} ${data.contractable ? 'is-contractable' : 'is-hostile'}`}
+    onClick={onSelect}
+    role="button"
+    tabIndex={0}
+    onKeyDown={(event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        onSelect();
+      }
+    }}
+  >
+    <div className="battle-devil__body">
+      <div className="battle-devil__art">{art}</div>
+      <div className="battle-devil__label">
+        <strong>{data.label}</strong>
+        <span>{data.contractable ? 'CONTRACTABLE' : 'HOSTILE'} / {data.threat}</span>
+      </div>
+    </div>
+    {focused && <span className="battle-devil__target">TARGET LOCK</span>}
+  </article>;
 }
 
 function reducer(state: State, action: Action): State {
@@ -507,8 +640,12 @@ function reducer(state: State, action: Action): State {
 export function App() {
   const [showPrologue, setShowPrologue] = useState(true);
   const [encounterPulse, setEncounterPulse] = useState(false);
+  const [selectedCommand, setSelectedCommand] = useState<CommandId>('talk');
+  const [selectedTargetIndex, setSelectedTargetIndex] = useState(1);
+  const [commandTelemetry, setCommandTelemetry] = useState<string[]>([]);
   const [state, dispatch] = useReducer(reducer, undefined, initialState);
   const terminalLogRef = useRef<HTMLUListElement | null>(null);
+  const previousCommandRef = useRef<CommandId | null>(null);
   const current = state.nodes.find((n) => n.id === state.currentId)!;
   const nextNodes = useMemo(() => current.next.map((id) => state.nodes.find((n) => n.id === id)!), [current.next, state.nodes]);
   const negotiationChances: Record<NegotiationApproach, number> = {
@@ -518,13 +655,10 @@ export function App() {
     listen: getNegotiationChance(state, 'listen'),
   };
   const terminalLogs = state.logs.filter((log) => !log.startsWith('M.O.E.:'));
-  const moeLogs = state.logs.filter((log) => log.startsWith('M.O.E.:'));
   const depth = state.nodes.filter((node) => node.done).length;
   const runStatus = state.outcome ? state.outcome.toUpperCase() : state.phase.toUpperCase();
   const linkLabel = state.signal <= 1 ? 'SIGNAL WEAK' : state.contracts.some((c) => c.id === 'radio_voice') ? 'LINK: AM 666.0' : 'SIGNAL LOCKED';
   const liveMoeLine = getMoeLiveLine(state, current, depth);
-  const moeMood = getMoeMood(state, current);
-  const currentNarrative = nodeNarratives[current.type];
   const activeEncounterId: EncounterId | null = state.phase === 'negotiation' && state.pendingContract
     ? state.pendingContract.id === 'radio_voice'
       ? 'roadside_phone'
@@ -532,22 +666,45 @@ export function App() {
         ? 'silent_shape'
         : 'abandoned_ai_navi'
     : state.phase === 'node' && current.type === 'entity'
-      ? 'roadside_phone'
+      ? 'whisper_broker'
       : state.phase === 'node' && current.type === 'combat'
         ? 'road_reaper'
       : null;
   const isEncounterActive = activeEncounterId !== null;
+  const encounterSquad = useMemo(() => getEncounterSquad(activeEncounterId), [activeEncounterId]);
+  const focusEncounterId = encounterSquad[Math.max(0, Math.min(encounterSquad.length - 1, selectedTargetIndex))];
+  const focusedEncounterProfile = encounterProfiles[focusEncounterId];
+  const speed = state.phase === 'map' ? 92 : state.phase === 'negotiation' ? 74 : state.phase === 'result' ? 0 : 81;
   const terminalStatus = [
     linkLabel,
     state.phase === 'map' ? 'ROUTE LINK' : 'ROUTE ACTIVE',
     state.signal <= 2 ? 'NOISE HIGH' : 'NOISE LOW',
     state.contracts.some((contract) => contract.id === 'radio_voice') ? 'AM 666.0' : 'AM BAND CLOSED',
   ];
-
+  const tacticalLines = [
+    isEncounterActive ? 'ENTITY DETECTED' : 'ROAD SCAN ACTIVE',
+    isEncounterActive ? (encounterSquad.length >= 3 ? 'MULTIPLE HOSTILES' : 'SINGLE CONTACT') : 'NO HOSTILES IN LANE',
+    state.phase === 'negotiation' ? 'NEGOTIATION WINDOW OPEN' : 'CONTRACT CHANNEL STANDBY',
+  ];
+  const selectedCommandInfo = commandDescriptions[selectedCommand];
+  const isContractAvailable = focusedEncounterProfile.contractable && (isEncounterActive || state.phase === 'negotiation');
+  const commandEnabledMap: Record<CommandId, boolean> = {
+    attack: isEncounterActive || state.phase === 'negotiation',
+    talk: isEncounterActive || state.phase === 'negotiation',
+    analyze: true,
+    contract: isContractAvailable,
+    guard: true,
+    escape: true,
+  };
+  const commandUnavailableReason = selectedCommand === 'contract' && !isContractAvailable
+    ? 'Contract: 対象が契約可能な状態ではない。'
+    : null;
+  const commandMoeLine = `M.O.E.: ${selectedCommandInfo.moe}`;
+  const displayTerminalLogs = [...terminalLogs, ...commandTelemetry];
   useEffect(() => {
     if (!terminalLogRef.current) return;
     terminalLogRef.current.scrollTop = terminalLogRef.current.scrollHeight;
-  }, [terminalLogs.length]);
+  }, [displayTerminalLogs.length]);
 
   useEffect(() => {
     if (!isEncounterActive) return;
@@ -555,6 +712,60 @@ export function App() {
     const timer = setTimeout(() => setEncounterPulse(false), 550);
     return () => clearTimeout(timer);
   }, [isEncounterActive, state.currentId, state.phase]);
+
+  useEffect(() => {
+    const preferredIndex = activeEncounterId ? encounterSquad.findIndex((id) => id === activeEncounterId) : 1;
+    setSelectedTargetIndex(preferredIndex < 0 ? 1 : preferredIndex);
+  }, [activeEncounterId, encounterSquad]);
+
+  useEffect(() => {
+    if (showPrologue) return;
+    if (previousCommandRef.current === selectedCommand) return;
+    previousCommandRef.current = selectedCommand;
+    const terminalLine = `> ${commandDescriptions[selectedCommand].terminal}`;
+    setCommandTelemetry((prev) => [...prev, terminalLine].slice(-8));
+  }, [selectedCommand, showPrologue]);
+
+  useEffect(() => {
+    if (showPrologue) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
+
+      const currentIndex = commandOptions.findIndex((option) => option.id === selectedCommand);
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        const next = (currentIndex - 1 + commandOptions.length) % commandOptions.length;
+        setSelectedCommand(commandOptions[next].id);
+        return;
+      }
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        const next = (currentIndex + 1) % commandOptions.length;
+        setSelectedCommand(commandOptions[next].id);
+        return;
+      }
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        setSelectedTargetIndex((prev) => (prev - 1 + encounterSquad.length) % encounterSquad.length);
+        return;
+      }
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        setSelectedTargetIndex((prev) => (prev + 1) % encounterSquad.length);
+        return;
+      }
+      if (/^[1-6]$/.test(event.key)) {
+        event.preventDefault();
+        const idx = Number(event.key) - 1;
+        setSelectedCommand(commandOptions[idx].id);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selectedCommand, encounterSquad, showPrologue]);
 
   return <div className={`dashboard-shell ${isEncounterActive ? 'is-encounter' : ''}`}>
     <div className="road-runner-bg" aria-hidden="true">
@@ -569,7 +780,7 @@ export function App() {
         <h2>NIGHT LOOP BRIEFING</h2>
         <p>午前0時。巨大道路迷宮「夜環」が開く。通常車両では入口から戻れない。</p>
         <p>あなたは新米サルベージドライバー。持ち帰るのは異界部品、契約存在、そして生きて帰った記録。</p>
-        <p>車載端末 <strong>Demon Terminal</strong> を起動。交渉回線は M.O.E. が握る。</p>
+        <p>車載端末 <strong>Devil Terminal</strong> を起動。交渉回線は M.O.E. が握る。</p>
         <p>「今夜も潜ろう。帰還ログは、夜を越えた人にだけ残る。」</p>
         <ul className="prologue-boot">
           <li>&gt; BOOT: D-COMP CHASSIS LINKED</li>
@@ -601,79 +812,160 @@ export function App() {
         </div>
       </header>
 
-      <aside className="route-panel panel">
-        <div className="panel-title">
-          <span>NIGHT LOOP ROUTE MAP</span>
-          <small>D-COMP NAVI</small>
-        </div>
-        <div className="route-grid">{state.nodes.map((node, index) => {
-          const isAvailable = current.next.includes(node.id) && state.phase === 'map' && !state.outcome;
-          const isRevealed = node.done || node.id === state.currentId || current.next.includes(node.id);
-          const nodeLabel = isRevealed ? node.name : 'UNKNOWN';
-          return <button
-            key={node.id}
-            className={getNodeClass(node, state, current)}
-            disabled={!isAvailable}
-            onClick={() => dispatch({ type: 'MOVE', nodeId: node.id })}
-          >
-            <span className="route-node__index">{String(index).padStart(2, '0')}</span>
-            <span className="route-node__icon">{isRevealed ? nodeIcons[node.type] : '?'}</span>
-            <span className="route-node__body">
-              <span className="route-node__name">{nodeLabel}</span>
-              <span className="route-node__meta">{isRevealed ? node.type.replace('_', ' ').toUpperCase() : 'NO SIGNAL'}</span>
-            </span>
-            {(node.type === 'combat' || node.type === 'unknown') && isRevealed && <span className="danger-chip">DANGER</span>}
-          </button>;
-        })}</div>
-      </aside>
-
       <main className="action-panel panel">
         <div className="panel-title">
-          <span>CURRENT EVENT</span>
-          <small>{current.type.replace('_', ' ').toUpperCase()}</small>
+          <span>WINDSHIELD ENCOUNTER VIEW</span>
+          <small>{isEncounterActive ? 'ENCOUNTER ACTIVE' : 'PATROL MODE'}</small>
         </div>
-        {isEncounterActive && <div className="encounter-stinger">
-          <span>{activeEncounterId === 'road_reaper' ? 'HOSTILE SIGNAL' : 'ENTITY DETECTED'}</span>
-          <strong>{activeEncounterId === 'road_reaper' ? 'ROAD REAPER' : 'CONTRACTABLE PRESENCE'}</strong>
-        </div>}
+        <section className={`battle-view ${isEncounterActive ? 'is-hot' : ''}`}>
+          <div className="battle-view__frame" aria-hidden="true">
+            <span className="battle-view__pillar battle-view__pillar--left" />
+            <span className="battle-view__pillar battle-view__pillar--right" />
+            <span className="battle-view__dashboard-lip" />
+          </div>
+          <div className="battle-view__road">
+            <span className="battle-view__roadline" />
+            <span className="battle-view__rail battle-view__rail--left" />
+            <span className="battle-view__rail battle-view__rail--right" />
+            <span className="battle-view__viaduct" />
+            <span className="battle-view__streetlights" />
+            <span className="battle-view__city" />
+            <span className="battle-view__speedlines" />
+            <span className="battle-view__mist" />
+          </div>
+          <div className="battle-view__hud">
+            <span>THREAT FIELD {isEncounterActive ? 'ACTIVE' : 'STANDBY'}</span>
+            <strong>{focusedEncounterProfile.label}</strong>
+          </div>
+          {state.phase === 'map' && !state.outcome && <div className="battle-view__navi-select">
+            <div className="battle-view__navi-head">
+              <span>NAVI SELECT</span>
+              <small>ROUTE LINK / DEPTH {String(depth).padStart(2, '0')}</small>
+            </div>
+            <div className="battle-view__route-list">
+              {nextNodes.map((node) => <button
+                key={`windshield-route-${node.id}`}
+                type="button"
+                className={`battle-route battle-route--${node.type}`}
+                onClick={() => dispatch({ type: 'MOVE', nodeId: node.id })}
+              >
+                <span className="battle-route__icon">{nodeIcons[node.type]}</span>
+                <span className="battle-route__main">
+                  <strong>{node.name}</strong>
+                  <small>{node.type.replace('_', ' ').toUpperCase()}</small>
+                </span>
+                <span className="battle-route__tag">MOVE</span>
+              </button>)}
+            </div>
+            <p className="battle-view__navi-note">M.O.E.: ルートは前方ガラスに投影した。進路を選んで。</p>
+          </div>}
+          <div className="battle-view__devils">
+            {state.phase !== 'map' && encounterSquad.map((encounterId, index) => <BattleDevilSprite
+              key={`${encounterId}-${index}`}
+              profile={encounterId}
+              lane={index === 0 ? 'left' : index === 1 ? 'center' : 'right'}
+              focused={focusEncounterId === encounterId}
+              onSelect={() => setSelectedTargetIndex(index)}
+            />)}
+          </div>
+        </section>
 
-        {state.phase === 'map' && !state.outcome && <section className="event-card">
-          <div className="event-header">
-            <div className="event-kicker">NAVI SELECT</div>
-            <span className="event-chip event-chip--route">ROUTE SCAN</span>
-          </div>
-          <h2>夜環 深度 {String(depth).padStart(2, '0')} // 進行ルート選択</h2>
-          <h3 className="event-subtitle">Night Loop Route Arbitration</h3>
-          <p>サルベージ対象ログを回収しつつ、帰還可能な経路を維持してください。接続可能な出口のみ琥珀色で照合中。</p>
-          <div className="event-layer">
-            <p className="event-layer__system">SYS: NAVIGATION GRID STABLE / DRIVER DISCRETION ADVISED</p>
-            <p className="event-layer__moe">M.O.E.: 最短は安全じゃないし、安全は無料じゃない。どっちで行く？</p>
-          </div>
-          <div className="next-node-list">
-            {nextNodes.map((n) => <div key={n.id} className={`next-node next-node--${n.type}`}>
-              <span>{nodeIcons[n.type]}</span>
-              <strong>{n.name}</strong>
-              <small>{n.type.replace('_', ' ').toUpperCase()}</small>
-            </div>)}
-          </div>
-        </section>}
+        <section className="battle-deck">
+          <section className="terminal-stack panel">
+            <section className={`terminal terminal-log ${isEncounterActive ? 'terminal--anomaly' : ''}`}>
+              <div className="terminal__head terminal-status">
+                <strong>DEVIL TERMINAL</strong>
+                <span>{runStatus}</span>
+              </div>
+              <div className="terminal-status__chips">
+                {terminalStatus.map((status) => <span key={status} className="terminal-status__chip">{status}</span>)}
+                {tacticalLines.map((line) => <span key={line} className="terminal-status__chip terminal-status__chip--tactical">{line}</span>)}
+              </div>
+              <ul ref={terminalLogRef} className="terminal-log__list">
+                {displayTerminalLogs.slice(-18).map((log, i, logs) => {
+                  const kind = classifyLog(log);
+                  return <li key={`${log}-${i}`} className={`terminal-log__line log-${kind} ${i === logs.length - 1 ? 'is-latest' : ''}`}>
+                    <span className="terminal-log__time">{getPseudoTimecode(i, logs.length, depth)}</span>
+                    <span className="terminal-log__badge">{getLogBadge(kind)}</span>
+                    <span className="terminal-log__caret">&gt;</span>
+                    <span className="terminal-log__text">{log}</span>
+                  </li>;
+                })}
+              </ul>
+            </section>
 
-        {state.phase === 'node' && <section className="event-card">
-          <div className="event-header">
-            <div className="event-kicker">NODE CONTACT</div>
-            <span className={`event-chip event-chip--${current.type === 'combat' || current.type === 'unknown' ? 'danger' : current.type === 'entity' ? 'contract' : 'system'}`}>{current.type.replace('_', ' ').toUpperCase()}</span>
+            <section className="radio-panel">
+              <div className="radio-panel__head">
+                <span>RADIO // M.O.E.</span>
+                <small>{getMoeMood(state, current)} / {state.signal <= 2 ? 'NOISY' : 'CLEAR'}</small>
+              </div>
+              <div className="radio-bubble">
+                <p className="moe-live">「{liveMoeLine}」</p>
+                <p className="moe-command">「{commandMoeLine}」</p>
+              </div>
+            </section>
+          </section>
+
+          <section className={`command-core ${state.phase === 'map' ? 'command-core--standby' : ''}`}>
+            <div className="panel-title panel-title--compact">
+              <span>RPG COMMAND</span>
+              <small>{state.phase === 'map' ? 'STANDBY / SELECT ROUTE' : 'SELECT ACTION'}</small>
+            </div>
+            <div className="command-window command-list command-window--grid">
+              {commandOptions.map((command) => <button
+                key={command.id}
+                className={`command-button command-button--${command.tone} ${selectedCommand === command.id ? 'is-selected' : ''}`}
+                onClick={() => setSelectedCommand(command.id)}
+                disabled={!commandEnabledMap[command.id]}
+                type="button"
+                data-desc={commandDescriptions[command.id].description}
+              >
+                {command.label}
+              </button>)}
+            </div>
+            <small className="command-hint">Keys: ↑↓ command / ←→ target / 1-6 quick select</small>
+            {commandUnavailableReason && <small className="command-hint command-hint--warn">{commandUnavailableReason}</small>}
+          </section>
+
+          <section className="vehicle-panel vehicle-panel--inline panel">
+            <div className="panel-title">
+              <span>VEHICLE DASHBOARD</span>
+              <small>SPD {String(speed).padStart(3, '0')} km/h</small>
+            </div>
+            <div className="vehicle-panel__meters">
+              <ResourceMeter label="Fuel" value={state.fuel} max={12} tone="fuel" />
+              <ResourceMeter label="Armor" value={state.armor} max={12} tone="armor" />
+              <ResourceMeter label="Signal" value={state.signal} max={10} tone="signal" />
+            </div>
+            <div className="contract-slots">
+              <div className="panel-title panel-title--compact">
+                <span>CONTRACT SLOTS</span>
+                <small>{state.contracts.length}/3</small>
+              </div>
+              {state.contracts.length === 0
+                ? <div className="empty-slot">[EMPTY] No entity bound to the vehicle bus.</div>
+                : state.contracts.map((contract) => <article key={contract.id} className={`module-card module-card--${contract.id.split('_').join('-')}`}>
+                  <span className="module-card__band">[{contractLabels[contract.id]}]</span>
+                  <strong>{contract.name}</strong>
+                  <p>{contract.effect}</p>
+                </article>)}
+            </div>
+          </section>
+        </section>
+
+        <section className="system-event-panel">
+          {isEncounterActive && <div className="encounter-stinger">
+            <span>{activeEncounterId === 'road_reaper' ? 'HOSTILE SIGNAL' : 'ENTITY DETECTED'}</span>
+            <strong>{activeEncounterId === 'road_reaper' ? 'ROAD REAPER' : 'CONTRACTABLE PRESENCE'}</strong>
+          </div>}
+
+        {state.phase === 'node' && <section className="node-quickbar">
+          <div className="node-quickbar__meta">
+            <span className="node-quickbar__kicker">NODE CONTACT</span>
+            <strong>{current.name}</strong>
+            <small>{current.type.replace('_', ' ').toUpperCase()}</small>
           </div>
-          <h2>{current.name}</h2>
-          <h3 className="event-subtitle">On-board Encounter Brief</h3>
-          <p>{current.detail}</p>
-          <div className="event-layer">
-            <p className="event-layer__system">SYS: {currentNarrative.system}</p>
-            <p className="event-layer__moe">M.O.E.: {currentNarrative.moe}</p>
-          </div>
-          {activeEncounterId && <EncounterVisual profile={activeEncounterId} pulse={encounterPulse} />}
-          <div className="command-window command-list">
-            <button className="command-button command-button--route" onClick={() => dispatch({ type: 'RESOLVE_NODE' })}>Resolve Node</button>
-          </div>
+          <button className="command-button command-button--route" onClick={() => dispatch({ type: 'RESOLVE_NODE' })}>Resolve Node</button>
         </section>}
 
         {state.phase === 'negotiation' && state.pendingContract && <section className="event-card">
@@ -682,10 +974,10 @@ export function App() {
             <span className="event-chip event-chip--contract">CONTRACT WINDOW</span>
           </div>
           <h2>{state.pendingEntity?.name ?? current.name}</h2>
-          <h3 className="event-subtitle">Demon Terminal Bargain Sequence</h3>
+          <h3 className="event-subtitle">Devil Terminal Bargain Sequence</h3>
           <p>端末経由の交渉は短時間で決着します。提案を選び、失敗時の装甲損耗に備えてください。</p>
           <div className="event-layer">
-            <p className="event-layer__system">SYS: DEMON TERMINAL CHANNEL STABLE / CONTRACT BUS STANDBY</p>
+            <p className="event-layer__system">SYS: DEVIL TERMINAL CHANNEL STABLE / CONTRACT BUS STANDBY</p>
             <p className="event-layer__moe">M.O.E.: 交渉は優しさでも暴力でもなく、相手の欲望に名前をつける作業だよ。</p>
           </div>
           {activeEncounterId && <EncounterVisual profile={activeEncounterId} pulse={encounterPulse} />}
@@ -719,74 +1011,8 @@ export function App() {
             <button className="command-button command-button--route" onClick={() => dispatch({ type: 'RETRY' })}>Retry</button>
           </div>
         </section>}
+        </section>
       </main>
-
-      <section className="vehicle-panel panel">
-        <div className="panel-title">
-          <span>VEHICLE DASHBOARD</span>
-          <small>DIAGNOSTICS</small>
-        </div>
-        <ResourceMeter label="Fuel" value={state.fuel} max={12} tone="fuel" />
-        <ResourceMeter label="Armor" value={state.armor} max={12} tone="armor" />
-        <ResourceMeter label="Signal" value={state.signal} max={10} tone="signal" />
-
-        <div className="contract-slots">
-          <div className="panel-title panel-title--compact">
-            <span>CONTRACT SLOTS</span>
-            <small>{state.contracts.length}/3</small>
-          </div>
-          {state.contracts.length === 0
-            ? <div className="empty-slot">[EMPTY] No entity bound to the vehicle bus.</div>
-            : state.contracts.map((contract) => <article key={contract.id} className={`module-card module-card--${contract.id.split('_').join('-')}`}>
-              <span className="module-card__band">[{contractLabels[contract.id]}]</span>
-              <strong>{contract.name}</strong>
-              <p>{contract.effect}</p>
-            </article>)}
-        </div>
-      </section>
-
-      <footer className="terminal-panel panel">
-        <section className={`terminal terminal-log ${isEncounterActive ? 'terminal--anomaly' : ''}`}>
-          <div className="terminal__head terminal-status">
-            <strong>DEMON TERMINAL</strong>
-            <span>{runStatus}</span>
-          </div>
-          <div className="terminal-status__chips">
-            {terminalStatus.map((status) => <span key={status} className="terminal-status__chip">{status}</span>)}
-          </div>
-          <ul ref={terminalLogRef} className="terminal-log__list">
-            {terminalLogs.slice(-18).map((log, i, logs) => {
-              const kind = classifyLog(log);
-              return <li key={`${log}-${i}`} className={`terminal-log__line log-${kind} ${i === logs.length - 1 ? 'is-latest' : ''}`}>
-                <span className="terminal-log__time">{getPseudoTimecode(i, logs.length, depth)}</span>
-                <span className="terminal-log__badge">{getLogBadge(kind)}</span>
-                <span className="terminal-log__caret">&gt;</span>
-                <span className="terminal-log__text">{log}</span>
-              </li>;
-            })}
-          </ul>
-        </section>
-
-        <section className="moe-panel">
-          <div className="moe-nameplate">
-            <span>M.O.E. // NAVI AI</span>
-            <div className="moe-nameplate__chips">
-              <em>{moeMood}</em>
-              <em>{state.signal <= 2 ? 'VOICE NOISY' : 'VOICE CLEAR'}</em>
-            </div>
-            <i aria-hidden="true" />
-          </div>
-          <div className="moe-bubble">
-            <span className="moe-bubble__tail" aria-hidden="true" />
-            <div className="moe-dialogue">
-              <p className="moe-live">「{liveMoeLine}」</p>
-              {moeLogs.length === 0
-                ? <p>「午前0時。夜環、開いたよ。今日はどこまで潜る？」</p>
-                : moeLogs.slice(-2).map((log, i) => <p key={`${log}-${i}`}>「{log.replace('M.O.E.: ', '')}」</p>)}
-            </div>
-          </div>
-        </section>
-      </footer>
     </div>
   </div>;
 }

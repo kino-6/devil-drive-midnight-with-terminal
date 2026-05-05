@@ -177,12 +177,11 @@ body {
   border: 1px solid var(--line);
   background: linear-gradient(180deg, rgba(16, 19, 24, 0.95), rgba(10, 12, 16, 0.95));
   display: grid;
-  grid-template-columns: 330px minmax(400px, 1fr) 340px;
-  grid-template-rows: auto 1fr auto;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto 1fr;
   grid-template-areas:
-    "header header header"
-    "route action vehicle"
-    "terminal terminal terminal";
+    "header"
+    "action";
   gap: 10px;
   padding: 10px;
   position: relative;
@@ -311,6 +310,10 @@ body {
   font-size: 0.7rem;
 }
 
+.route-panel--sub {
+  opacity: 0.88;
+}
+
 .route-panel {
   grid-area: route;
 }
@@ -415,6 +418,511 @@ body {
 
 .action-panel {
   grid-area: action;
+  display: grid;
+  gap: 10px;
+}
+
+.battle-view {
+  position: relative;
+  border: 1px solid #4f3a2a;
+  background: linear-gradient(180deg, rgba(16, 22, 31, 0.98), rgba(11, 16, 23, 0.98));
+  min-height: 320px;
+  overflow: hidden;
+}
+
+.battle-view.is-hot {
+  border-color: #7c3d37;
+}
+
+.battle-view__road,
+.battle-view__hud,
+.battle-view__devils {
+  position: absolute;
+}
+
+.battle-view__frame {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.battle-view__pillar {
+  position: absolute;
+  top: 0;
+  width: 18px;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(33, 39, 50, 0.95), rgba(20, 24, 31, 0.95));
+  border-right: 1px solid rgba(124, 138, 152, 0.2);
+}
+
+.battle-view__pillar--left {
+  left: 0;
+}
+
+.battle-view__pillar--right {
+  right: 0;
+  border-right: 0;
+  border-left: 1px solid rgba(124, 138, 152, 0.2);
+}
+
+.battle-view__dashboard-lip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 36px;
+  background: linear-gradient(180deg, rgba(18, 24, 33, 0.22), rgba(15, 19, 27, 0.95));
+  border-top: 1px solid rgba(124, 138, 152, 0.24);
+}
+
+.battle-view__road {
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(11, 14, 22, 0.68), rgba(8, 11, 16, 0.15) 30%, rgba(4, 5, 8, 0.82)),
+    radial-gradient(ellipse at 50% 12%, rgba(107, 130, 152, 0.2), transparent 42%);
+}
+
+.battle-view__roadline {
+  position: absolute;
+  left: 50%;
+  bottom: -20px;
+  width: 2px;
+  height: 170%;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(220, 164, 84, 0) 0 14px,
+    rgba(220, 164, 84, 0.65) 14px 28px
+  );
+  transform: perspective(320px) rotateX(66deg);
+  transform-origin: bottom;
+}
+
+.battle-view__rail {
+  position: absolute;
+  bottom: 0;
+  width: 35%;
+  height: 64%;
+  border-top: 1px solid rgba(120, 151, 174, 0.38);
+}
+
+.battle-view__rail--left {
+  left: -4%;
+  transform: skewY(-18deg);
+}
+
+.battle-view__rail--right {
+  right: -4%;
+  transform: skewY(18deg);
+}
+
+.battle-view__city {
+  position: absolute;
+  inset: auto 0 40% 0;
+  height: 44%;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(126, 147, 167, 0.06) 0 12px,
+      rgba(126, 147, 167, 0.02) 12px 18px
+    );
+  mask: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.9) 36%, #000 100%);
+}
+
+.battle-view__viaduct {
+  position: absolute;
+  left: -8%;
+  right: -8%;
+  top: 22%;
+  height: 18%;
+  border-top: 1px solid rgba(104, 126, 147, 0.28);
+  border-bottom: 1px solid rgba(54, 70, 88, 0.22);
+  transform: perspective(380px) rotateX(66deg);
+  transform-origin: top;
+}
+
+.battle-view__streetlights {
+  position: absolute;
+  inset: 14% 0 auto 0;
+  height: 48%;
+  background:
+    radial-gradient(circle at 14% 30%, rgba(223, 184, 121, 0.35), transparent 18%),
+    radial-gradient(circle at 33% 35%, rgba(223, 184, 121, 0.25), transparent 14%),
+    radial-gradient(circle at 52% 28%, rgba(223, 184, 121, 0.38), transparent 18%),
+    radial-gradient(circle at 70% 35%, rgba(223, 184, 121, 0.25), transparent 14%),
+    radial-gradient(circle at 88% 30%, rgba(223, 184, 121, 0.35), transparent 18%);
+  opacity: 0.52;
+}
+
+.battle-view__speedlines {
+  position: absolute;
+  inset: 32% -10% 0 -10%;
+  background: repeating-linear-gradient(
+    112deg,
+    rgba(132, 160, 182, 0.12) 0 2px,
+    transparent 2px 14px
+  );
+  opacity: 0.23;
+  animation: speedLineSweep 9s linear infinite;
+}
+
+.battle-view__mist {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 100%, rgba(115, 131, 146, 0.22), transparent 60%);
+}
+
+.battle-view__hud {
+  position: absolute;
+  left: 10px;
+  top: 9px;
+  z-index: 6;
+  display: grid;
+  gap: 4px;
+  font-size: 0.68rem;
+  color: #c9d4df;
+}
+
+.battle-view__hud strong {
+  color: #e4bc83;
+  font-size: 0.78rem;
+}
+
+.battle-view__navi-select {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 40px;
+  z-index: 6;
+  border: 1px solid #5a4330;
+  background: linear-gradient(180deg, rgba(13, 17, 23, 0.94), rgba(10, 14, 20, 0.94));
+  padding: 8px;
+  display: grid;
+  gap: 7px;
+}
+
+.battle-view__navi-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.battle-view__navi-head span {
+  color: #e2b26f;
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+}
+
+.battle-view__navi-head small {
+  color: #95a4b3;
+  font-size: 0.64rem;
+}
+
+.battle-view__route-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.battle-route {
+  width: 100%;
+  border: 1px solid #4a3a2c;
+  background: linear-gradient(180deg, #141b25, #101722);
+  color: var(--text);
+  text-align: left;
+  padding: 7px 8px;
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.battle-route:hover {
+  border-color: #d39a4a;
+  background: linear-gradient(180deg, #1b2430, #151e2b);
+  transform: translateX(1px);
+}
+
+.battle-route__icon {
+  color: #d39a4a;
+  font-size: 0.92rem;
+}
+
+.battle-route__main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.battle-route__main strong {
+  font-size: 0.78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.battle-route__main small {
+  color: #9ca8b3;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+}
+
+.battle-route__tag {
+  color: #c0cad3;
+  border: 1px solid #4e6072;
+  background: #141d2a;
+  font-size: 0.58rem;
+  padding: 1px 5px;
+}
+
+.battle-route--combat .battle-route__icon,
+.battle-route--unknown .battle-route__icon {
+  color: #cc6d68;
+}
+
+.battle-route--entity .battle-route__icon {
+  color: #a897d2;
+}
+
+.battle-route--signal .battle-route__icon {
+  color: #78b6bf;
+}
+
+.battle-route--return_gate .battle-route__icon {
+  color: #98b87b;
+}
+
+.battle-view__navi-note {
+  margin: 0;
+  font-size: 0.7rem;
+  color: #c8ccd2;
+}
+
+.battle-view__devils {
+  inset: 16% 20px 40px 20px;
+  z-index: 4;
+}
+
+.battle-devil {
+  position: absolute;
+  width: min(28%, 190px);
+  cursor: pointer;
+  transition: transform 180ms ease, opacity 180ms ease;
+}
+
+.battle-devil--left {
+  left: 2%;
+  bottom: 8%;
+  transform: scale(0.9);
+}
+
+.battle-devil--center {
+  left: 50%;
+  bottom: 2%;
+  transform: translateX(-50%) scale(1.08);
+}
+
+.battle-devil--right {
+  right: 2%;
+  bottom: 10%;
+  transform: scale(0.88);
+}
+
+.battle-devil__body {
+  border: 1px solid #4f3d2e;
+  background: linear-gradient(180deg, rgba(22, 27, 36, 0.78), rgba(14, 18, 25, 0.78));
+  padding: 6px;
+  display: grid;
+  gap: 4px;
+}
+
+.battle-devil__art {
+  color: #c1b7cf;
+  height: 110px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(113, 102, 134, 0.35);
+  background: radial-gradient(circle at 50% 45%, rgba(121, 103, 162, 0.22), rgba(13, 16, 22, 0.24));
+}
+
+.battle-devil.is-hostile .battle-devil__art {
+  color: #c99492;
+  border-color: rgba(153, 84, 80, 0.45);
+  background: radial-gradient(circle at 50% 45%, rgba(169, 83, 78, 0.24), rgba(18, 14, 17, 0.24));
+}
+
+.battle-devil__art svg {
+  width: 100%;
+  height: 100%;
+}
+
+.battle-devil__label {
+  display: grid;
+  gap: 2px;
+}
+
+.battle-devil__label strong {
+  color: #e8cb95;
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.battle-devil__label span {
+  color: #b9c2cd;
+  font-size: 0.62rem;
+  letter-spacing: 0.03em;
+}
+
+.battle-devil__target {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 0.6rem;
+  color: #f4d6aa;
+  border: 1px solid #a87452;
+  background: rgba(35, 24, 17, 0.9);
+  padding: 1px 5px;
+}
+
+.battle-devil.is-focused .battle-devil__body {
+  border-color: #c98c62;
+  box-shadow: 0 0 0 1px rgba(201, 140, 98, 0.45), 0 0 28px rgba(201, 140, 98, 0.22);
+}
+
+.battle-devil.is-focused .battle-devil__art {
+  box-shadow: inset 0 0 0 1px rgba(216, 168, 104, 0.45);
+}
+
+.command-core {
+  border: 1px solid #493526;
+  background: linear-gradient(180deg, rgba(15, 20, 28, 0.98), rgba(12, 16, 22, 0.98));
+  padding: 8px;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  grid-column: 2;
+}
+
+.command-core--standby {
+  opacity: 0.94;
+}
+
+.battle-deck {
+  display: grid;
+  grid-template-columns: minmax(420px, 1.15fr) minmax(320px, 0.95fr) minmax(280px, 0.8fr);
+  gap: 8px;
+  align-items: stretch;
+}
+
+.vehicle-panel--inline {
+  padding: 8px;
+  min-width: 0;
+  grid-column: 3;
+  align-self: stretch;
+  justify-self: stretch;
+}
+
+.vehicle-panel__meters {
+  display: grid;
+  gap: 6px;
+}
+
+.terminal-stack {
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+  min-width: 0;
+  grid-column: 1;
+}
+
+.radio-panel {
+  border: 1px solid #514332;
+  background: linear-gradient(180deg, rgba(18, 21, 27, 0.98), rgba(13, 17, 22, 0.98));
+  padding: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.radio-panel__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.radio-panel__head span {
+  color: #e6c98f;
+  font-size: 0.74rem;
+  letter-spacing: 0.05em;
+}
+
+.radio-panel__head small {
+  color: #b0bac2;
+  font-size: 0.65rem;
+}
+
+.radio-bubble {
+  border: 1px solid #5b4a69;
+  background: linear-gradient(180deg, rgba(22, 25, 38, 0.92), rgba(16, 19, 31, 0.92));
+  clip-path: polygon(0 0, 97% 0, 100% 22%, 100% 100%, 0 100%, 0 10%);
+  padding: 7px;
+  display: grid;
+  gap: 5px;
+}
+
+.command-hint {
+  color: #9aa3ac;
+  font-size: 0.65rem;
+}
+
+.command-hint--warn {
+  color: #d1847f;
+}
+
+.system-event-panel {
+  display: grid;
+  gap: 8px;
+}
+
+.node-quickbar {
+  border: 1px solid #4a3527;
+  background: linear-gradient(180deg, rgba(16, 21, 28, 0.96), rgba(12, 17, 23, 0.96));
+  padding: 8px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.node-quickbar__meta {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto auto auto;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.node-quickbar__kicker {
+  color: #d0a56f;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+}
+
+.node-quickbar__meta strong {
+  color: var(--text);
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.node-quickbar__meta small {
+  color: #9ca7b1;
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
 }
 
 .event-card {
@@ -600,6 +1108,7 @@ body {
   justify-content: space-between;
   gap: 10px;
   transition: border-color 120ms ease, transform 120ms ease, background 120ms ease;
+  position: relative;
 }
 
 .command-button::before {
@@ -614,9 +1123,33 @@ body {
   transform: translateX(2px);
 }
 
+.command-button.is-selected {
+  border-color: #e0a85b;
+  background: linear-gradient(180deg, #2a3442, #1f2a37);
+  box-shadow: inset 0 0 0 1px rgba(224, 168, 91, 0.45);
+}
+
 .command-button:disabled {
   opacity: 0.42;
   filter: grayscale(0.35);
+}
+
+.command-button[data-desc]:hover::after,
+.command-button[data-desc]:focus-visible::after {
+  content: attr(data-desc);
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 8;
+  border: 1px solid #6a5239;
+  background: #0f141d;
+  color: #d2d4d1;
+  font-size: 0.69rem;
+  line-height: 1.4;
+  padding: 5px 6px;
+  text-wrap: pretty;
+  pointer-events: none;
 }
 
 .command-button--system {
@@ -803,7 +1336,7 @@ body {
 }
 
 .vehicle-panel {
-  grid-area: vehicle;
+  grid-area: auto;
 }
 
 .resource-meter {
@@ -1001,21 +1534,28 @@ body {
   letter-spacing: 0.04em;
 }
 
+.terminal-status__chip--tactical {
+  border-color: #5d495f;
+  color: #d3c0db;
+}
+
 .terminal-log__list {
   list-style: none;
   padding: 0;
   margin: 0;
   display: grid;
   gap: 4px;
-  max-height: 210px;
+  height: 210px;
+  min-height: 210px;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #5d4935 #0b0f15;
 }
 
 .terminal-log__line {
-  display: flex;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: 40px 38px 12px minmax(0, 1fr);
+  column-gap: 6px;
   align-items: center;
   color: #c8c9c4;
   font-size: 0.75rem;
@@ -1055,13 +1595,10 @@ body {
 }
 
 .terminal-log__text {
-  flex: 1;
   min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.terminal-log__line span {
-  color: var(--amber);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .log-warning {
@@ -1174,6 +1711,10 @@ body {
   font-size: 0.88rem;
 }
 
+.moe-command {
+  color: #c9b5e1;
+}
+
 @keyframes laneFlow {
   from {
     transform: translateY(0);
@@ -1184,6 +1725,15 @@ body {
 }
 
 @keyframes sideLightDrift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(42px);
+  }
+}
+
+@keyframes speedLineSweep {
   from {
     transform: translateX(0);
   }
@@ -1237,14 +1787,23 @@ body {
     grid-template-columns: 1fr;
     grid-template-areas:
       "header"
-      "route"
-      "action"
-      "vehicle"
-      "terminal";
+      "action";
   }
 
-  .terminal-panel {
-    grid-template-columns: 1fr;
+  .battle-deck {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .terminal-stack {
+    grid-column: 1 / -1;
+  }
+
+  .command-core {
+    grid-column: 1;
+  }
+
+  .vehicle-panel--inline {
+    grid-column: 2;
   }
 
   .header-readouts {
@@ -1257,7 +1816,54 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .node-quickbar {
+    grid-template-columns: 1fr;
+  }
+
+  .node-quickbar__meta {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .battle-view__devils {
+    inset: 20% 16px 34px 16px;
+  }
+
+  .battle-view__navi-select {
+    left: 14px;
+    right: 14px;
+    bottom: 34px;
+  }
+
+  .battle-view__route-list {
+    grid-template-columns: 1fr;
+  }
+
+  .battle-devil {
+    width: min(40%, 180px);
+  }
+
+  .battle-devil--left {
+    left: 0;
+  }
+
+  .battle-devil--right {
+    right: 0;
+  }
+
   .prologue-actions {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .battle-deck {
+    grid-template-columns: 1fr;
+  }
+
+  .terminal-stack,
+  .command-core,
+  .vehicle-panel--inline {
+    grid-column: 1;
   }
 }
