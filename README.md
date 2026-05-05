@@ -16,6 +16,8 @@
 - Retryで再挑戦
 - ラン開始時のプロローグ演出（Night Loop導入）
 - M.O.E.のフェーズ別台詞と、端末ログ文面の強化
+- Result後に遷移できる `GARAGE // MIDNIGHT BAY`（Loadout再設定）
+- Garage内 `AUTOPLAY LAB`（複数Runを自動実行して勝率/平均リソースを集計）
 
 ## 起動方法
 
@@ -44,6 +46,18 @@ npm run start
 ## ドキュメント
 
 - 詳細仕様: `docs/game-design.md`
+
+## AutoPlay（バランス調整用）
+
+1. 通常プレイで `Result` まで進む
+2. `START NEXT RUN` または `RETURN TO GARAGE` でGarageへ移動
+3. `AUTOPLAY LAB` で Runs / Strategy を選び `RUN AUTOPLAY`
+
+主な出力:
+- Result種別カウント（Boss Cleared / Boss Avoided / Early Return / Vehicle Disabled）
+- 勝率
+- 平均 Encounter / Contract / Salvage
+- 平均 Fuel / Armor / Signal / Main Ammo
 
 ## Narrative TODO
 
