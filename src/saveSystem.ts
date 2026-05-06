@@ -34,6 +34,7 @@ export type DemonArchiveEntry = {
   contractedCount: number;
   analyzed: boolean;
   affinityRevealed: boolean;
+  intelProgress?: number;
   affinities?: Record<string, string>;
   lastSeenAt: number;
 };
@@ -172,6 +173,10 @@ const normalizeDemonArchive = (raw: unknown): Record<string, DemonArchiveEntry> 
       contractedCount: asNumber(item.contractedCount, 0),
       analyzed: asBool(item.analyzed),
       affinityRevealed: asBool(item.affinityRevealed),
+      intelProgress: (() => {
+        const value = asNumber(item.intelProgress, 0);
+        return Number.isFinite(value) ? Math.max(0, value) : undefined;
+      })(),
       affinities: (() => {
         const aff = asObject(item.affinities);
         const normalized: Record<string, string> = {};
@@ -501,6 +506,7 @@ export const touchDemonArchive = (
     contractedDelta?: number;
     analyzed?: boolean;
     affinityRevealed?: boolean;
+    intelProgress?: number;
     affinities?: Record<string, string>;
   },
 ): SaveData =>
@@ -517,6 +523,7 @@ export const touchDemonArchive = (
         contractedCount: prev.contractedCount + (input.contractedDelta ?? 0),
         analyzed: prev.analyzed || !!input.analyzed,
         affinityRevealed: prev.affinityRevealed || !!input.affinityRevealed,
+        intelProgress: Math.max(prev.intelProgress ?? 0, input.intelProgress ?? 0),
         affinities: input.affinities
           ? { ...(prev.affinities ?? {}), ...input.affinities }
           : prev.affinities,
@@ -532,6 +539,7 @@ export const touchDemonArchive = (
         contractedCount: input.contractedDelta ?? 0,
         analyzed: !!input.analyzed,
         affinityRevealed: !!input.affinityRevealed,
+        intelProgress: Math.max(0, input.intelProgress ?? 0),
         affinities: input.affinities,
         lastSeenAt: ts,
       };

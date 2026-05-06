@@ -175,6 +175,33 @@ body {
   font-size: 0.9rem;
 }
 
+.prologue-visual {
+  border: 1px solid #5a4732;
+  background: #090d14;
+  min-height: 140px;
+  max-height: 220px;
+  overflow: hidden;
+  position: relative;
+}
+
+.prologue-visual::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(7, 10, 15, 0.05), rgba(7, 10, 15, 0.48)),
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 3px);
+}
+
+.prologue-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: saturate(0.88) contrast(1.04) brightness(0.96);
+}
+
 .prologue-boot {
   list-style: none;
   margin: 2px 0 0;
@@ -484,11 +511,47 @@ body {
   gap: 10px;
 }
 
+.action-panel--run-fit {
+  min-height: 0;
+  overflow: hidden;
+  grid-template-rows: auto minmax(270px, 40vh) minmax(0, 1fr);
+}
+
+.action-panel--run-fit > .battle-deck {
+  min-height: 0;
+}
+
+.action-panel--run-fit .terminal-stack {
+  grid-template-rows: auto 1fr;
+}
+
+.action-panel--run-fit .terminal {
+  min-height: 0;
+}
+
+.action-panel--run-fit .terminal-log__list {
+  height: 126px;
+  min-height: 126px;
+}
+
+.action-panel--garage-focus {
+  gap: 8px;
+}
+
+.action-panel--garage-focus .battle-deck {
+  display: none;
+}
+
+.action-panel--garage-focus .garage-grid-card {
+  border-color: #6a4d35;
+  box-shadow: inset 0 0 0 1px rgba(211, 154, 74, 0.2);
+}
+
 .battle-view {
   position: relative;
   border: 1px solid #4f3a2a;
   background: linear-gradient(180deg, rgba(16, 22, 31, 0.98), rgba(11, 16, 23, 0.98));
-  min-height: 392px;
+  min-height: 306px;
   overflow: hidden;
 }
 
@@ -756,8 +819,15 @@ body {
 
 .battle-view__hud strong {
   color: #e4bc83;
-  font-size: 1rem;
+  font-size: 1.08rem;
   letter-spacing: 0.03em;
+  background: linear-gradient(90deg, rgba(10, 14, 20, 0.94), rgba(10, 14, 20, 0.64));
+  border: 1px solid rgba(93, 70, 48, 0.5);
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
 }
 
 .battle-view__boss-alert {
@@ -929,7 +999,7 @@ body {
 }
 
 .battle-view__devils {
-  inset: 16% 20px 40px 20px;
+  inset: 13% 10px 16px 10px;
   z-index: 4;
 }
 
@@ -947,40 +1017,40 @@ body {
 
 .battle-devil {
   position: absolute;
-  width: min(23%, 176px);
+  width: min(31%, 252px);
   cursor: pointer;
   transition: transform 180ms ease, opacity 180ms ease;
 }
 
 .battle-devil--left {
-  left: 2%;
-  bottom: 10%;
-  transform: scale(0.88);
+  left: 1%;
+  bottom: 6%;
+  transform: scale(0.97);
 }
 
 .battle-devil--center {
   left: 50%;
-  bottom: 4%;
-  transform: translateX(-50%) scale(1.03);
+  bottom: 1%;
+  transform: translateX(-50%) scale(1.1);
 }
 
 .battle-devil--right {
-  right: 2%;
-  bottom: 10%;
-  transform: scale(0.86);
+  right: 1%;
+  bottom: 6%;
+  transform: scale(0.95);
 }
 
 .battle-devil__body {
   border: 1px solid #4f3d2e;
   background: linear-gradient(180deg, rgba(22, 27, 36, 0.78), rgba(14, 18, 25, 0.78));
-  padding: 6px;
+  padding: 8px;
   display: grid;
-  gap: 5px;
+  gap: 6px;
 }
 
 .battle-devil__art {
   color: #c1b7cf;
-  height: 132px;
+  height: 182px;
   display: grid;
   place-items: center;
   border: 1px solid rgba(113, 102, 134, 0.35);
@@ -1004,6 +1074,16 @@ body {
   object-fit: contain;
 }
 
+.battle-devil__unknown {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: #e0b777;
+  font-size: clamp(2.2rem, 5.2vw, 3.8rem);
+  text-shadow: 0 0 12px rgba(211, 154, 74, 0.26);
+}
+
 .battle-devil__label {
   display: grid;
   gap: 1px;
@@ -1011,7 +1091,7 @@ body {
 
 .battle-devil__label strong {
   color: #e8cb95;
-  font-size: 0.68rem;
+  font-size: 0.88rem;
   line-height: 1.2;
 }
 
@@ -1022,11 +1102,11 @@ body {
 
 .battle-devil__hp span {
   color: #c5cbd4;
-  font-size: 0.62rem;
+  font-size: 0.72rem;
 }
 
 .battle-devil__hp div {
-  height: 7px;
+  height: 9px;
   border: 1px solid #4e3828;
   background: #0f141c;
 }
@@ -1042,19 +1122,19 @@ body {
   align-items: center;
   gap: 6px;
   color: #c4cdd5;
-  font-size: 0.64rem;
+  font-size: 0.74rem;
   letter-spacing: 0.04em;
 }
 
 .battle-devil__intent-icon {
-  width: 18px;
-  height: 18px;
+  width: 21px;
+  height: 21px;
   display: inline-grid;
   place-items: center;
   border: 1px solid #4f3d2e;
   background: #111720;
   color: #dfa566;
-  font-size: 0.74rem;
+  font-size: 0.86rem;
 }
 
 .battle-devil__intent-icon.intent--attack {
@@ -1115,13 +1195,13 @@ body {
 }
 
 .battle-view.is-boss .battle-view__devils {
-  inset: 11% 22px 34px 22px;
+  inset: 9% 14px 22px 14px;
 }
 
 .battle-view.is-boss .battle-devil--center {
-  width: min(44%, 360px);
-  bottom: -2%;
-  transform: translateX(-50%) scale(1.48);
+  width: min(58%, 560px);
+  bottom: -1%;
+  transform: translateX(-50%) scale(1.58);
   z-index: 7;
 }
 
@@ -1133,39 +1213,39 @@ body {
 
 .approach-contact {
   position: absolute;
-  width: min(29%, 200px);
+  width: min(32%, 340px);
   border: 1px solid #4f3d2e;
   background: linear-gradient(180deg, rgba(15, 20, 28, 0.82), rgba(10, 15, 22, 0.82));
-  padding: 8px 7px;
+  padding: 12px 11px;
   display: grid;
-  gap: 6px;
+  gap: 9px;
   box-shadow: 0 0 28px rgba(24, 36, 48, 0.5);
 }
 
 .approach-contact--left {
-  left: 3%;
-  bottom: 8%;
+  left: 1%;
+  bottom: 5%;
 }
 
 .approach-contact--center {
   left: 50%;
-  bottom: 4%;
+  bottom: 2%;
   transform: translateX(-50%);
 }
 
 .approach-contact--right {
-  right: 3%;
-  bottom: 10%;
+  right: 1%;
+  bottom: 5%;
 }
 
 .approach-contact__sigil {
-  width: 30px;
-  height: 30px;
+  width: 124px;
+  height: 124px;
   border: 1px solid #6e543d;
   color: #e2b676;
   display: grid;
   place-items: center;
-  font-size: 1rem;
+  font-size: 2.7rem;
   background: radial-gradient(circle at 50% 50%, rgba(216, 169, 99, 0.2), rgba(11, 15, 22, 0.3));
 }
 
@@ -1189,12 +1269,13 @@ body {
 
 .approach-contact__meta strong {
   color: #d8dde2;
-  font-size: 0.7rem;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
 }
 
 .approach-contact__meta small {
   color: #9eabb9;
-  font-size: 0.6rem;
+  font-size: 0.76rem;
   letter-spacing: 0.04em;
 }
 
@@ -1202,10 +1283,13 @@ body {
   border: 1px solid #493526;
   background: linear-gradient(180deg, rgba(15, 20, 28, 0.98), rgba(12, 16, 22, 0.98));
   padding: 8px;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
   min-width: 0;
   grid-column: 2;
+  min-height: 0;
+  overflow: hidden auto;
 }
 
 .command-core--standby {
@@ -1290,8 +1374,10 @@ body {
 }
 
 .command-groups {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
+  margin-top: 0;
 }
 
 .command-group {
@@ -1331,6 +1417,8 @@ body {
   padding: 8px;
   min-width: 0;
   grid-column: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .radio-panel {
@@ -1341,6 +1429,16 @@ body {
   gap: 6px;
 }
 
+.radio-panel--terminal {
+  border-color: #6a5238;
+  box-shadow: inset 0 0 0 1px rgba(215, 166, 92, 0.2);
+}
+
+.radio-panel--terminal .radio-bubble {
+  border-color: #6d597d;
+  background: linear-gradient(180deg, rgba(20, 24, 36, 0.96), rgba(13, 17, 28, 0.96));
+}
+
 .radio-panel--command {
   border-color: #6a5238;
   background: linear-gradient(180deg, rgba(20, 24, 33, 0.98), rgba(14, 18, 26, 0.98));
@@ -1348,11 +1446,12 @@ body {
 }
 
 .radio-panel--command .radio-panel__head span {
-  font-size: 0.8rem;
+  font-size: 0.94rem;
+  gap: 10px;
 }
 
 .radio-panel--command .radio-bubble {
-  padding: 10px;
+  padding: 12px;
   gap: 7px;
 }
 
@@ -1373,10 +1472,24 @@ body {
 }
 
 .radio-panel__avatar {
-  width: 20px;
-  height: 20px;
+  width: 96px;
+  height: 96px;
   border: 1px solid #5b4a36;
+  object-fit: contain;
+  background: radial-gradient(circle at 50% 40%, rgba(116, 155, 175, 0.22), rgba(16, 20, 29, 0.88));
+  padding: 3px;
+}
+
+.radio-panel--terminal .radio-panel__avatar {
+  width: clamp(164px, 14vw, 256px);
+  height: clamp(164px, 14vw, 256px);
+}
+
+.radio-panel__avatar--moe {
   object-fit: cover;
+  object-position: 50% 10%;
+  padding: 0;
+  image-rendering: auto;
 }
 
 .radio-panel__head small {
@@ -1395,9 +1508,13 @@ body {
 
 .radio-bubble .moe-live {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 1rem;
   line-height: 1.45;
   color: #e3d0a5;
+}
+
+.radio-panel--terminal .moe-live {
+  font-size: 1.06rem;
 }
 
 .radio-bubble .moe-command {
@@ -1622,6 +1739,23 @@ body {
   gap: 12px;
 }
 
+.garage-visual {
+  border: 1px solid #4d3828;
+  background: #0d1219;
+  max-height: 180px;
+  overflow: hidden;
+}
+
+.garage-visual img {
+  width: 100%;
+  height: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  display: block;
+  opacity: 0.86;
+  filter: saturate(0.85) contrast(1.05);
+}
+
 .garage-fold {
   border: 1px solid #3f3024;
   background: #111821;
@@ -1815,8 +1949,13 @@ body {
 }
 
 .command-button__affinity--weak {
-  border-color: #3e6f7f;
-  color: #7dc8dd;
+  border-color: #67e4ff;
+  background: linear-gradient(180deg, rgba(26, 74, 92, 0.95), rgba(14, 44, 59, 0.95));
+  color: #d4f8ff;
+  box-shadow:
+    0 0 0 1px rgba(103, 228, 255, 0.24) inset,
+    0 0 10px rgba(103, 228, 255, 0.28);
+  text-shadow: 0 0 6px rgba(120, 236, 255, 0.55);
 }
 
 .command-button__affinity--resist {
@@ -2627,10 +2766,12 @@ body {
 }
 
 .vehicle-panel__avatar {
-  width: 20px;
-  height: 20px;
-  object-fit: cover;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
   border: 1px solid #524131;
+  background: radial-gradient(circle at 50% 40%, rgba(130, 145, 166, 0.18), rgba(14, 18, 25, 0.9));
+  padding: 1px;
   margin-right: 6px;
   vertical-align: middle;
 }

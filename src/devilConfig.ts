@@ -1,4 +1,4 @@
-import type { AffinityRating, ContractId, EncounterId, Temperament } from './game/types';
+import type { AffinityRating, ContractId, EncounterId, Intent, Temperament } from './game/types';
 
 export type EncounterProfile = {
   label: string;
@@ -6,6 +6,15 @@ export type EncounterProfile = {
   threat: 'LOW' | 'MED' | 'HIGH' | 'CRITICAL';
   signal: string;
   contractable: boolean;
+  assetImage?: string;
+};
+
+export type TalkTendency = {
+  successBias: number;
+  trustBonus: number;
+  interestBonus: number;
+  failPressure: number;
+  failIntent?: Intent;
 };
 
 export type DevilTemplate = {
@@ -17,6 +26,7 @@ export type DevilTemplate = {
   targetModuleId?: ContractId;
   armored?: boolean;
   affinities: Record<'ballistic' | 'suppressive' | 'impact' | 'signal' | 'talk', AffinityRating>;
+  talkTendency?: TalkTendency;
 };
 
 export type DevilConfig = {
@@ -45,6 +55,13 @@ const encounterIds: EncounterId[] = [
   'abandoned_ai_navi',
   'road_reaper',
   'toll_gate_saint',
+  'tunnel_rider',
+  'closure_ogre',
+  'tow_collector',
+  'ghost_chaser',
+  'vending_spirit',
+  'phantom_patrol',
+  'midnight_taxi',
 ];
 
 const defaultAffinity = {
@@ -58,57 +75,108 @@ const defaultAffinity = {
 export const defaultDevilConfig: DevilConfig = {
   version: 'builtin',
   encounterProfiles: {
-    whisper_broker: { label: 'WHISPER BROKER', subtitle: 'A slim broker exchanging routes for promises.', threat: 'MED', signal: 'CONTRACT TRACE / VIOLET BAND', contractable: true },
-    roadside_phone: { label: 'ROADSIDE PHONE', subtitle: 'Ringing public line with an impossible child voice.', threat: 'MED', signal: 'VOICE CARRIER / AM 666.0', contractable: true },
-    pixie_shibuya_glow: { label: 'PIXIE // SHIBUYA GLOW', subtitle: 'Tiny city-light fairy that plays with lane signals.', threat: 'LOW', signal: 'STREETLIGHT FRACTAL / SOFT CHIME', contractable: true },
-    foxfire_navi: { label: 'FOXFIRE NAVI', subtitle: 'Kitsunebi guide flickering between shrine lanes and flyovers.', threat: 'MED', signal: 'KITSUNEBI TRACE / ROUTE SPOOF', contractable: true },
-    no_face_taxi_passenger: { label: 'NO-FACE TAXI PASSENGER', subtitle: 'A faceless rider waiting in the rear-view mirror.', threat: 'HIGH', signal: 'METER DRIFT / BLANK ID', contractable: true },
-    silent_shape: { label: 'SILENT SHAPE', subtitle: 'A black mass that swallows engine noise.', threat: 'HIGH', signal: 'AUDIO NULL / EDGE BLUR', contractable: true },
-    abandoned_ai_navi: { label: 'ABANDONED AI NAVI', subtitle: 'Cracked guidance unit with haunted pathing.', threat: 'LOW', signal: 'LEGACY BUS / GHOST ARROW', contractable: true },
-    road_reaper: { label: 'ROAD REAPER', subtitle: 'Traffic marshal silhouette with terminal intent.', threat: 'CRITICAL', signal: 'HOSTILE SIGNAL / COLLISION VECTOR', contractable: false },
-    toll_gate_saint: { label: 'TOLL GATE SAINT', subtitle: 'Armored toll keeper demanding passage.', threat: 'CRITICAL', signal: 'DEEP SIGNAL / TOLL DEMAND', contractable: true },
+    whisper_broker: { label: 'WHISPER BROKER', subtitle: 'A slim broker exchanging routes for promises.', threat: 'MED', signal: 'CONTRACT TRACE / VIOLET BAND', contractable: true, assetImage: 'images/devil/WhisperBroker.png' },
+    roadside_phone: { label: 'ROADSIDE PHONE', subtitle: 'Ringing public line with an impossible child voice.', threat: 'MED', signal: 'VOICE CARRIER / AM 666.0', contractable: true, assetImage: 'images/devil/RoadsidePhone.png' },
+    pixie_shibuya_glow: { label: 'PIXIE // SHIBUYA GLOW', subtitle: 'Tiny city-light fairy that plays with lane signals.', threat: 'LOW', signal: 'STREETLIGHT FRACTAL / SOFT CHIME', contractable: true, assetImage: 'images/devil/Pixie.png' },
+    foxfire_navi: { label: 'FOXFIRE NAVI', subtitle: 'Kitsunebi guide flickering between shrine lanes and flyovers.', threat: 'MED', signal: 'KITSUNEBI TRACE / ROUTE SPOOF', contractable: true, assetImage: 'images/devil/FoxfireNavi.png' },
+    no_face_taxi_passenger: { label: 'NO-FACE TAXI PASSENGER', subtitle: 'A faceless rider waiting in the rear-view mirror.', threat: 'HIGH', signal: 'METER DRIFT / BLANK ID', contractable: true, assetImage: 'images/devil/No-FaceTaxi_ Passenger.png' },
+    silent_shape: { label: 'SILENT SHAPE', subtitle: 'A black mass that swallows engine noise.', threat: 'HIGH', signal: 'AUDIO NULL / EDGE BLUR', contractable: true, assetImage: 'images/devil/Silent_Shape.png' },
+    abandoned_ai_navi: { label: 'ABANDONED AI NAVI', subtitle: 'Cracked guidance unit with haunted pathing.', threat: 'LOW', signal: 'LEGACY BUS / GHOST ARROW', contractable: true, assetImage: 'images/devil/Abandoned_AI_Navi.png' },
+    road_reaper: { label: 'ROAD REAPER', subtitle: 'Traffic marshal silhouette with terminal intent.', threat: 'CRITICAL', signal: 'HOSTILE SIGNAL / COLLISION VECTOR', contractable: false, assetImage: 'images/devil/RoadReaper.png' },
+    toll_gate_saint: { label: 'TOLL GATE SAINT', subtitle: 'Armored toll keeper demanding passage.', threat: 'CRITICAL', signal: 'DEEP SIGNAL / TOLL DEMAND', contractable: true, assetImage: 'images/devil/Toll_Gate_Saint.png' },
+    tunnel_rider: { label: 'TUNNEL RIDER', subtitle: 'A phantom bike weaving through non-existent lanes.', threat: 'HIGH', signal: 'TUNNEL ECHO / SHADOW TRAIL', contractable: true, assetImage: 'images/devil/TunnelRider.png' },
+    closure_ogre: { label: 'CLOSURE OGRE', subtitle: 'Ramp-closure brute forged from barricades and cones.', threat: 'CRITICAL', signal: 'RAMP BLOCK / IMPACT RISK', contractable: false, assetImage: 'images/devil/Closure_Ogre.png' },
+    tow_collector: { label: 'TOW COLLECTOR', subtitle: 'A haunted tow rig demanding unpaid passage.', threat: 'HIGH', signal: 'TOW HOOK / DEBT TRACE', contractable: true, assetImage: 'images/devil/TowCollector.png' },
+    ghost_chaser: { label: 'GHOST CHASER', subtitle: 'Siren-lit pursuit spirit that never loses lock.', threat: 'HIGH', signal: 'CHASE VECTOR / SIREN BLEED', contractable: false, assetImage: 'images/devil/GhostChaser.png' },
+    vending_spirit: { label: 'VENDING SPIRIT', subtitle: 'Neon can-machine entity whispering route favors.', threat: 'LOW', signal: 'COIN LOOP / COLD STATIC', contractable: true, assetImage: 'images/devil/VendingSpirit.png' },
+    phantom_patrol: { label: 'PHANTOM PATROL', subtitle: 'Ghostly patrol car scanning forbidden exits.', threat: 'MED', signal: 'PATROL BAND / BLIND SPOT', contractable: true, assetImage: 'images/devil/PhantomPatrol.png' },
+    midnight_taxi: { label: 'MIDNIGHT TAXI', subtitle: 'An empty cab that offers one-way fares at 00:00.', threat: 'MED', signal: 'METER PULSE / EMPTY CAB', contractable: true, assetImage: 'images/devil/MidnightTaxi.png' },
   },
   devilTemplates: {
     whisper_broker: {
       name: 'Whisper Broker', maxHp: 6, temperament: 'hungry', contractable: true, profile: 'whisper_broker', targetModuleId: 'radio_voice',
       affinities: { ...defaultAffinity, signal: 'weak', talk: 'weak', ballistic: 'resist' },
+      talkTendency: { successBias: 0.05, trustBonus: 0, interestBonus: 1, failPressure: 1, failIntent: 'bargain' },
     },
     roadside_phone: {
       name: 'Roadside Phone', maxHp: 6, temperament: 'lonely', contractable: true, profile: 'roadside_phone', targetModuleId: 'radio_voice',
       affinities: { ...defaultAffinity, signal: 'weak', talk: 'weak', ballistic: 'resist' },
+      talkTendency: { successBias: 0.08, trustBonus: 1, interestBonus: 0, failPressure: 1, failIntent: 'curse' },
     },
     pixie_shibuya_glow: {
       name: 'Pixie', maxHp: 5, temperament: 'curious', contractable: true, profile: 'pixie_shibuya_glow', targetModuleId: 'radio_voice',
       affinities: { ballistic: 'resist', suppressive: 'normal', impact: 'normal', signal: 'weak', talk: 'weak' },
+      talkTendency: { successBias: 0.12, trustBonus: 1, interestBonus: 1, failPressure: 0, failIntent: 'flee' },
     },
     foxfire_navi: {
       name: 'Foxfire Navi', maxHp: 6, temperament: 'hungry', contractable: true, profile: 'foxfire_navi', targetModuleId: 'radio_voice',
       affinities: { ballistic: 'normal', suppressive: 'normal', impact: 'resist', signal: 'weak', talk: 'weak' },
+      talkTendency: { successBias: 0.07, trustBonus: 0, interestBonus: 1, failPressure: 1, failIntent: 'guard' },
     },
     no_face_taxi_passenger: {
       name: 'No-Face Taxi Passenger', maxHp: 7, temperament: 'lonely', contractable: true, profile: 'no_face_taxi_passenger', targetModuleId: 'silent_shape',
       affinities: { ballistic: 'resist', suppressive: 'normal', impact: 'normal', signal: 'normal', talk: 'weak' },
+      talkTendency: { successBias: -0.03, trustBonus: 1, interestBonus: 0, failPressure: 2, failIntent: 'curse' },
     },
     silent_shape: {
       name: 'Silent Shape', maxHp: 7, temperament: 'hostile', contractable: true, profile: 'silent_shape', targetModuleId: 'silent_shape',
       affinities: { ballistic: 'normal', suppressive: 'resist', impact: 'normal', signal: 'weak', talk: 'normal' },
+      talkTendency: { successBias: -0.1, trustBonus: 0, interestBonus: 0, failPressure: 2, failIntent: 'attack' },
     },
     abandoned_ai_navi: {
       name: 'Abandoned AI Navi', maxHp: 6, temperament: 'machine', contractable: true, profile: 'abandoned_ai_navi', targetModuleId: 'abandoned_ai_navi',
       affinities: { ballistic: 'normal', suppressive: 'normal', impact: 'resist', signal: 'weak', talk: 'normal' },
+      talkTendency: { successBias: 0.03, trustBonus: 1, interestBonus: 1, failPressure: 1, failIntent: 'guard' },
     },
     road_reaper: {
       name: 'Road Reaper', maxHp: 9, temperament: 'proud', contractable: false, profile: 'road_reaper',
       affinities: { ballistic: 'weak', suppressive: 'normal', impact: 'normal', signal: 'normal', talk: 'resist' },
+      talkTendency: { successBias: -0.18, trustBonus: 0, interestBonus: 0, failPressure: 2, failIntent: 'attack' },
     },
     toll_gate_saint: {
       name: 'Toll Gate Saint', maxHp: 16, temperament: 'proud', contractable: true, profile: 'toll_gate_saint', armored: true,
       affinities: { ballistic: 'normal', suppressive: 'resist', impact: 'resist', signal: 'weak', talk: 'normal' },
+      talkTendency: { successBias: -0.08, trustBonus: 1, interestBonus: 0, failPressure: 2, failIntent: 'bargain' },
+    },
+    tunnel_rider: {
+      name: 'Tunnel Rider', maxHp: 8, temperament: 'hostile', contractable: true, profile: 'tunnel_rider', targetModuleId: 'silent_shape',
+      affinities: { ballistic: 'normal', suppressive: 'normal', impact: 'weak', signal: 'normal', talk: 'resist' },
+      talkTendency: { successBias: -0.12, trustBonus: 0, interestBonus: 0, failPressure: 2, failIntent: 'attack' },
+    },
+    closure_ogre: {
+      name: 'Closure Ogre', maxHp: 12, temperament: 'proud', contractable: false, profile: 'closure_ogre', armored: true,
+      affinities: { ballistic: 'weak', suppressive: 'resist', impact: 'resist', signal: 'normal', talk: 'resist' },
+      talkTendency: { successBias: -0.2, trustBonus: 0, interestBonus: 0, failPressure: 2, failIntent: 'guard' },
+    },
+    tow_collector: {
+      name: 'Tow Collector', maxHp: 9, temperament: 'hungry', contractable: true, profile: 'tow_collector', targetModuleId: 'radio_voice',
+      affinities: { ballistic: 'normal', suppressive: 'normal', impact: 'resist', signal: 'weak', talk: 'normal' },
+      talkTendency: { successBias: 0.02, trustBonus: 0, interestBonus: 1, failPressure: 1, failIntent: 'bargain' },
+    },
+    ghost_chaser: {
+      name: 'Ghost Chaser', maxHp: 10, temperament: 'hostile', contractable: false, profile: 'ghost_chaser',
+      affinities: { ballistic: 'normal', suppressive: 'weak', impact: 'normal', signal: 'resist', talk: 'resist' },
+      talkTendency: { successBias: -0.16, trustBonus: 0, interestBonus: 0, failPressure: 2, failIntent: 'attack' },
+    },
+    vending_spirit: {
+      name: 'Vending Spirit', maxHp: 6, temperament: 'curious', contractable: true, profile: 'vending_spirit', targetModuleId: 'radio_voice',
+      affinities: { ballistic: 'resist', suppressive: 'normal', impact: 'normal', signal: 'weak', talk: 'weak' },
+      talkTendency: { successBias: 0.1, trustBonus: 1, interestBonus: 1, failPressure: 0, failIntent: 'flee' },
+    },
+    phantom_patrol: {
+      name: 'Phantom Patrol', maxHp: 8, temperament: 'machine', contractable: true, profile: 'phantom_patrol', targetModuleId: 'abandoned_ai_navi',
+      affinities: { ballistic: 'normal', suppressive: 'resist', impact: 'normal', signal: 'weak', talk: 'normal' },
+      talkTendency: { successBias: 0.03, trustBonus: 1, interestBonus: 0, failPressure: 1, failIntent: 'guard' },
+    },
+    midnight_taxi: {
+      name: 'Midnight Taxi', maxHp: 7, temperament: 'lonely', contractable: true, profile: 'midnight_taxi', targetModuleId: 'silent_shape',
+      affinities: { ballistic: 'normal', suppressive: 'normal', impact: 'normal', signal: 'normal', talk: 'weak' },
+      talkTendency: { successBias: 0.05, trustBonus: 1, interestBonus: 0, failPressure: 1, failIntent: 'curse' },
     },
   },
   lineups: {
-    enc1: ['pixie_shibuya_glow', 'whisper_broker'],
-    enc2: ['no_face_taxi_passenger', 'abandoned_ai_navi'],
+    enc1: ['pixie_shibuya_glow', 'whisper_broker', 'vending_spirit'],
+    enc2: ['no_face_taxi_passenger', 'abandoned_ai_navi', 'tunnel_rider'],
     boss: ['toll_gate_saint'],
   },
   support: {
@@ -122,6 +190,13 @@ export const defaultDevilConfig: DevilConfig = {
       abandoned_ai_navi: 'Analyze support + forecast stability improved.',
       road_reaper: 'Hostile lane vectors are marked before impact.',
       toll_gate_saint: 'Toll pulse stabilizes deep-route signal negotiation.',
+      tunnel_rider: 'First Ram gains extra pressure on the target.',
+      closure_ogre: 'Barricade bulk reinforces armor checks briefly.',
+      tow_collector: 'Salvage traces occasionally convert to extra credit.',
+      ghost_chaser: 'Pursuit vectors reveal imminent attack lanes.',
+      vending_spirit: 'Route offerings skew toward safer salvage picks.',
+      phantom_patrol: 'Initial forecast noise is reduced by one step.',
+      midnight_taxi: 'Talk channel opens with less static on first contact.',
     },
     linkLogs: {
       whisper_broker: 'WHISPER LINK: bargain static syncs with lane chatter.',
@@ -133,6 +208,13 @@ export const defaultDevilConfig: DevilConfig = {
       abandoned_ai_navi: 'NAVI LINK: an obsolete route map overlays the windshield.',
       road_reaper: 'REAPER LINK: hostile vectors etch into the guardrail glow.',
       toll_gate_saint: 'TOLL LINK: gate pulse resonates through the dashboard frame.',
+      tunnel_rider: 'RIDER LINK: tunnel echoes sync to throttle rhythm.',
+      closure_ogre: 'OGRE LINK: barricade sigils latch onto the chassis frame.',
+      tow_collector: 'TOW LINK: chain rattle tracks abandoned side lanes.',
+      ghost_chaser: 'CHASER LINK: distant sirens mirror your steering corrections.',
+      vending_spirit: 'VENDING LINK: coin drops ring from an empty shoulder.',
+      phantom_patrol: 'PATROL LINK: ghost beacons sweep the next merge.',
+      midnight_taxi: 'TAXI LINK: a vacant meter ticks in the back seat.',
     },
     stability: {
       pixie_shibuya_glow: 'NOISY',
@@ -143,6 +225,13 @@ export const defaultDevilConfig: DevilConfig = {
       whisper_broker: 'HUNGRY',
       no_face_taxi_passenger: 'UNKNOWN',
       toll_gate_saint: 'STABLE',
+      tunnel_rider: 'NOISY',
+      closure_ogre: 'HUNGRY',
+      tow_collector: 'STABLE',
+      ghost_chaser: 'UNKNOWN',
+      vending_spirit: 'NOISY',
+      phantom_patrol: 'STABLE',
+      midnight_taxi: 'UNKNOWN',
     },
   },
 };
@@ -200,6 +289,14 @@ const parseCsvIds = (value: unknown, fallback: EncounterId[]): EncounterId[] => 
   return parsed.length ? parsed : fallback;
 };
 
+const parseCsvPaths = (value: unknown): string[] => {
+  if (typeof value !== 'string') return [];
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+};
+
 const parseAffinityMap = (value: unknown, fallback: DevilTemplate['affinities']): DevilTemplate['affinities'] => {
   const raw = asRecord(value);
   const read = (k: keyof DevilTemplate['affinities']) => {
@@ -212,6 +309,21 @@ const parseAffinityMap = (value: unknown, fallback: DevilTemplate['affinities'])
     impact: read('impact'),
     signal: read('signal'),
     talk: read('talk'),
+  };
+};
+
+const parseTalkTendency = (value: unknown, fallback?: TalkTendency): TalkTendency | undefined => {
+  const raw = asRecord(value);
+  if (!Object.keys(raw).length) return fallback;
+  const failIntent = raw.failIntent;
+  return {
+    successBias: asNum(raw.successBias, fallback?.successBias ?? 0),
+    trustBonus: asNum(raw.trustBonus, fallback?.trustBonus ?? 0),
+    interestBonus: asNum(raw.interestBonus, fallback?.interestBonus ?? 0),
+    failPressure: asNum(raw.failPressure, fallback?.failPressure ?? 1),
+    failIntent: failIntent === 'attack' || failIntent === 'curse' || failIntent === 'bargain' || failIntent === 'guard' || failIntent === 'flee'
+      ? failIntent
+      : fallback?.failIntent,
   };
 };
 
@@ -239,6 +351,7 @@ const fromRecord = (raw: Record<string, unknown>): DevilConfig => {
           : baseProfile.threat,
       signal: asStr(profileRaw.signal, baseProfile.signal),
       contractable: asBool(profileRaw.contractable, baseProfile.contractable),
+      assetImage: asStr(profileRaw.assetImage, baseProfile.assetImage ?? ''),
     };
 
     const baseTemplate = defaultDevilConfig.devilTemplates[id];
@@ -259,6 +372,7 @@ const fromRecord = (raw: Record<string, unknown>): DevilConfig => {
           : baseTemplate.targetModuleId,
       armored: asBool(templateRaw.armored, baseTemplate.armored ?? false),
       affinities: parseAffinityMap(templateRaw.affinities, baseTemplate.affinities),
+      talkTendency: parseTalkTendency(templateRaw.talkTendency, baseTemplate.talkTendency),
     };
   }
 
@@ -303,9 +417,92 @@ const parseDevilConfigText = (text: string): DevilConfig => {
   }
 };
 
+const parseConfigRecordText = (text: string): Record<string, unknown> => {
+  const trimmed = text.trim();
+  if (!trimmed) return {};
+  try {
+    return asRecord(JSON.parse(trimmed));
+  } catch {
+    return parseYamlLikeObject(trimmed);
+  }
+};
+
+const mergeRecords = (base: Record<string, unknown>, patch: Record<string, unknown>): Record<string, unknown> => {
+  const next: Record<string, unknown> = { ...base };
+  for (const [key, value] of Object.entries(patch)) {
+    const current = next[key];
+    if (
+      value &&
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      current &&
+      typeof current === 'object' &&
+      !Array.isArray(current)
+    ) {
+      next[key] = mergeRecords(asRecord(current), asRecord(value));
+    } else {
+      next[key] = value;
+    }
+  }
+  return next;
+};
+
+const resolveIncludePath = (indexPath: string, includePath: string): string => {
+  const raw = includePath.trim();
+  if (!raw) return '';
+  if (raw.startsWith('/')) return raw;
+  const normalizedIndex = indexPath.startsWith('/') ? indexPath : `/${indexPath}`;
+  const slash = normalizedIndex.lastIndexOf('/');
+  const dir = slash >= 0 ? normalizedIndex.slice(0, slash + 1) : '/';
+  return `${dir}${raw}`.replace(/\/{2,}/g, '/');
+};
+
+const loadSplitConfigFromIndex = async (): Promise<DevilConfig | null> => {
+  const indexCandidates = ['/devils/index.yaml', '/devils/index.yml', '/devils/index.json'];
+  for (const indexPath of indexCandidates) {
+    try {
+      const indexRes = await fetch(indexPath, { cache: 'no-cache' });
+      if (!indexRes.ok) continue;
+      const indexText = await indexRes.text();
+      const indexRaw = parseConfigRecordText(indexText);
+      const includeRaw = indexRaw.includes;
+      const includePaths = Array.isArray(includeRaw)
+        ? includeRaw.filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+        : parseCsvPaths(includeRaw);
+
+      let merged = mergeRecords({}, indexRaw);
+      delete merged.includes;
+
+      for (const includePath of includePaths) {
+        const resolved = resolveIncludePath(indexPath, includePath);
+        if (!resolved) continue;
+        try {
+          const includeRes = await fetch(resolved, { cache: 'no-cache' });
+          if (!includeRes.ok) continue;
+          const includeText = await includeRes.text();
+          const includeRawRecord = parseConfigRecordText(includeText);
+          merged = mergeRecords(merged, includeRawRecord);
+        } catch {
+          continue;
+        }
+      }
+
+      const parsed = fromRecord(merged);
+      runtimeDevilConfig = parsed;
+      return parsed;
+    } catch {
+      continue;
+    }
+  }
+  return null;
+};
+
 export const getDevilConfig = (): DevilConfig => runtimeDevilConfig;
 
 export const loadDevilConfig = async (): Promise<DevilConfig> => {
+  const splitLoaded = await loadSplitConfigFromIndex();
+  if (splitLoaded) return splitLoaded;
+
   const paths = ['/devils.yaml', '/devils.yml', '/devils.json'];
   for (const path of paths) {
     try {

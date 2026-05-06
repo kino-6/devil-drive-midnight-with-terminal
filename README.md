@@ -30,7 +30,7 @@ React + TypeScript + Viteで作られた、**Run-first** の短編MVPです。
 - Story断片ログ回収（Result反映 + Garage閲覧）
 - YAMLベースの外部設定:
   - `public/balance.yaml`（ゲームバランス）
-  - `public/devils.yaml`（敵プロファイル/相性/ラインナップ/支援ログ）
+  - `public/devils/index.yaml` + `public/devils/*.yaml`（敵プロファイル/相性/ラインナップ/支援ログ）
   - `public/assets/manifest.yaml`（BGM/SFX/画像/UI差し替え）
 
 ## セットアップ
@@ -115,7 +115,7 @@ Garageの `AUTOPLAY LAB` は、この設定値を使ってシミュレーショ�
 
 ### 3) Devilデータ設定
 
-- ファイル: `public/devils.yaml`
+- ファイル: `public/devils/index.yaml`（分割本体は `public/devils/*.yaml`）
 - 読み込みタイミング: 起動時
 - 主な調整項目:
   - `lineups`（enc1 / enc2 / boss）
@@ -123,7 +123,7 @@ Garageの `AUTOPLAY LAB` は、この設定値を使ってシミュレーショ�
   - `templates`（HP、temperament、affinity、契約モジュール）
   - `support`（Active Support Daemonの効果文、リンクログ、stability）
 
-`public/devils.yaml` が欠落・不整合の場合は、ビルトイン定義へ自動フォールバックします。
+`public/devils/index.yaml` や include 先が欠落・不整合の場合は、ビルトイン定義へ自動フォールバックします。
 
 ## ドキュメント
 

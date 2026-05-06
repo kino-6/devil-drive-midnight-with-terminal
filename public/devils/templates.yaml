@@ -1,0 +1,302 @@
+templates:
+  whisper_broker:
+    name: "Whisper Broker"
+    maxHp: 6
+    temperament: "hungry"
+    contractable: true
+    targetModuleId: "radio_voice"
+    affinities:
+      ballistic: "resist"
+      suppressive: "normal"
+      impact: "normal"
+      signal: "weak"
+      talk: "weak"
+    talkTendency:
+      successBias: 0.05
+      trustBonus: 0
+      interestBonus: 1
+      failPressure: 1
+      failIntent: "bargain"
+
+  roadside_phone:
+    name: "Roadside Phone"
+    maxHp: 6
+    temperament: "lonely"
+    contractable: true
+    targetModuleId: "radio_voice"
+    affinities:
+      ballistic: "resist"
+      suppressive: "normal"
+      impact: "normal"
+      signal: "weak"
+      talk: "weak"
+    talkTendency:
+      successBias: 0.08
+      trustBonus: 1
+      interestBonus: 0
+      failPressure: 1
+      failIntent: "curse"
+
+  pixie_shibuya_glow:
+    name: "Pixie"
+    maxHp: 5
+    temperament: "curious"
+    contractable: true
+    targetModuleId: "radio_voice"
+    affinities:
+      ballistic: "resist"
+      suppressive: "normal"
+      impact: "normal"
+      signal: "weak"
+      talk: "weak"
+    talkTendency:
+      successBias: 0.12
+      trustBonus: 1
+      interestBonus: 1
+      failPressure: 0
+      failIntent: "flee"
+
+  foxfire_navi:
+    name: "Foxfire Navi"
+    maxHp: 6
+    temperament: "hungry"
+    contractable: true
+    targetModuleId: "radio_voice"
+    affinities:
+      ballistic: "normal"
+      suppressive: "normal"
+      impact: "resist"
+      signal: "weak"
+      talk: "weak"
+    talkTendency:
+      successBias: 0.07
+      trustBonus: 0
+      interestBonus: 1
+      failPressure: 1
+      failIntent: "guard"
+
+  no_face_taxi_passenger:
+    name: "No-Face Taxi Passenger"
+    maxHp: 7
+    temperament: "lonely"
+    contractable: true
+    targetModuleId: "silent_shape"
+    affinities:
+      ballistic: "resist"
+      suppressive: "normal"
+      impact: "normal"
+      signal: "normal"
+      talk: "weak"
+    talkTendency:
+      successBias: -0.03
+      trustBonus: 1
+      interestBonus: 0
+      failPressure: 2
+      failIntent: "curse"
+
+  silent_shape:
+    name: "Silent Shape"
+    maxHp: 7
+    temperament: "hostile"
+    contractable: true
+    targetModuleId: "silent_shape"
+    affinities:
+      ballistic: "normal"
+      suppressive: "resist"
+      impact: "normal"
+      signal: "weak"
+      talk: "normal"
+    talkTendency:
+      successBias: -0.10
+      trustBonus: 0
+      interestBonus: 0
+      failPressure: 2
+      failIntent: "attack"
+
+  abandoned_ai_navi:
+    name: "Abandoned AI Navi"
+    maxHp: 6
+    temperament: "machine"
+    contractable: true
+    targetModuleId: "abandoned_ai_navi"
+    affinities:
+      ballistic: "normal"
+      suppressive: "normal"
+      impact: "resist"
+      signal: "weak"
+      talk: "normal"
+    talkTendency:
+      successBias: 0.03
+      trustBonus: 1
+      interestBonus: 1
+      failPressure: 1
+      failIntent: "guard"
+
+  road_reaper:
+    name: "Road Reaper"
+    maxHp: 9
+    temperament: "proud"
+    contractable: false
+    affinities:
+      ballistic: "weak"
+      suppressive: "normal"
+      impact: "normal"
+      signal: "normal"
+      talk: "resist"
+    talkTendency:
+      successBias: -0.18
+      trustBonus: 0
+      interestBonus: 0
+      failPressure: 2
+      failIntent: "attack"
+
+  toll_gate_saint:
+    name: "Toll Gate Saint"
+    maxHp: 16
+    temperament: "proud"
+    contractable: true
+    armored: true
+    affinities:
+      ballistic: "normal"
+      suppressive: "resist"
+      impact: "resist"
+      signal: "weak"
+      talk: "normal"
+    talkTendency:
+      successBias: -0.08
+      trustBonus: 1
+      interestBonus: 0
+      failPressure: 2
+      failIntent: "bargain"
+
+  tunnel_rider:
+    name: "Tunnel Rider"
+    maxHp: 8
+    temperament: "hostile"
+    contractable: true
+    targetModuleId: "silent_shape"
+    affinities:
+      ballistic: "normal"
+      suppressive: "normal"
+      impact: "weak"
+      signal: "normal"
+      talk: "resist"
+    talkTendency:
+      successBias: -0.12
+      trustBonus: 0
+      interestBonus: 0
+      failPressure: 2
+      failIntent: "attack"
+
+  closure_ogre:
+    name: "Closure Ogre"
+    maxHp: 12
+    temperament: "proud"
+    contractable: false
+    armored: true
+    affinities:
+      ballistic: "weak"
+      suppressive: "resist"
+      impact: "resist"
+      signal: "normal"
+      talk: "resist"
+    talkTendency:
+      successBias: -0.2
+      trustBonus: 0
+      interestBonus: 0
+      failPressure: 2
+      failIntent: "guard"
+
+  tow_collector:
+    name: "Tow Collector"
+    maxHp: 9
+    temperament: "hungry"
+    contractable: true
+    targetModuleId: "radio_voice"
+    affinities:
+      ballistic: "normal"
+      suppressive: "normal"
+      impact: "resist"
+      signal: "weak"
+      talk: "normal"
+    talkTendency:
+      successBias: 0.02
+      trustBonus: 0
+      interestBonus: 1
+      failPressure: 1
+      failIntent: "bargain"
+
+  ghost_chaser:
+    name: "Ghost Chaser"
+    maxHp: 10
+    temperament: "hostile"
+    contractable: false
+    affinities:
+      ballistic: "normal"
+      suppressive: "weak"
+      impact: "normal"
+      signal: "resist"
+      talk: "resist"
+    talkTendency:
+      successBias: -0.16
+      trustBonus: 0
+      interestBonus: 0
+      failPressure: 2
+      failIntent: "attack"
+
+  vending_spirit:
+    name: "Vending Spirit"
+    maxHp: 6
+    temperament: "curious"
+    contractable: true
+    targetModuleId: "radio_voice"
+    affinities:
+      ballistic: "resist"
+      suppressive: "normal"
+      impact: "normal"
+      signal: "weak"
+      talk: "weak"
+    talkTendency:
+      successBias: 0.1
+      trustBonus: 1
+      interestBonus: 1
+      failPressure: 0
+      failIntent: "flee"
+
+  phantom_patrol:
+    name: "Phantom Patrol"
+    maxHp: 8
+    temperament: "machine"
+    contractable: true
+    targetModuleId: "abandoned_ai_navi"
+    affinities:
+      ballistic: "normal"
+      suppressive: "resist"
+      impact: "normal"
+      signal: "weak"
+      talk: "normal"
+    talkTendency:
+      successBias: 0.03
+      trustBonus: 1
+      interestBonus: 0
+      failPressure: 1
+      failIntent: "guard"
+
+  midnight_taxi:
+    name: "Midnight Taxi"
+    maxHp: 7
+    temperament: "lonely"
+    contractable: true
+    targetModuleId: "silent_shape"
+    affinities:
+      ballistic: "normal"
+      suppressive: "normal"
+      impact: "normal"
+      signal: "normal"
+      talk: "weak"
+    talkTendency:
+      successBias: 0.05
+      trustBonus: 1
+      interestBonus: 0
+      failPressure: 1
+      failIntent: "curse"

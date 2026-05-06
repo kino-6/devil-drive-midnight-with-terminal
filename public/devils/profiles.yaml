@@ -1,0 +1,128 @@
+profiles:
+  whisper_broker:
+    label: "WHISPER BROKER"
+    subtitle: "A slim broker exchanging routes for promises."
+    threat: "MED"
+    signal: "CONTRACT TRACE / VIOLET BAND"
+    contractable: true
+    assetImage: "images/devil/WhisperBroker.png"
+
+  roadside_phone:
+    label: "ROADSIDE PHONE"
+    subtitle: "Ringing public line with an impossible child voice."
+    threat: "MED"
+    signal: "VOICE CARRIER / AM 666.0"
+    contractable: true
+    assetImage: "images/devil/RoadsidePhone.png"
+
+  pixie_shibuya_glow:
+    label: "PIXIE // SHIBUYA GLOW"
+    subtitle: "Tiny city-light fairy that plays with lane signals."
+    threat: "LOW"
+    signal: "STREETLIGHT FRACTAL / SOFT CHIME"
+    contractable: true
+    assetImage: "images/devil/Pixie.png"
+
+  foxfire_navi:
+    label: "FOXFIRE NAVI"
+    subtitle: "Kitsunebi guide flickering between shrine lanes and flyovers."
+    threat: "MED"
+    signal: "KITSUNEBI TRACE / ROUTE SPOOF"
+    contractable: true
+    assetImage: "images/devil/FoxfireNavi.png"
+
+  no_face_taxi_passenger:
+    label: "NO-FACE TAXI PASSENGER"
+    subtitle: "A faceless rider waiting in the rear-view mirror."
+    threat: "HIGH"
+    signal: "METER DRIFT / BLANK ID"
+    contractable: true
+    assetImage: "images/devil/No-FaceTaxi_ Passenger.png"
+
+  silent_shape:
+    label: "SILENT SHAPE"
+    subtitle: "A black mass that swallows engine noise."
+    threat: "HIGH"
+    signal: "AUDIO NULL / EDGE BLUR"
+    contractable: true
+    assetImage: "images/devil/Silent_Shape.png"
+
+  abandoned_ai_navi:
+    label: "ABANDONED AI NAVI"
+    subtitle: "Cracked guidance unit with haunted pathing."
+    threat: "LOW"
+    signal: "LEGACY BUS / GHOST ARROW"
+    contractable: true
+    assetImage: "images/devil/Abandoned_AI_Navi.png"
+
+  road_reaper:
+    label: "ROAD REAPER"
+    subtitle: "Traffic marshal silhouette with terminal intent."
+    threat: "CRITICAL"
+    signal: "HOSTILE SIGNAL / COLLISION VECTOR"
+    contractable: false
+    assetImage: "images/devil/RoadReaper.png"
+
+  toll_gate_saint:
+    label: "TOLL GATE SAINT"
+    subtitle: "Armored toll keeper demanding passage."
+    threat: "CRITICAL"
+    signal: "DEEP SIGNAL / TOLL DEMAND"
+    contractable: true
+    assetImage: "images/devil/Toll_Gate_Saint.png"
+
+  tunnel_rider:
+    label: "TUNNEL RIDER"
+    subtitle: "A phantom bike weaving through non-existent lanes."
+    threat: "HIGH"
+    signal: "TUNNEL ECHO / SHADOW TRAIL"
+    contractable: true
+    assetImage: "images/devil/TunnelRider.png"
+
+  closure_ogre:
+    label: "CLOSURE OGRE"
+    subtitle: "Ramp-closure brute forged from barricades and cones."
+    threat: "CRITICAL"
+    signal: "RAMP BLOCK / IMPACT RISK"
+    contractable: false
+    assetImage: "images/devil/Closure_Ogre.png"
+
+  tow_collector:
+    label: "TOW COLLECTOR"
+    subtitle: "A haunted tow rig demanding unpaid passage."
+    threat: "HIGH"
+    signal: "TOW HOOK / DEBT TRACE"
+    contractable: true
+    assetImage: "images/devil/TowCollector.png"
+
+  ghost_chaser:
+    label: "GHOST CHASER"
+    subtitle: "Siren-lit pursuit spirit that never loses lock."
+    threat: "HIGH"
+    signal: "CHASE VECTOR / SIREN BLEED"
+    contractable: false
+    assetImage: "images/devil/GhostChaser.png"
+
+  vending_spirit:
+    label: "VENDING SPIRIT"
+    subtitle: "Neon can-machine entity whispering route favors."
+    threat: "LOW"
+    signal: "COIN LOOP / COLD STATIC"
+    contractable: true
+    assetImage: "images/devil/VendingSpirit.png"
+
+  phantom_patrol:
+    label: "PHANTOM PATROL"
+    subtitle: "Ghostly patrol car scanning forbidden exits."
+    threat: "MED"
+    signal: "PATROL BAND / BLIND SPOT"
+    contractable: true
+    assetImage: "images/devil/PhantomPatrol.png"
+
+  midnight_taxi:
+    label: "MIDNIGHT TAXI"
+    subtitle: "An empty cab that offers one-way fares at 00:00."
+    threat: "MED"
+    signal: "METER PULSE / EMPTY CAB"
+    contractable: true
+    assetImage: "images/devil/MidnightTaxi.png"

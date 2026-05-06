@@ -19,14 +19,37 @@ media:
 
 images:
   moe: "images/moe/MOE_Default.png"
+  moeVariants:
+    default: "images/moe/MOE_Default.png"
+    smile: "images/moe/MOE_Smile.png"
+    serious: "images/moe/MOE_Serious.png"
+    confused: "images/moe/MOE_Confused.png"
+    relaxed: "images/moe/MOE_Relaxed.png"
+    hud: "images/moe/MOE_HUD.png"
   enemies:
+    whisper_broker: "images/devil/WhisperBroker.png"
+    roadside_phone: "images/devil/RoadsidePhone.png"
     pixie_shibuya_glow: "images/devil/Pixie.png"
+    foxfire_navi: "images/devil/FoxfireNavi.png"
+    no_face_taxi_passenger: "images/devil/No-FaceTaxi_ Passenger.png"
     silent_shape: "images/devil/Silent_Shape.png"
     abandoned_ai_navi: "images/devil/Abandoned_AI_Navi.png"
-    road_reaper: "images/devil/Closure_Ogre.png"
+    road_reaper: "images/devil/RoadReaper.png"
     toll_gate_saint: "images/devil/Toll_Gate_Saint.png"
+    tunnel_rider: "images/devil/TunnelRider.png"
+    closure_ogre: "images/devil/Closure_Ogre.png"
+    tow_collector: "images/devil/TowCollector.png"
+    ghost_chaser: "images/devil/GhostChaser.png"
+    vending_spirit: "images/devil/VendingSpirit.png"
+    phantom_patrol: "images/devil/PhantomPatrol.png"
+    midnight_taxi: "images/devil/MidnightTaxi.png"
+    unknown_sign: "images/devil/UNKNOWN.png"
+    unknown_mask_a: "images/devil/MirrorCurve.png"
+    unknown_mask_b: "images/devil/ConeSwarm.png"
   ui:
     windshield: "images/ui/nightloop.png"
+    nightloop: "images/ui/nightloop.png"
+    garage: "images/ui/Garage.png"
 
 ui:
   shellClass: "theme-midnight"

@@ -1,6 +1,70 @@
 import { useEffect, useState } from 'react';
 import type { Devil, EncounterId, HitFxTone } from '../game/types';
 
+const transparencyCache = new Map<string, string>();
+
+const colorDistance = (a: [number, number, number], b: [number, number, number]) =>
+  Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+
+const buildCornerKeyedImage = async (src: string): Promise<string | undefined> => {
+  if (transparencyCache.has(src)) return transparencyCache.get(src);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image();
+      el.decoding = 'async';
+      el.onload = () => resolve(el);
+      el.onerror = reject;
+      el.src = src;
+    });
+    const width = Math.max(1, Math.floor(img.naturalWidth || img.width));
+    const height = Math.max(1, Math.floor(img.naturalHeight || img.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return undefined;
+    ctx.drawImage(img, 0, 0, width, height);
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const pixels = imageData.data;
+    const sample = (x: number, y: number): [number, number, number] => {
+      const i = (y * width + x) * 4;
+      return [pixels[i], pixels[i + 1], pixels[i + 2]];
+    };
+    const corners: [number, number, number][] = [
+      sample(0, 0),
+      sample(width - 1, 0),
+      sample(0, height - 1),
+      sample(width - 1, height - 1),
+    ];
+    const avg: [number, number, number] = [
+      Math.round((corners[0][0] + corners[1][0] + corners[2][0] + corners[3][0]) / 4),
+      Math.round((corners[0][1] + corners[1][1] + corners[2][1] + corners[3][1]) / 4),
+      Math.round((corners[0][2] + corners[1][2] + corners[2][2] + corners[3][2]) / 4),
+    ];
+    const isConsistent = corners.every((c) => colorDistance(c, avg) <= 20);
+    if (!isConsistent) {
+      transparencyCache.set(src, src);
+      return src;
+    }
+
+    for (let i = 0; i < pixels.length; i += 4) {
+      const p: [number, number, number] = [pixels[i], pixels[i + 1], pixels[i + 2]];
+      const distance = colorDistance(p, avg);
+      if (distance <= 18) {
+        pixels[i + 3] = 0;
+      } else if (distance <= 28) {
+        pixels[i + 3] = Math.min(pixels[i + 3], 90);
+      }
+    }
+    ctx.putImageData(imageData, 0, 0);
+    const dataUrl = canvas.toDataURL('image/png');
+    transparencyCache.set(src, dataUrl);
+    return dataUrl;
+  } catch {
+    return undefined;
+  }
+};
+
 function renderDevilArt(profile: EncounterId) {
   if (profile === 'whisper_broker') {
     return <svg viewBox="0 0 180 180" role="img" aria-label="Whisper Broker silhouette">
@@ -66,22 +130,38 @@ export function AssetFigure({
   alt,
   className,
   fallback,
+  transparencyMode = 'none',
 }: {
   src?: string;
   alt: string;
   className?: string;
   fallback: JSX.Element;
+  transparencyMode?: 'none' | 'auto-corner';
 }) {
   const [broken, setBroken] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [resolvedSrc, setResolvedSrc] = useState<string | undefined>(src);
   useEffect(() => {
     setBroken(false);
     setLoaded(false);
-  }, [src]);
+    setResolvedSrc(src);
+    if (!src || transparencyMode === 'none') return;
+    let alive = true;
+    buildCornerKeyedImage(src).then((processed) => {
+      if (!alive || !processed) return;
+      setResolvedSrc(processed);
+    }).catch(() => {
+      if (!alive) return;
+      setResolvedSrc(src);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [src, transparencyMode]);
   if (!src || broken) return fallback;
   return <img
     className={className}
-    src={src}
+    src={resolvedSrc ?? src}
     alt={alt}
     loading="lazy"
     decoding="async"
@@ -142,20 +222,29 @@ export function BattleDevilSprite({
   >
     <div className="battle-devil__body">
       <div className="battle-devil__art">
-        <AssetFigure
-          src={imageSrc}
-          alt={`${profile.label} visual`}
-          className="battle-devil__asset"
-          fallback={renderDevilArt(devil.profile)}
-        />
+        {analyzed
+          ? <AssetFigure
+            src={imageSrc}
+            alt={`${profile.label} visual`}
+            className="battle-devil__asset"
+            fallback={renderDevilArt(devil.profile)}
+            transparencyMode="auto-corner"
+          />
+          : <AssetFigure
+            src={imageSrc}
+            alt="Unknown signal visual"
+            className="battle-devil__asset"
+            fallback={<span className="battle-devil__unknown">?</span>}
+            transparencyMode="auto-corner"
+          />}
       </div>
       <div className="battle-devil__label">
         <strong>{analyzed ? devil.name.toUpperCase() : 'UNKNOWN SIGN'}</strong>
       </div>
-      <div className="battle-devil__hp">
+      {analyzed && <div className="battle-devil__hp">
         <span>HP {devil.hp}/{devil.maxHp}</span>
         <div><i style={{ width: `${hpPct}%` }} /></div>
-      </div>
+      </div>}
       <div className="battle-devil__intent">
         <span className={`battle-devil__intent-icon intent--${devil.intent}`}>{intentIconMap[devil.intent]}</span>
         <small>{analyzed ? devil.intent.toUpperCase() : 'UNKNOWN'}</small>
@@ -169,6 +258,7 @@ export function ApproachContactMarker({
   profile,
   lane,
   scanSuccess,
+  revealIdentity = false,
   imageSrc,
   encounterProfiles,
   getLikelyWeaknessSummary,
@@ -176,11 +266,13 @@ export function ApproachContactMarker({
   profile: EncounterId;
   lane: 'left' | 'center' | 'right';
   scanSuccess: boolean;
+  revealIdentity?: boolean;
   imageSrc?: string;
   encounterProfiles: Record<EncounterId, EncounterProfile>;
   getLikelyWeaknessSummary: (id: EncounterId) => string;
 }) {
   const info = encounterProfiles[profile];
+  const showIdentity = scanSuccess && revealIdentity;
   return <article className={`approach-contact approach-contact--${lane}`}>
     <div className="approach-contact__sigil">
       <AssetFigure
@@ -188,12 +280,13 @@ export function ApproachContactMarker({
         alt={`${info.label} contact`}
         className="approach-contact__asset"
         fallback={<span className="approach-contact__fallback">?</span>}
+        transparencyMode="auto-corner"
       />
     </div>
     <div className="approach-contact__meta">
-      <strong>{scanSuccess ? info.label : 'UNKNOWN CONTACT'}</strong>
-      <small>{scanSuccess ? `suggested: ${getLikelyWeaknessSummary(profile)}` : 'suggested: Analyze / Guard'}</small>
-      <small>{scanSuccess ? info.signal.toLowerCase() : 'signal noise / unknown lane object'}</small>
+      <strong>{showIdentity ? info.label : 'UNKNOWN CONTACT'}</strong>
+      <small>{showIdentity ? `suggested: ${getLikelyWeaknessSummary(profile)}` : 'suggested: Analyze / Guard'}</small>
+      <small>{showIdentity ? info.signal.toLowerCase() : 'signal noise / unknown lane object'}</small>
     </div>
   </article>;
 }

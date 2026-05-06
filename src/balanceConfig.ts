@@ -1,6 +1,6 @@
-type MainGunId = 'rusted_cannon' | 'light_cannon' | 'heavy_cannon' | 'burst_cannon';
-type SubGunId = 'hood_mg' | 'twin_mg' | 'suppression_mg' | 'road_sweeper';
-type SpecialEquipmentId = 'signal_harpoon' | 'micro_missile' | 'emp_flare' | 'jammer_pulse';
+type MainGunId = 'rusted_cannon' | 'light_cannon' | 'heavy_cannon' | 'burst_cannon' | 'rail_cannon';
+type SubGunId = 'hood_mg' | 'twin_mg' | 'suppression_mg' | 'road_sweeper' | 'counter_pod';
+type SpecialEquipmentId = 'signal_harpoon' | 'micro_missile' | 'emp_flare' | 'jammer_pulse' | 'decoy_beacon';
 
 export type BalanceConfig = {
   version: string;
@@ -107,8 +107,8 @@ export const defaultBalanceConfig: BalanceConfig = {
     maxChance: 0.9,
   },
   autoplay: {
-    defaultRuns: 120,
-    minRuns: 10,
+    defaultRuns: 1,
+    minRuns: 1,
     maxRuns: 1000,
     pushForwardChance: 0.35,
     talkProbeChance: 0.35,

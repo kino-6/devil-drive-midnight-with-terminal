@@ -9,18 +9,25 @@ export type EncounterId =
   | 'silent_shape'
   | 'abandoned_ai_navi'
   | 'road_reaper'
-  | 'toll_gate_saint';
+  | 'toll_gate_saint'
+  | 'tunnel_rider'
+  | 'closure_ogre'
+  | 'tow_collector'
+  | 'ghost_chaser'
+  | 'vending_spirit'
+  | 'phantom_patrol'
+  | 'midnight_taxi';
 export type CommandId = 'main_gun' | 'sub_gun' | 'se_harpoon' | 'analyze' | 'talk' | 'contract' | 'ram' | 'guard' | 'escape';
 export type AffinityType = 'ballistic' | 'suppressive' | 'impact' | 'signal' | 'talk';
 export type AffinityRating = 'weak' | 'normal' | 'resist';
 export type DevilAffinity = Record<AffinityType, AffinityRating>;
-export type MainGunId = 'rusted_cannon' | 'light_cannon' | 'heavy_cannon' | 'burst_cannon';
-export type SubGunId = 'hood_mg' | 'twin_mg' | 'suppression_mg' | 'road_sweeper';
-export type SpecialEquipmentId = 'signal_harpoon' | 'micro_missile' | 'emp_flare' | 'jammer_pulse';
+export type MainGunId = 'rusted_cannon' | 'light_cannon' | 'heavy_cannon' | 'burst_cannon' | 'rail_cannon';
+export type SubGunId = 'hood_mg' | 'twin_mg' | 'suppression_mg' | 'road_sweeper' | 'counter_pod';
+export type SpecialEquipmentId = 'signal_harpoon' | 'micro_missile' | 'emp_flare' | 'jammer_pulse' | 'decoy_beacon';
 export type ContractSupportId = 'none' | ContractId;
 export type Temperament = 'hungry' | 'proud' | 'lonely' | 'machine' | 'hostile' | 'curious';
 export type Intent = 'attack' | 'curse' | 'bargain' | 'guard' | 'flee';
-export type EncounterPhase = 'command' | 'resolving' | 'finished';
+export type EncounterPhase = 'command' | 'conversation' | 'resolving' | 'finished';
 export type GamePhase =
   | 'prologue'
   | 'approach'
@@ -72,9 +79,52 @@ export type Devil = {
   armored?: boolean;
   affinities: DevilAffinity;
   affinityRevealed?: boolean;
+  intelProgress: number;
+  intelThreshold: number;
   profile: EncounterId;
   empDisabledTurns: number;
   exit?: 'defeated' | 'contracted' | 'fled';
+};
+
+export type ConversationEffect =
+  | { type: 'trust'; amount: number }
+  | { type: 'interest'; amount: number }
+  | { type: 'pressure'; amount: number }
+  | { type: 'openContractWindow' }
+  | { type: 'revealAffinity' }
+  | { type: 'revealIntent' }
+  | { type: 'routeHint' }
+  | { type: 'bossTraitHint' }
+  | { type: 'recover'; resource: 'fuel' | 'armor' | 'signal' | 'mainAmmo'; amount: number }
+  | { type: 'enemyLeaves' }
+  | { type: 'cancelNextIntent' }
+  | { type: 'storyLog'; logId: StoryLogId }
+  | { type: 'moeSync'; amount: number };
+
+export type ConversationChoice = {
+  id: string;
+  label: string;
+  playerLine: string;
+  successText: string;
+  failText: string;
+  preferredTemperaments?: Temperament[];
+  affinityType?: AffinityType;
+  cost?: {
+    fuel?: number;
+    signal?: number;
+    armor?: number;
+    mainAmmo?: number;
+  };
+  effectsOnSuccess?: ConversationEffect[];
+  effectsOnFail?: ConversationEffect[];
+};
+
+export type DevilConversationProfile = {
+  introLine: string;
+  choices: ConversationChoice[];
+  contractOfferLine?: string;
+  refusalLine?: string;
+  moeHint?: string;
 };
 
 export type EncounterState = {
@@ -89,6 +139,13 @@ export type EncounterState = {
   forecast: ForecastMap;
   forecastUnstable: boolean;
   supportArmorGuardReady: boolean;
+};
+
+export type ActiveConversation = {
+  enemyId: string;
+  enemyProfile: EncounterId;
+  introLine: string;
+  choices: ConversationChoice[];
 };
 
 export type EncounterReport = {
@@ -211,6 +268,7 @@ export type State = {
   rewardOptions: RewardOption[];
   rewardTarget?: RewardTarget;
   rewardScope?: RewardScope;
+  negotiationRewards: string[];
   routeBoostReward: boolean;
   tempForecastBoost: number;
   lastReport?: EncounterReport;
@@ -220,6 +278,7 @@ export type State = {
   moeLine: string;
   selectedLoadout: Loadout;
   activeSupportDaemon?: ActiveSupportDaemon;
+  activeConversation?: ActiveConversation;
   previousRun?: PreviousRunSummary;
   approach?: ApproachState;
   encounterPrep: EncounterPrep;
@@ -242,6 +301,8 @@ export type Action =
   | { type: 'PURCHASE_VEHICLE_UPGRADE'; id: VehicleUpgradeId }
   | { type: 'SELECT_ENEMY'; enemyId: string }
   | { type: 'SELECT_COMMAND'; command: CommandId }
+  | { type: 'TALK_CHOOSE'; choiceId: string }
+  | { type: 'TALK_CANCEL' }
   | { type: 'EXECUTE_COMMAND'; command?: CommandId }
   | { type: 'REWARD_CONTINUE' }
   | { type: 'ROUTE_CHOICE'; lane: 'salvage' | 'signal' | 'push_forward' | 'return_gate' }
@@ -255,6 +316,7 @@ export type Action =
   | { type: 'GARAGE_SET_SUB_GUN'; id: SubGunId }
   | { type: 'GARAGE_SET_SPECIAL'; id: SpecialEquipmentId }
   | { type: 'GARAGE_SET_SUPPORT'; id: ContractSupportId }
+  | { type: 'GARAGE_SET_STAGE'; stage: number }
   | { type: 'GARAGE_ENTER_RUN' }
   | { type: 'DEBUG_RESTORE'; snapshot: State }
   | { type: 'START_NEXT_RUN' }

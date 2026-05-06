@@ -45,8 +45,8 @@ approach:
   maxChance: 0.9
 
 autoplay:
-  defaultRuns: 120
-  minRuns: 10
+  defaultRuns: 1
+  minRuns: 1
   maxRuns: 1000
   pushForwardChance: 0.35
   talkProbeChance: 0.35

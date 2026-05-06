@@ -285,6 +285,12 @@ export function App() {
       ? `STAGE ${state.stage}/${state.stageCount} - ENCOUNTER ${state.encounterIndex + 1}/3`
       : state.gamePhase.toUpperCase(),
   ];
+  const terminalStatusCompact = terminalStatus
+    .filter((status) => !status.startsWith('ASSET ') && !status.startsWith('DEVIL CFG ') && !status.startsWith('DIALOGUE '))
+    .slice(0, 7);
+const tacticalLinesCompact = tacticalLines
+    .filter((_, index) => index === 0 || (isEncounterActive && index === 1))
+    .slice(0, 2);
 
   const contractEnabled = !!selectedEnemy && selectedEnemy.contractWindow && selectedEnemy.contractable;
   const selectedEnemyAnalyzed = !!selectedEnemy && (isBossProfile(selectedEnemy.profile) || state.encounter.analyzedEnemyIds.includes(selectedEnemy.id) || !!selectedEnemy.affinityRevealed);
@@ -1189,8 +1195,8 @@ export function App() {
             signal={state.signal}
             liveMoeLine={liveMoeLine}
             runStatus={runStatus}
-            terminalStatus={terminalStatus}
-            tacticalLines={tacticalLines}
+            terminalStatus={terminalStatusCompact}
+            tacticalLines={tacticalLinesCompact}
             logLines={logLines}
             encounterIndex={state.encounterIndex}
             encounterTurn={state.encounter.turn}

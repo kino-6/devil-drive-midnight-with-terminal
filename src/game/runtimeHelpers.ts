@@ -182,6 +182,27 @@ export const lineupByKind = (kind: ApproachKind): EncounterId[] =>
       ? [...getDevilConfig().lineups.enc2]
       : [...getDevilConfig().lineups.boss];
 
+export const pickEncounterEnemyCount = (kind: EncounterState['kind'], stage: number, available: number): number => {
+  if (kind === 'boss') return Math.min(1, available);
+  if (available <= 1) return available;
+  if (stage <= 1) return Math.random() < 0.55 ? 1 : Math.min(2, available);
+  if (stage === 2) return Math.random() < 0.35 ? 2 : Math.min(3, available);
+  if (stage === 3) return Math.random() < 0.2 ? 2 : Math.min(3, available);
+  return Math.random() < 0.1 ? 2 : Math.min(3, available);
+};
+
+export const pickEncounterLineup = (kind: EncounterState['kind'], stage: number): EncounterId[] => {
+  const pool = lineupByKind(kind);
+  if (pool.length <= 1) return pool;
+  const shuffled = [...pool];
+  for (let i = shuffled.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  const count = pickEncounterEnemyCount(kind, stage, shuffled.length);
+  return shuffled.slice(0, Math.max(1, count));
+};
+
 export const createEmptyEncounterPrep = (): EncounterPrep => ({
   firstStrike: false,
   ambushed: false,
@@ -223,6 +244,7 @@ export const buildDevil = (kind: EncounterId, index: number, stage = 1): Devil =
     ? (stage - 1) * 5
     : (stage - 1) * 2;
   const scaledMaxHp = t.maxHp + stageHpBonus;
+  const intelThreshold = t.profile === 'toll_gate_saint' ? 170 : 100;
   return {
     id: `${kind}-${index}`,
     name: t.name,
@@ -231,7 +253,7 @@ export const buildDevil = (kind: EncounterId, index: number, stage = 1): Devil =
     temperament: t.temperament,
     intent: nextIntent(t.profile),
     contractable: t.contractable,
-    revealed: false,
+    revealed: t.profile === 'toll_gate_saint',
     targetModuleId: t.targetModuleId,
     trust: 0,
     pressure: 0,
@@ -241,6 +263,8 @@ export const buildDevil = (kind: EncounterId, index: number, stage = 1): Devil =
     armored: t.armored,
     affinities: { ...t.affinities },
     affinityRevealed: false,
+    intelProgress: t.profile === 'toll_gate_saint' ? 40 : 0,
+    intelThreshold,
     profile: t.profile,
     empDisabledTurns: 0,
   };
@@ -283,8 +307,9 @@ export const buildEncounter = (
   activeSupportProfile: EncounterId | undefined,
   extraForecast = 0,
   stage = 1,
+  lineupOverride?: EncounterId[],
 ): EncounterState => {
-  const lineup = lineupByKind(kind);
+  const lineup = lineupOverride && lineupOverride.length > 0 ? lineupOverride : pickEncounterLineup(kind, stage);
   const enemies = lineup.map((id, i) => buildDevil(id, i, stage));
   const { forecast, unstable } = buildForecast(enemies, hasAiNaviContract(contracts), supportId, activeSupportProfile, extraForecast);
   return {
@@ -484,6 +509,7 @@ export const initState = (): State => {
     rewardOptions: pickRewardChoices(rewardCatalog),
     rewardTarget: undefined,
     rewardScope: undefined,
+    negotiationRewards: [],
     routeBoostReward: false,
     tempForecastBoost: 0,
     lastReport: undefined,
@@ -493,6 +519,7 @@ export const initState = (): State => {
     moeLine: getDialogueLine('moe.prologue.open', '午前0時。夜環、開いたよ。'),
     selectedLoadout: defaultLoadout,
     activeSupportDaemon: undefined,
+    activeConversation: undefined,
     previousRun: undefined,
     approach: undefined,
     encounterPrep: createEmptyEncounterPrep(),
@@ -606,7 +633,7 @@ export const appendRecoveredStoryLogLines = (logs: string[], story: StoryState):
 
 export const initRunWithLoadout = (state: State, logsPrefix: string[] = []): State => {
   const start = getRunStartResources(state.selectedLoadout, state.vehicleUpgrades);
-  const lineup = lineupByKind('enc1');
+  const lineup = pickEncounterLineup('enc1', state.stage);
   const scanChance = getScanChance({ ...state, signal: start.signal }, 'enc1', lineup);
   const scanSuccess = Math.random() * 100 < scanChance;
   let fuel = start.fuel;
@@ -640,10 +667,11 @@ export const initRunWithLoadout = (state: State, logsPrefix: string[] = []): Sta
     contracts: [],
     salvageCredits: 0,
     encounterIndex: 0,
-    encounter: buildEncounter('enc1', [], state.selectedLoadout.contractSupportId, undefined, 0, state.stage),
+    encounter: buildEncounter('enc1', [], state.selectedLoadout.contractSupportId, undefined, 0, state.stage, lineup),
     rewardOptions: pickRewardChoices(rewardCatalog),
     rewardTarget: undefined,
     rewardScope: undefined,
+    negotiationRewards: [],
     routeBoostReward: false,
     tempForecastBoost: 0,
     lastReport: undefined,
@@ -651,6 +679,7 @@ export const initRunWithLoadout = (state: State, logsPrefix: string[] = []): Sta
     resultType: undefined,
     bossChallenged: false,
     activeSupportDaemon: undefined,
+    activeConversation: undefined,
     approach: { pendingKind: 'enc1', scanSuccess, scanChance, lineup },
     encounterPrep: createEmptyEncounterPrep(),
     analyzeSuccessCount: 0,

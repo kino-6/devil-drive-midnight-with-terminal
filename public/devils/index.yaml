@@ -1,0 +1,6 @@
+# Devil config split-loader entrypoint
+# - Runtime now loads this file first.
+# - Include files are merged in order.
+# - This file is now the canonical source (legacy /devils.yaml removed).
+version: "tokyo-devils-v1"
+includes: "/devils/lineups.yaml, /devils/profiles.yaml, /devils/templates.yaml, /devils/support.yaml"

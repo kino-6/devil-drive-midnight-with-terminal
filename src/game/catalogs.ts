@@ -121,6 +121,13 @@ export const demonArchiveFlavor: Partial<Record<EncounterId, string>> = {
   roadside_phone: 'Ringing public line with an impossible child voice.',
   silent_shape: 'A black mass that swallows engine noise.',
   abandoned_ai_navi: 'Cracked guidance unit with haunted pathing.',
+  tunnel_rider: 'A phantom bike weaving through lanes that should not exist.',
+  closure_ogre: 'Ramp-closure brute forged from barricades and warning lights.',
+  tow_collector: 'Haunted tow rig collecting unpaid midnight tolls.',
+  ghost_chaser: 'Siren-lit pursuit spirit that keeps impossible lock-on.',
+  vending_spirit: 'Neon can-machine entity bargaining with route favors.',
+  phantom_patrol: 'Ghost patrol unit scanning forbidden exits.',
+  midnight_taxi: 'An empty cab offering one-way fares at 00:00.',
 };
 
 export const rewardCatalog: RewardOption[] = [
@@ -255,4 +262,3 @@ export const bossIntel = {
 export const routeScenarioIdMap: Partial<Record<'salvage' | 'signal' | 'push_forward' | 'return_gate', string>> = {
   signal: 'signal_tunnel_01',
 };
-

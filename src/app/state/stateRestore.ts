@@ -1,0 +1,196 @@
+import { contractModules } from '../../game/catalogs';
+import {
+  asNum,
+  asRec,
+  asStr,
+  encounterProfiles,
+  supportDaemonEffectLabels,
+} from '../../game/runtimeHelpers';
+import type {
+  ActiveSupportDaemon,
+  CommandId,
+  ContractModule,
+  ContractSupportId,
+  EncounterId,
+  GamePhase,
+  Loadout,
+  MainGunId,
+  ResultType,
+  SpecialEquipmentId,
+  State,
+  SubGunId,
+  Temperament,
+} from '../../game/types';
+
+export type RestoreDeps = {
+  initState: () => State;
+  buildEncounter: (kind: 'enc1' | 'enc2' | 'boss', contracts: ContractModule[], supportId: ContractSupportId, activeSupportProfile: EncounterId | undefined, extraForecast?: number, stage?: number, lineupOverride?: EncounterId[]) => State['encounter'];
+};
+
+export const sanitizeRestoredStateWithDeps = (raw: unknown, fallback: State, deps: RestoreDeps): State => {
+  const source = asRec(raw);
+  if (!Object.keys(source).length) return fallback;
+  const base = deps.initState();
+
+  const normalizeMainGun = (id: unknown): MainGunId =>
+    id === 'light_cannon' || id === 'heavy_cannon' || id === 'burst_cannon' || id === 'rusted_cannon' || id === 'rail_cannon'
+      ? id
+      : fallback.selectedLoadout.mainGunId;
+  const normalizeSubGun = (id: unknown): SubGunId =>
+    id === 'hood_mg' || id === 'twin_mg' || id === 'suppression_mg' || id === 'road_sweeper' || id === 'counter_pod'
+      ? id
+      : fallback.selectedLoadout.subGunId;
+  const normalizeSE = (id: unknown): SpecialEquipmentId =>
+    id === 'signal_harpoon' || id === 'micro_missile' || id === 'emp_flare' || id === 'jammer_pulse' || id === 'decoy_beacon'
+      ? id
+      : fallback.selectedLoadout.specialEquipmentId;
+  const normalizeSupport = (id: unknown): ContractSupportId => {
+    if (id === 'radio_voice' || id === 'silent_shape' || id === 'abandoned_ai_navi' || id === 'none') return id;
+    if (id === 'moe_core') return 'none';
+    return fallback.selectedLoadout.contractSupportId;
+  };
+  const normalizePhase = (value: unknown): GamePhase => {
+    const phases: GamePhase[] = [
+      'prologue',
+      'approach',
+      'encounter',
+      'reward',
+      'route_choice',
+      'salvage',
+      'signal',
+      'boss_preview',
+      'boss_encounter',
+      'return_gate',
+      'result',
+      'garage',
+      'game_over',
+    ];
+    return phases.includes(value as GamePhase) ? (value as GamePhase) : fallback.gamePhase;
+  };
+  const normalizeCommand = (value: unknown): CommandId => {
+    const commands: CommandId[] = ['main_gun', 'sub_gun', 'se_harpoon', 'analyze', 'talk', 'contract', 'ram', 'guard', 'escape'];
+    return commands.includes(value as CommandId) ? (value as CommandId) : 'analyze';
+  };
+  const pickContracts = (value: unknown): ContractModule[] =>
+    Array.isArray(value)
+      ? value
+        .map((item) => asRec(item))
+        .map((item) => {
+          const id = asStr(item.id, '');
+          return id === 'radio_voice' || id === 'silent_shape' || id === 'abandoned_ai_navi'
+            ? contractModules[id]
+            : null;
+        })
+        .filter((item): item is ContractModule => !!item)
+      : fallback.contracts;
+  const normalizeEncounterId = (value: unknown): EncounterId | undefined =>
+    value === 'whisper_broker'
+      || value === 'roadside_phone'
+      || value === 'pixie_shibuya_glow'
+      || value === 'foxfire_navi'
+      || value === 'no_face_taxi_passenger'
+      || value === 'silent_shape'
+      || value === 'abandoned_ai_navi'
+      || value === 'road_reaper'
+      || value === 'toll_gate_saint'
+      || value === 'tunnel_rider'
+      || value === 'closure_ogre'
+      || value === 'tow_collector'
+      || value === 'ghost_chaser'
+      || value === 'vending_spirit'
+      || value === 'phantom_patrol'
+      || value === 'midnight_taxi'
+      ? value
+      : undefined;
+  const normalizeTemperament = (value: unknown): Temperament =>
+    value === 'hungry' || value === 'proud' || value === 'lonely' || value === 'machine' || value === 'hostile' || value === 'curious'
+      ? value
+      : 'curious';
+
+  const selectedLoadoutRaw = asRec(source.selectedLoadout);
+  const selectedLoadout: Loadout = {
+    mainGunId: normalizeMainGun(selectedLoadoutRaw.mainGunId),
+    subGunId: normalizeSubGun(selectedLoadoutRaw.subGunId),
+    specialEquipmentId: normalizeSE(selectedLoadoutRaw.specialEquipmentId),
+    contractSupportId: normalizeSupport(selectedLoadoutRaw.contractSupportId),
+  };
+  const activeSupportRaw = asRec(source.activeSupportDaemon);
+  const activeSupportProfile = normalizeEncounterId(activeSupportRaw.profile);
+  const activeSupportDaemon: ActiveSupportDaemon | undefined = activeSupportProfile
+    ? {
+      id: normalizeEncounterId(activeSupportRaw.id) ?? activeSupportProfile,
+      name: asStr(activeSupportRaw.name, encounterProfiles()[activeSupportProfile].label),
+      profile: activeSupportProfile,
+      temperament: normalizeTemperament(activeSupportRaw.temperament),
+      effectLabel: asStr(activeSupportRaw.effectLabel, supportDaemonEffectLabels()[activeSupportProfile]),
+      expiresAt: 'run_end',
+    }
+    : undefined;
+
+  const restored: State = {
+    ...base,
+    ...fallback,
+    gamePhase: normalizePhase(source.gamePhase),
+    stage: Math.max(1, asNum(source.stage, fallback.stage)),
+    stageCount: Math.max(1, asNum(source.stageCount, fallback.stageCount)),
+    fuel: asNum(source.fuel, fallback.fuel),
+    armor: asNum(source.armor, fallback.armor),
+    signal: asNum(source.signal, fallback.signal),
+    mainAmmo: asNum(source.mainAmmo, fallback.mainAmmo),
+    maxMainAmmo: asNum(source.maxMainAmmo, fallback.maxMainAmmo),
+    seAmmo: asNum(source.seAmmo, fallback.seAmmo),
+    maxSeAmmo: asNum(source.maxSeAmmo, fallback.maxSeAmmo),
+    salvageCredits: asNum(source.salvageCredits, fallback.salvageCredits),
+    encounterIndex: Math.max(0, asNum(source.encounterIndex, fallback.encounterIndex)),
+    contracts: pickContracts(source.contracts),
+    logs: Array.isArray(source.logs)
+      ? source.logs.filter((line): line is string => typeof line === 'string').slice(-200)
+      : fallback.logs,
+    selectedLoadout,
+    activeSupportDaemon,
+    activeConversation: undefined,
+    negotiationRewards: Array.isArray(source.negotiationRewards)
+      ? source.negotiationRewards.filter((entry): entry is string => typeof entry === 'string').slice(0, 16)
+      : fallback.negotiationRewards,
+    runSummary: {
+      cleared: asNum(asRec(source.runSummary).cleared, fallback.runSummary.cleared),
+      defeated: asNum(asRec(source.runSummary).defeated, fallback.runSummary.defeated),
+      contracted: asNum(asRec(source.runSummary).contracted, fallback.runSummary.contracted),
+      escaped: asNum(asRec(source.runSummary).escaped, fallback.runSummary.escaped),
+    },
+    resultType: typeof source.resultType === 'string' ? (source.resultType as ResultType) : fallback.resultType,
+    bossChallenged: typeof source.bossChallenged === 'boolean' ? source.bossChallenged : fallback.bossChallenged,
+    moeLine: asStr(source.moeLine, fallback.moeLine),
+    growthClaimed: typeof source.growthClaimed === 'boolean' ? source.growthClaimed : fallback.growthClaimed,
+    analyzeSuccessCount: asNum(source.analyzeSuccessCount, fallback.analyzeSuccessCount),
+    driverXpBank: asNum(source.driverXpBank, fallback.driverXpBank),
+    moeSyncBank: asNum(source.moeSyncBank, fallback.moeSyncBank),
+    creditBank: asNum(source.creditBank, fallback.creditBank),
+  };
+
+  const encounterRaw = asRec(source.encounter);
+  const fallbackEncounter = deps.buildEncounter('enc1', restored.contracts, restored.selectedLoadout.contractSupportId, restored.activeSupportDaemon?.profile, 0, restored.stage);
+  restored.encounter = {
+    ...fallbackEncounter,
+    ...fallback.encounter,
+    turn: Math.max(1, asNum(encounterRaw.turn, fallback.encounter.turn)),
+    selectedEnemyId: asStr(encounterRaw.selectedEnemyId, fallback.encounter.selectedEnemyId),
+    selectedCommand: normalizeCommand(encounterRaw.selectedCommand),
+    guardActive: typeof encounterRaw.guardActive === 'boolean' ? encounterRaw.guardActive : fallback.encounter.guardActive,
+    phase: encounterRaw.phase === 'command' || encounterRaw.phase === 'conversation' || encounterRaw.phase === 'resolving' || encounterRaw.phase === 'finished'
+      ? encounterRaw.phase
+      : fallback.encounter.phase,
+  };
+  restored.encounterPrep = {
+    ...fallback.encounterPrep,
+    ...asRec(source.encounterPrep),
+    firstStrike: !!asRec(source.encounterPrep).firstStrike,
+    ambushed: !!asRec(source.encounterPrep).ambushed,
+    talkPrepared: !!asRec(source.encounterPrep).talkPrepared,
+    intentDisrupted: !!asRec(source.encounterPrep).intentDisrupted,
+    firstTalkBonus: asNum(asRec(source.encounterPrep).firstTalkBonus, fallback.encounterPrep.firstTalkBonus),
+    firstTalkPending: !!asRec(source.encounterPrep).firstTalkPending,
+  };
+
+  return restored;
+};

@@ -7,6 +7,7 @@ export type AssetManifest = {
   images: {
     player?: string;
     moe?: string;
+    moeVariants?: Record<string, string>;
     logo?: string;
     enemies?: Record<string, string>;
     ui?: Record<string, string>;
@@ -90,6 +91,7 @@ const toAssetManifest = (raw: Record<string, unknown>): AssetManifest => {
     images: {
       player: typeof images.player === 'string' ? images.player : undefined,
       moe: typeof images.moe === 'string' ? images.moe : undefined,
+      moeVariants: asStringMap(images.moeVariants),
       logo: typeof images.logo === 'string' ? images.logo : undefined,
       enemies: asStringMap(images.enemies),
       ui: asStringMap(images.ui),

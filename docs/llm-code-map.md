@@ -21,7 +21,7 @@
   - ローカルプレイテスト計測とレポート生成
 - `src/balanceConfig.ts` + `public/balance.yaml`
   - バランス値の既定値と外部YAML上書き
-- `src/devilConfig.ts` + `public/devils.yaml`
+- `src/devilConfig.ts` + `public/devils/index.yaml` + `public/devils/*.yaml`
   - Devilプロファイル/相性/出現ラインナップ/Support演出ログの外部YAML上書き
 - `src/assetManifest.ts` + `public/assets/manifest.yaml`
   - 差し替えアセット定義とフォールバック解決

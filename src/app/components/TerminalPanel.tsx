@@ -47,7 +47,7 @@ export const TerminalPanel = ({
             alt="M.O.E."
             className="radio-panel__avatar radio-panel__avatar--moe"
             fallback={<></>}
-            transparencyMode="auto-corner"
+            transparencyMode="none"
           />
           M.O.E. // NAVI AI
         </span>

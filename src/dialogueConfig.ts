@@ -3,6 +3,8 @@ export type DialogueConfig = {
   lines: Record<string, string>;
 };
 
+type DialogueVars = Record<string, string | number | boolean | null | undefined>;
+
 export const defaultDialogueConfig: DialogueConfig = {
   version: 'builtin',
   lines: {
@@ -71,6 +73,38 @@ export const defaultDialogueConfig: DialogueConfig = {
     'hint.hover.return_to_surface': '帰還処理を実行。地上へ戻る。',
     'hint.contract.window_open': '契約窓が開いてる。今なら接続できる。',
     'hint.contract.window_closed': '契約窓がまだ開いていない。TalkかS-Eを先に。',
+    'moe.dynamic.battle.idle': '次の手を選んで。',
+    'moe.dynamic.battle.signal_low': 'Signalが足りない。',
+    'moe.dynamic.battle.hit_and_run_success': 'ひき逃げ成功。突破した。',
+    'moe.dynamic.battle.hit_and_run_bypass': 'ひき逃げ成功。接敵を回避した。',
+    'moe.dynamic.battle.main_gun.weak': '{target}へ主砲射撃。刺さった。押し切れる。',
+    'moe.dynamic.battle.main_gun.resist': '{target}へ主砲射撃。効きが薄い。別の手に切り替えよう。',
+    'moe.dynamic.battle.main_gun.normal': '{target}へ主砲射撃。命中。警戒は上がってる。',
+    'moe.dynamic.battle.sub_gun.resist': '副砲制圧。効きが浅い。相性が悪い。',
+    'moe.dynamic.battle.sub_gun.weak': '副砲制圧。刺さってる。崩せるよ。',
+    'moe.dynamic.battle.sub_gun.suppress': '副砲制圧。攻勢が鈍るかも。',
+    'moe.dynamic.battle.sub_gun.normal': '副砲制圧。足止めにはなる。',
+    'moe.dynamic.battle.se.all_damage': 'S-E発射。制圧寄りにまとめて焼いた。',
+    'moe.dynamic.battle.se.interest.weak': '{target}へS-E発射。署名が浮いた。契約窓が開きやすい。',
+    'moe.dynamic.battle.se.interest.resist': '{target}へS-E発射。信号が弾かれた。窓が閉じる。',
+    'moe.dynamic.battle.se.interest.normal': '{target}へS-E発射。署名を掴んだ。会話が通じやすい。',
+    'moe.dynamic.battle.se.emp': '{target}へEMPフレア。機械霊の挙動が鈍る。',
+    'moe.dynamic.battle.analyze.success': '{target}の解析完了。気質と相性を掴んだ。交渉の順番を合わせよう。',
+    'moe.dynamic.battle.talk.boss_clear': '{target}との交渉成立。通行許可が出た。ボス反応が引いた。',
+    'moe.dynamic.battle.talk.success.weak': '{target}への交信成功。返事が柔らかい。契約窓を狙える。',
+    'moe.dynamic.battle.talk.success.resist': '{target}への交信成功。通ったけど警戒が強い。押しすぎ注意。',
+    'moe.dynamic.battle.talk.success.window_open': '{target}への交信成功。会話に乗った。今なら積める。',
+    'moe.dynamic.battle.talk.success.normal': '{target}への交信成功。反応は良い。もう一押し。',
+    'moe.dynamic.battle.talk.failure': '{target}への交信失敗。怒りが上がった。次手を変えよう。',
+    'moe.dynamic.battle.contract.no_window': '{target}へ契約試行。契約窓が未開放。TalkかS-Eを先に。',
+    'moe.dynamic.battle.contract.condition_fail': '{target}へ契約失敗。条件不足。反動が来る。',
+    'moe.dynamic.battle.contract.reject': '{target}へ契約失敗。拒否された。まだ早い。',
+    'moe.dynamic.battle.ram.weak': '{target}へラムアタック。効いてる。押し切れる。',
+    'moe.dynamic.battle.ram.resist': '{target}へラムアタック。固い。正面突破は不利。',
+    'moe.dynamic.battle.ram.normal': '{target}へラムアタック。衝突確認。こちらの装甲も削れてる。',
+    'moe.dynamic.battle.guard': '防御姿勢、固定。次の被弾を抑える。',
+    'moe.dynamic.battle.escape.success': '離脱。ルート確保。接触を切った。',
+    'moe.dynamic.battle.escape.fail': '離脱失敗。受ける準備して。',
   },
 };
 
@@ -134,6 +168,24 @@ export const getDialogueConfig = (): DialogueConfig => runtimeDialogueConfig;
 
 export const getDialogueLine = (key: string, fallback: string): string =>
   runtimeDialogueConfig.lines[key] ?? fallback;
+
+export const formatDialogueTemplate = (template: string, vars?: DialogueVars): string => {
+  if (!vars) return template;
+  return template.replace(/\{([a-zA-Z0-9_]+)\}/g, (_all, token: string) => {
+    const value = vars[token];
+    if (value === undefined || value === null) return '';
+    return String(value);
+  });
+};
+
+export const getDialogueLineWithVars = (
+  key: string,
+  fallback: string,
+  vars?: DialogueVars,
+): string => {
+  const template = getDialogueLine(key, fallback);
+  return formatDialogueTemplate(template, vars);
+};
 
 export const loadDialogueConfig = async (): Promise<DialogueConfig> => {
   const paths = ['/dialogue.yaml', '/dialogue.yml', '/dialogue.json'];
