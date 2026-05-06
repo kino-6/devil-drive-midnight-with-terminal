@@ -130,23 +130,23 @@
   "routeEvents": [
     {
       "id": "signal_tunnel_01",
-      "title": "Signal Tunnel // AM 666.0",
-      "body": "トンネル中央でAM 666.0が割り込む。M.O.E.は前任ドライバーの記憶断片を検知した。",
+      "title": "信号トンネル // AM 666.0",
+      "body": "AM 666.0が計器盤へ割り込む。M.O.E.は前任ドライバーの記憶残響を捉えた。",
       "choices": [
         {
           "id": "analyze_trace",
-          "label": "Analyze Trace",
-          "text": "干渉源を解析し、断片ログの輪郭を拾う。"
+          "label": "残響を解析する",
+          "text": "干渉源を切り分け、記憶断片の輪郭を読む。"
         },
         {
           "id": "hold_lane",
-          "label": "Keep Driving",
-          "text": "干渉を無視して速度維持。遭遇優先で抜ける。"
+          "label": "車線維持で抜ける",
+          "text": "干渉を切り捨て、速度と接敵テンポを優先する。"
         },
         {
           "id": "open_radio",
-          "label": "Open Radio Channel",
-          "text": "AM帯を開き、音声断片と交信を試みる。"
+          "label": "ラジオ回線を開く",
+          "text": "AM帯を開放し、断片音声との交信を試行する。"
         }
       ]
     }

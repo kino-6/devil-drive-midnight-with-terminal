@@ -12,7 +12,7 @@ export function ResourceMeter({ label, value, max, tone }: { label: string; valu
   const safeMax = Math.max(1, max);
   const pct = Math.max(0, Math.min(100, (value / safeMax) * 100));
   const isLow = tone !== 'signal' && pct <= 35;
-  const blockCount = Math.min(safeMax, 12);
+  const blockCount = 12;
   const filledBlocks = Math.round((pct / 100) * blockCount);
   const blocks = Array.from({ length: blockCount }, (_, index) => index < filledBlocks);
   return <div className={`resource-meter resource-meter--${tone} ${isLow ? 'resource-meter--low' : ''}`}>

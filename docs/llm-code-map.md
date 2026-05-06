@@ -25,6 +25,9 @@
   - Devilプロファイル/相性/出現ラインナップ/Support演出ログの外部YAML上書き
 - `src/assetManifest.ts` + `public/assets/manifest.yaml`
   - 差し替えアセット定義とフォールバック解決
+- `src/dialogueConfig.ts` + `public/dialogue.yaml`
+  - M.O.E.台詞・hoverヒントなど作中文言の外部YAML管理
+  - `dialogue.yaml` は「利用場面コメント」を併記して運用
 
 ## 2) 変更タスク別の推奨編集先
 

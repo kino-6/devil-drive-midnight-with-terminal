@@ -246,6 +246,7 @@ export type Action =
   | { type: 'REWARD_CONTINUE' }
   | { type: 'ROUTE_CHOICE'; lane: 'salvage' | 'signal' | 'push_forward' | 'return_gate' }
   | { type: 'SALVAGE_PICK'; rewardId: string }
+  | { type: 'SIGNAL_ROUTE_CHOICE'; choiceId: 'analyze_trace' | 'hold_lane' | 'open_radio' }
   | { type: 'SIGNAL_CONTINUE' }
   | { type: 'BOSS_PREVIEW_CHOICE'; choice: 'challenge' | 'emergency_salvage' | 'return_gate' }
   | { type: 'RETURN_TO_SURFACE' }

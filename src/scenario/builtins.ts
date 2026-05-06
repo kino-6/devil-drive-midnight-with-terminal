@@ -33,12 +33,12 @@ export const builtInScenarioPack: ScenarioPack = {
   routeEvents: [
     {
       id: 'signal_tunnel_01',
-      title: 'Signal Tunnel',
-      body: 'A low-frequency tunnel amplifies NAVI echoes and weak signatures.',
+      title: '信号トンネル // AM 666.0',
+      body: '低周波のトンネルでAM帯が揺らぎ、NAVIに記憶残響が混入する。',
       choices: [
-        { id: 'analyze_trace', label: 'Analyze Trace', text: 'Trace the source and parse the memory fragment.' },
-        { id: 'hold_lane', label: 'Keep Driving', text: 'Maintain speed and prioritize encounter tempo.' },
-        { id: 'open_radio', label: 'Open Radio Channel', text: 'Open AM band and attempt handshake.' },
+        { id: 'analyze_trace', label: '残響を解析する', text: '干渉源を解析して記憶断片の輪郭を拾う。' },
+        { id: 'hold_lane', label: '車線維持で抜ける', text: '速度を保って次接敵を優先する。' },
+        { id: 'open_radio', label: 'ラジオ回線を開く', text: 'AM帯を開いて断片音声との交信を試す。' },
       ],
     },
   ],

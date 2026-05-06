@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useReducer, useRef, useState, type ChangeEvent } from 'react';
 import { defaultAssetManifest, loadAssetManifest, resolveAssetUrl, type AssetManifest } from './assetManifest';
 import { defaultBalanceConfig, getBalanceConfig, loadBalanceConfig, type BalanceConfig } from './balanceConfig';
+import { getDialogueConfig, getDialogueLine, loadDialogueConfig } from './dialogueConfig';
 import {
   clearAutoSaveSnapshot,
   clearSaveData,
@@ -204,17 +205,8 @@ const commandDescriptions: Record<CommandId, { description: string }> = {
   escape: { description: 'Fuel-1で70%離脱。' },
 };
 
-const moeCommandGuides: Record<CommandId, string> = {
-  main_gun: '主砲を叩き込む。怒らせるけど、確実に削れる。',
-  sub_gun: '副砲で牽制。複数の敵に触って流れを作る。',
-  se_harpoon: 'S-Eは切り札。契約狙いか妨害か、撃ちどころが命。',
-  analyze: 'まず読む。相性を見れば無駄打ちを減らせる。',
-  talk: '会話は最短ルートになり得る。圧を上げすぎないで。',
-  contract: '契約窓が開いたら一気に。迷うと閉じる。',
-  ram: '体当たりは強いけど車体を削る。短期決戦向き。',
-  guard: '防御姿勢。次の被害を抑えて立て直す手。',
-  escape: '帰還も勝ち筋。持ち帰って次へ繋げよう。',
-};
+const getMoeCommandGuide = (command: CommandId): string =>
+  getDialogueLine(`hint.command.${command}`, commandDescriptions[command].description);
 
 const affinityOrder: AffinityType[] = ['ballistic', 'suppressive', 'impact', 'signal', 'talk'];
 const affinityLabel: Record<AffinityType, string> = {
@@ -710,7 +702,7 @@ const initState = (): State => {
     runSummary: { cleared: 0, defeated: 0, contracted: 0, escaped: 0 },
     resultType: undefined,
     bossChallenged: false,
-    moeLine: '午前0時。夜環、開いたよ。',
+    moeLine: getDialogueLine('moe.prologue.open', '午前0時。夜環、開いたよ。'),
     selectedLoadout: defaultLoadout,
     activeSupportDaemon: undefined,
     previousRun: undefined,
@@ -797,19 +789,19 @@ const getNarrativeMoeLine = (state: State): string => {
   if (state.gamePhase === 'prologue') {
     return getMoeLine(
       'prologue.open',
-      '午前0時。夜環、開いたよ。浅層サルベージ任務……ってことになってる。本命は、前任者のログ反応。まだ消えてない。',
+      getDialogueLine('moe.prologue.narrative', '午前0時。夜環、開いたよ。浅層サルベージ任務……ってことになってる。本命は、前任者のログ反応。まだ消えてない。'),
     );
   }
   if (state.story.recoveredLogs.includes('LOG_01') && state.gamePhase === 'boss_preview') {
     return getMoeLine(
       'boss_preview.toll_gate',
-      '料金所の反応、前よりは読める。通行料を払う相手を間違えないで。',
+      getDialogueLine('moe.story.boss_preview_log01', '料金所の反応、前よりは読める。通行料を払う相手を間違えないで。'),
     );
   }
   if (state.story.recoveredLogs.includes('LOG_00') && state.gamePhase === 'garage') {
     return getMoeLine(
       'garage.after_log00',
-      '前任者の声……記録には残ってない。でも、知ってる気がする。',
+      getDialogueLine('moe.story.after_log00', '前任者の声……記録には残ってない。でも、知ってる気がする。'),
     );
   }
   return state.moeLine;
@@ -877,7 +869,9 @@ const initRunWithLoadout = (state: State, logsPrefix: string[] = []): State => {
     growthClaimed: false,
     story: { ...state.story, recentRecoveredLogs: [] },
     logs,
-    moeLine: scanSuccess ? '先に見つけた。どう入る？' : 'ごめん、遅れた。来るよ。',
+    moeLine: scanSuccess
+      ? getDialogueLine('moe.run.scan_success', '先に見つけた。どう入る？')
+      : getDialogueLine('moe.run.scan_fail', 'ごめん、遅れた。来るよ。'),
   };
 };
 
@@ -996,7 +990,7 @@ const runAutoplayBatch = (loadout: Loadout, runs: number, strategy: AutoPlayStra
         const reward = chooseAutoplayReward(s);
         s = reducer(s, { type: 'SALVAGE_PICK', rewardId: reward.id });
       } else if (s.gamePhase === 'signal') {
-        s = reducer(s, { type: 'SIGNAL_CONTINUE' });
+        s = reducer(s, { type: 'SIGNAL_ROUTE_CHOICE', choiceId: 'analyze_trace' });
       } else if (s.gamePhase === 'boss_preview') {
         s = reducer(s, { type: 'BOSS_PREVIEW_CHOICE', choice: chooseAutoplayBossPreview(s, strategy) });
       } else if (s.gamePhase === 'return_gate') {
@@ -1232,7 +1226,7 @@ function reducer(state: State, action: Action): State {
       activeSupportDaemon: undefined,
       previousRun: makePreviousRunSummary(claimed, claimed.resultType ?? 'Early Return'),
       logs: [...disconnectLogs, '> GARAGE: MIDNIGHT BAY ONLINE'],
-      moeLine: '戻れたね。次は出る前に少し積み替えよっか。',
+      moeLine: getDialogueLine('moe.garage.enter', '戻れたね。次は出る前に少し積み替えよっか。'),
     };
   }
 
@@ -1253,7 +1247,7 @@ function reducer(state: State, action: Action): State {
       activeSupportDaemon: undefined,
       previousRun,
       logs: [...disconnectLogs, '> GARAGE: MIDNIGHT BAY ONLINE'],
-      moeLine: '戻れたね。次は出る前に少し積み替えよっか。',
+      moeLine: getDialogueLine('moe.garage.enter', '戻れたね。次は出る前に少し積み替えよっか。'),
     };
   }
 
@@ -1262,7 +1256,7 @@ function reducer(state: State, action: Action): State {
     return {
       ...state,
       selectedLoadout: { ...state.selectedLoadout, mainGunId: action.id },
-      moeLine: '主砲を重くするとBossは楽。でも弾切れは早いよ。',
+      moeLine: getDialogueLine('moe.garage.set_main_gun', '主砲を重くするとBossは楽。でも弾切れは早いよ。'),
     };
   }
 
@@ -1271,7 +1265,7 @@ function reducer(state: State, action: Action): State {
     return {
       ...state,
       selectedLoadout: { ...state.selectedLoadout, subGunId: action.id },
-      moeLine: '副砲は戦い方が出る。牽制か、手数か。',
+      moeLine: getDialogueLine('moe.garage.set_sub_gun', '副砲は戦い方が出る。牽制か、手数か。'),
     };
   }
 
@@ -1280,7 +1274,7 @@ function reducer(state: State, action: Action): State {
     return {
       ...state,
       selectedLoadout: { ...state.selectedLoadout, specialEquipmentId: action.id },
-      moeLine: 'S-Eは切り札。契約狙いか、殲滅寄りか選んで。',
+      moeLine: getDialogueLine('moe.garage.set_se', 'S-Eは切り札。契約狙いか、殲滅寄りか選んで。'),
     };
   }
 
@@ -1289,7 +1283,7 @@ function reducer(state: State, action: Action): State {
     return {
       ...state,
       selectedLoadout: { ...state.selectedLoadout, contractSupportId: action.id },
-      moeLine: '契約サポートは一つだけ。何を車に残す？',
+      moeLine: getDialogueLine('moe.garage.set_support', '契約サポートは一つだけ。何を車に残す？'),
     };
   }
 
@@ -1309,6 +1303,7 @@ function reducer(state: State, action: Action): State {
     nextState: State,
     kind: ApproachKind,
     extraLogs: string[] = [],
+    prepSeed: Partial<EncounterPrep> = {},
   ): State => {
     const lineup = lineupByKind(kind);
     const scanChance = getScanChance(nextState, kind, lineup);
@@ -1323,13 +1318,16 @@ function reducer(state: State, action: Action): State {
       ...nextState,
       gamePhase: 'approach',
       approach: { pendingKind: kind, scanSuccess, scanChance, lineup },
-      encounterPrep: createEmptyEncounterPrep(),
+      encounterPrep: {
+        ...createEmptyEncounterPrep(),
+        ...prepSeed,
+      },
       logs,
       moeLine: scanSuccess
         ? kind === 'boss'
-          ? '強い反応。見えてるけど、近づき方は選べる。'
-          : '先に見つけた。どう入る？'
-        : 'ごめん、遅れた。来るよ。',
+          ? getDialogueLine('moe.run.scan_success_boss', '強い反応。見えてるけど、近づき方は選べる。')
+          : getDialogueLine('moe.run.scan_success', '先に見つけた。どう入る？')
+        : getDialogueLine('moe.run.scan_fail', 'ごめん、遅れた。来るよ。'),
     };
   };
 
@@ -1403,7 +1401,7 @@ function reducer(state: State, action: Action): State {
         seAmmo,
         encounterPrep: prep,
         logs,
-        moeLine: '見落とした。ごめん、初撃来る。',
+        moeLine: getDialogueLine('moe.run.ambush_contact', '見落とした。ごめん、初撃来る。'),
         approach: undefined,
       };
     }
@@ -1424,7 +1422,7 @@ function reducer(state: State, action: Action): State {
         firstTalkPending: prep.firstTalkPending || baseState.skillLevels.translation_assist > 0,
       },
       logs: [...logs, '> NAVI FORECAST UPDATED'],
-      moeLine: '接触。コマンド選択へ。',
+      moeLine: getDialogueLine('moe.run.contact_to_command', '接触。コマンド選択へ。'),
       approach: undefined,
     };
   };
@@ -1459,7 +1457,13 @@ function reducer(state: State, action: Action): State {
     const baseTalkBonus = state.skillLevels.translation_assist * 0.03;
 
     if (action.option === 'preemptive_main_gun') {
-      if (mainAmmo <= 0) return { ...state, logs: [...state.logs, '> WARNING: MAIN AMMO EMPTY'], moeLine: '主砲弾がない。別の入り方にして。' };
+      if (mainAmmo <= 0) {
+        return {
+          ...state,
+          logs: [...state.logs, '> WARNING: MAIN AMMO EMPTY'],
+          moeLine: getDialogueLine('moe.run.approach.no_main_ammo', '主砲弾がない。別の入り方にして。'),
+        };
+      }
       const target = encounter.enemies.findIndex(isAlive);
       if (target >= 0) {
         mainAmmo -= 1;
@@ -1553,7 +1557,13 @@ function reducer(state: State, action: Action): State {
     }
 
     if (action.option === 'open_channel') {
-      if (signal <= 0) return { ...state, logs: [...state.logs, '> WARNING: SIGNAL TOO LOW'], moeLine: 'Signalが足りない。' };
+      if (signal <= 0) {
+        return {
+          ...state,
+          logs: [...state.logs, '> WARNING: SIGNAL TOO LOW'],
+          moeLine: getDialogueLine('moe.run.approach.no_signal', 'Signalが足りない。'),
+        };
+      }
       signal = Math.max(0, signal - 1);
       const target = encounter.enemies.findIndex(isAlive);
       if (target >= 0) {
@@ -1601,12 +1611,12 @@ function reducer(state: State, action: Action): State {
       logs,
       moeLine:
         action.option === 'preemptive_main_gun'
-          ? '先に撃つ。交渉は少し荒れるよ。'
+          ? getDialogueLine('moe.run.approach.preemptive', '先に撃つ。交渉は少し荒れるよ。')
           : action.option === 'hit_and_run_ram'
-            ? 'ひき逃げルート。成功すれば早いけど、車体は削れるよ。'
+            ? getDialogueLine('moe.run.approach.hit_and_run', 'ひき逃げルート。成功すれば早いけど、車体は削れるよ。')
             : action.option === 'silent_coast'
-              ? '静かに寄る。話すならこれが一番マシ。'
-              : '先に声をかけるね。返事が人間向けとは限らないけど。',
+              ? getDialogueLine('moe.run.approach.silent_coast', '静かに寄る。話すならこれが一番マシ。')
+              : getDialogueLine('moe.run.approach.open_channel', '先に声をかけるね。返事が人間向けとは限らないけど。'),
     };
   }
 
@@ -1622,7 +1632,7 @@ function reducer(state: State, action: Action): State {
         moeSyncBank: state.moeSyncBank - cost,
         skillLevels: { ...state.skillLevels, [action.upgrade]: currentLevel + 1 },
         logs: [...state.logs, `> SKILL UPGRADE: ${action.upgrade.toUpperCase()} Lv${currentLevel + 1}`],
-        moeLine: '同期率を使って調整した。次Runで効く。',
+        moeLine: getDialogueLine('moe.garage.skill_sync', '同期率を使って調整した。次Runで効く。'),
       };
     }
     if (state.driverXpBank < cost) return state;
@@ -1631,7 +1641,7 @@ function reducer(state: State, action: Action): State {
       driverXpBank: state.driverXpBank - cost,
       skillLevels: { ...state.skillLevels, [action.upgrade]: currentLevel + 1 },
       logs: [...state.logs, `> SKILL UPGRADE: ${action.upgrade.toUpperCase()} Lv${currentLevel + 1}`],
-      moeLine: '操縦技能を更新。次Runの反応が変わるはず。',
+      moeLine: getDialogueLine('moe.garage.skill_driver', '操縦技能を更新。次Runの反応が変わるはず。'),
     };
   }
 
@@ -1645,7 +1655,7 @@ function reducer(state: State, action: Action): State {
       creditBank: state.creditBank - cost,
       vehicleUpgrades: { ...state.vehicleUpgrades, [action.id]: currentLevel + 1 },
       logs: [...state.logs, `> VEHICLE TUNE: ${action.id.toUpperCase()} Lv${currentLevel + 1}`],
-      moeLine: '改装完了。車体側の余裕が増える。',
+      moeLine: getDialogueLine('moe.garage.vehicle_tune', '改装完了。車体側の余裕が増える。'),
     };
   }
 
@@ -1662,9 +1672,19 @@ function reducer(state: State, action: Action): State {
   if (action.type === 'REWARD_CONTINUE') {
     if (state.gamePhase !== 'reward') return state;
     if (state.rewardScope === 'post_enc1') {
-      return { ...state, gamePhase: 'route_choice', logs: [...state.logs, '> ROUTE CHOICE AVAILABLE'], moeLine: '次の車線を選んで。補給・信号強化・強行突破・帰還、どれも正解になり得る。' };
+      return {
+        ...state,
+        gamePhase: 'route_choice',
+        logs: [...state.logs, '> ROUTE CHOICE AVAILABLE'],
+        moeLine: getDialogueLine('moe.run.route_choice', '次の車線を選んで。補給・信号強化・強行突破・帰還、どれも正解になり得る。'),
+      };
     }
-    return { ...state, gamePhase: 'boss_preview', logs: [...state.logs, '> DEEP SIGNAL DETECTED: TOLL GATE SAINT'], moeLine: '料金所型の強い反応。無理なら引き返そ。' };
+    return {
+      ...state,
+      gamePhase: 'boss_preview',
+      logs: [...state.logs, '> DEEP SIGNAL DETECTED: TOLL GATE SAINT'],
+      moeLine: getDialogueLine('moe.run.boss_preview', '料金所型の強い反応。無理なら引き返そ。'),
+    };
   }
 
   if (action.type === 'ROUTE_CHOICE') {
@@ -1680,7 +1700,7 @@ function reducer(state: State, action: Action): State {
         activeSupportDaemon: undefined,
         story,
         logs: appendRecoveredStoryLogLines([...disconnectLogs, '> RETURN GATE ROUTE OPEN', '> RUN COMPLETE'], story),
-        moeLine: '帰るのも仕事だよ。持ち帰れなきゃ、全部ゼロ。',
+        moeLine: getDialogueLine('moe.run.route_return', '帰るのも仕事だよ。持ち帰れなきゃ、全部ゼロ。'),
       };
     }
     if (action.lane === 'salvage') {
@@ -1690,7 +1710,7 @@ function reducer(state: State, action: Action): State {
         rewardTarget: 'encounter2',
         rewardOptions: pickRewardChoices(rewardCatalog),
         logs: [...state.logs, '> SALVAGE LANE SELECTED'],
-        moeLine: '補給反応あり。ひとつだけ拾える。',
+        moeLine: getDialogueLine('moe.run.salvage_ready', '補給反応あり。ひとつだけ拾える。'),
       };
     }
     if (action.lane === 'signal') {
@@ -1704,7 +1724,7 @@ function reducer(state: State, action: Action): State {
         signal: state.signal + signalGain,
         tempForecastBoost: forecastGain,
         logs: signalLogs,
-        moeLine: '信号帯がクリアになった。次の予測が少し長く見える。',
+        moeLine: getDialogueLine('moe.run.route_signal', '信号帯がクリアになった。次の予測が少し長く見える。'),
       };
     }
     const logs = [...state.logs, '> PUSH FORWARD SELECTED', '> ENCOUNTER 2: FORWARD CONTACT'];
@@ -1719,7 +1739,7 @@ function reducer(state: State, action: Action): State {
       routeBoostReward: true,
       logs,
       encounterIndex: 1,
-      moeLine: '回復なしで進むのね。報酬は少し盛れるかも。',
+      moeLine: getDialogueLine('moe.run.route_push', '回復なしで進むのね。報酬は少し盛れるかも。'),
     }, 'enc2');
   }
 
@@ -1748,22 +1768,67 @@ function reducer(state: State, action: Action): State {
     }, toBoss ? 'boss' : 'enc2');
   }
 
-  if (action.type === 'SIGNAL_CONTINUE') {
+  if (action.type === 'SIGNAL_ROUTE_CHOICE' || action.type === 'SIGNAL_CONTINUE') {
     if (state.gamePhase !== 'signal') return state;
-    const logs = [...state.logs, '> ENCOUNTER 2: SIGNAL CONTACT'];
+    const selectedChoice = action.type === 'SIGNAL_ROUTE_CHOICE' ? action.choiceId : 'hold_lane';
+    let normalizedChoice: 'analyze_trace' | 'hold_lane' | 'open_radio' = selectedChoice;
+    let signal = state.signal;
     let fuel = state.fuel;
+    let tempForecastBoost = state.tempForecastBoost;
+    const logs = [...state.logs];
+    const prepSeed: Partial<EncounterPrep> = {};
+
+    if (normalizedChoice === 'analyze_trace') {
+      logs.push('> SIGNAL TUNNEL CHOICE: ANALYZE TRACE');
+      if (signal <= 0) {
+        logs.push('> WARNING: SIGNAL TOO LOW / TRACE DOWNGRADED');
+        normalizedChoice = 'hold_lane';
+      } else {
+        signal = Math.max(0, signal - 1);
+        tempForecastBoost += 1;
+        prepSeed.intentDisrupted = true;
+        prepSeed.approachLabel = 'TRACE LOCK';
+        logs.push('> MEMORY TRACE ISOLATED', '> FORECAST LANE BOOSTED');
+      }
+    }
+    if (normalizedChoice === 'open_radio') {
+      logs.push('> SIGNAL TUNNEL CHOICE: OPEN RADIO CHANNEL');
+      if (signal <= 0) {
+        logs.push('> WARNING: SIGNAL TOO LOW / CHANNEL CLOSED');
+        normalizedChoice = 'hold_lane';
+      } else {
+        signal = Math.max(0, signal - 1);
+        prepSeed.talkPrepared = true;
+        prepSeed.firstTalkBonus = 0.12;
+        prepSeed.firstTalkPending = true;
+        prepSeed.approachLabel = 'OPEN CHANNEL';
+        logs.push('> AM 666.0 CHANNEL OPEN', '> TALK HANDSHAKE PREPARED');
+      }
+    }
+    if (normalizedChoice === 'hold_lane') {
+      logs.push('> SIGNAL TUNNEL CHOICE: KEEP DRIVING', '> LANE HOLD / CONTACT PRIORITY');
+      prepSeed.approachLabel = 'LANE HOLD';
+    }
+
+    logs.push('> ENCOUNTER 2: SIGNAL CONTACT');
     if (state.selectedLoadout.contractSupportId === 'silent_shape' && Math.random() < 0.2) {
       fuel = Math.max(0, fuel - 1);
       logs.push('> SUPPORT BACKLASH: SILENT SHAPE / FUEL -1');
     }
     return moveToApproach({
       ...state,
+      signal,
       fuel,
       encounterIndex: 1,
-      tempForecastBoost: 0,
+      tempForecastBoost,
       logs,
-      moeLine: 'Signal強化、効いてる。次の反応へ。',
-    }, 'enc2');
+      moeLine:
+        normalizedChoice === 'analyze_trace'
+          ? '断片ログを掴んだ。次接敵の読みは少し深い。'
+          : normalizedChoice === 'open_radio'
+            ? 'AM帯を開いた。最初の会話は通しやすい。'
+            : '速度維持で抜ける。接敵優先で行くよ。',
+    }, 'enc2', [], prepSeed);
   }
 
   if (action.type === 'BOSS_PREVIEW_CHOICE') {
@@ -1779,7 +1844,7 @@ function reducer(state: State, action: Action): State {
         activeSupportDaemon: undefined,
         story,
         logs: appendRecoveredStoryLogLines([...disconnectLogs, '> RETURN GATE ROUTE OPEN', '> RUN COMPLETE'], story),
-        moeLine: '引き返す判断、正解。持ち帰ることが最優先。',
+        moeLine: getDialogueLine('moe.run.boss_return', '引き返す判断、正解。持ち帰ることが最優先。'),
       };
     }
     if (action.choice === 'emergency_salvage') {
@@ -1792,7 +1857,7 @@ function reducer(state: State, action: Action): State {
         rewardTarget: 'boss',
         rewardOptions: pickRewardChoices(emergencyPool),
         logs: [...state.logs, '> EMERGENCY SALVAGE OPEN'],
-        moeLine: '主砲弾か装甲を足してから行ける。選んで。',
+        moeLine: getDialogueLine('moe.run.salvage_to_boss', '主砲弾か装甲を足してから行ける。選んで。'),
       };
     }
     const logs = [...state.logs, '> BOSS ENCOUNTER: TOLL GATE SAINT'];
@@ -1808,7 +1873,7 @@ function reducer(state: State, action: Action): State {
       bossChallenged: true,
       tempForecastBoost: 0,
       logs,
-      moeLine: '深層料金所、突入。主砲を温存しすぎないで。',
+      moeLine: getDialogueLine('moe.run.boss_start', '深層料金所、突入。主砲を温存しすぎないで。'),
     }, 'boss');
   }
 
@@ -1846,7 +1911,7 @@ function reducer(state: State, action: Action): State {
       activeSupportDaemon: undefined,
       story,
       logs: appendRecoveredStoryLogLines([...disconnectLogs, '> RUN COMPLETE'], story),
-      moeLine: '帰れたね。積んだもの、確認しよっか。',
+      moeLine: getDialogueLine('moe.run.result', '帰れたね。積んだもの、確認しよっか。'),
     };
   }
 
@@ -1890,6 +1955,10 @@ function reducer(state: State, action: Action): State {
   const selectedMainGun = getMainGunSpec(state.selectedLoadout.mainGunId);
   const selectedSubGun = getSubGunSpec(state.selectedLoadout.subGunId);
   const selectedSE = getSpecialEquipmentSpec(state.selectedLoadout.specialEquipmentId);
+  const getMoeTargetName = (enemy: Devil) =>
+    (encounter.analyzedEnemyIds.includes(enemy.id) || enemy.revealed || enemy.affinityRevealed)
+      ? enemy.name
+      : 'Unknown Sign';
   const logAffinityReaction = (enemy: Devil, affinityType: AffinityType) => {
     const rating = enemy.affinities[affinityType];
     if (rating === 'weak') {
@@ -1922,10 +1991,10 @@ function reducer(state: State, action: Action): State {
       logs.push(`> MAIN GUN: ${selectedMainGun.name.toUpperCase()} / TARGET: ${encounter.enemies[idx].name.toUpperCase()}`);
       logs.push(`> IMPACT CONFIRMED: ${damage} DAMAGE`);
       moeLine = affinity === 'weak'
-        ? buildMoeActionLine('主砲射撃', '刺さった。押し切れる。', encounter.enemies[idx].name)
+        ? buildMoeActionLine('主砲射撃', '刺さった。押し切れる。', getMoeTargetName(encounter.enemies[idx]))
         : affinity === 'resist'
-          ? buildMoeActionLine('主砲射撃', '効きが薄い。別の手に切り替えよう。', encounter.enemies[idx].name)
-          : buildMoeActionLine('主砲射撃', '命中。警戒は上がってる。', encounter.enemies[idx].name);
+          ? buildMoeActionLine('主砲射撃', '効きが薄い。別の手に切り替えよう。', getMoeTargetName(encounter.enemies[idx]))
+          : buildMoeActionLine('主砲射撃', '命中。警戒は上がってる。', getMoeTargetName(encounter.enemies[idx]));
       if (encounter.enemies[idx].hp <= 0 && !encounter.enemies[idx].exit) {
         encounter.enemies[idx].exit = 'defeated';
         salvageCredits += 1;
@@ -2035,10 +2104,10 @@ function reducer(state: State, action: Action): State {
           logs.push(`> SIGNAL EFFECT: ${getAffinityTag(affinity)}`);
           if (encounter.enemies[idx].contractWindow) logs.push('> CONTRACT WINDOW: PARTIAL OPEN');
           moeLine = affinity === 'weak'
-            ? buildMoeActionLine('S-E発射', '署名が浮いた。契約窓が開きやすい。', encounter.enemies[idx].name)
+            ? buildMoeActionLine('S-E発射', '署名が浮いた。契約窓が開きやすい。', getMoeTargetName(encounter.enemies[idx]))
             : affinity === 'resist'
-              ? buildMoeActionLine('S-E発射', '信号が弾かれた。窓が閉じる。', encounter.enemies[idx].name)
-              : buildMoeActionLine('S-E発射', '署名を掴んだ。会話が通じやすい。', encounter.enemies[idx].name);
+              ? buildMoeActionLine('S-E発射', '信号が弾かれた。窓が閉じる。', getMoeTargetName(encounter.enemies[idx]))
+              : buildMoeActionLine('S-E発射', '署名を掴んだ。会話が通じやすい。', getMoeTargetName(encounter.enemies[idx]));
         } else if (selectedSE.effect === 'emp') {
           if (encounter.enemies[idx].temperament === 'machine' || encounter.enemies[idx].profile === 'abandoned_ai_navi') {
             encounter.enemies[idx].empDisabledTurns = 1;
@@ -2046,7 +2115,7 @@ function reducer(state: State, action: Action): State {
           } else {
             logs.push('> EMP BURST: NO MACHINE RESPONSE');
           }
-          moeLine = buildMoeActionLine('EMPフレア', '機械霊の挙動が鈍る。', encounter.enemies[idx].name);
+          moeLine = buildMoeActionLine('EMPフレア', '機械霊の挙動が鈍る。', getMoeTargetName(encounter.enemies[idx]));
         }
         if (affinity === 'resist' && selectedSE.effect !== 'interest') {
           encounter.enemies[idx].pressure += 1;
@@ -2078,7 +2147,7 @@ function reducer(state: State, action: Action): State {
       logs.push(`> TEMPERAMENT: ${selectedEnemy.temperament.toUpperCase()}`);
       logs.push(`> CONTRACT HINT: ${getContractHint(selectedEnemy).toUpperCase()}`);
       analyzeSuccessCount += 1;
-      moeLine = buildMoeActionLine('解析完了', '気質と相性を掴んだ。交渉の順番を合わせよう。', selectedEnemy.name);
+      moeLine = buildMoeActionLine('解析完了', '気質と相性を掴んだ。交渉の順番を合わせよう。', getMoeTargetName(selectedEnemy));
     }
   }
 
@@ -2127,7 +2196,7 @@ function reducer(state: State, action: Action): State {
           encounter.enemies[idx].hp = 0;
           encounter.enemies[idx].exit = 'fled';
           logs.push('> TOLL NEGOTIATION ACCEPTED / PASSAGE GRANTED');
-          moeLine = buildMoeActionLine('交渉成立', '通行許可が出た。ボス反応が引いた。', encounter.enemies[idx].name);
+          moeLine = buildMoeActionLine('交渉成立', '通行許可が出た。ボス反応が引いた。', getMoeTargetName(encounter.enemies[idx]));
         } else {
           if (canOpenContractWindow(encounter.enemies[idx])) {
             encounter.enemies[idx].contractWindow = true;
@@ -2135,12 +2204,12 @@ function reducer(state: State, action: Action): State {
           }
           logs.push('> NEGOTIATION RESPONSE: ACCEPTED');
           moeLine = affinity === 'weak'
-            ? buildMoeActionLine('交信成功', '返事が柔らかい。契約窓を狙える。', encounter.enemies[idx].name)
+            ? buildMoeActionLine('交信成功', '返事が柔らかい。契約窓を狙える。', getMoeTargetName(encounter.enemies[idx]))
             : affinity === 'resist'
-              ? buildMoeActionLine('交信成功', '通ったけど警戒が強い。押しすぎ注意。', encounter.enemies[idx].name)
+              ? buildMoeActionLine('交信成功', '通ったけど警戒が強い。押しすぎ注意。', getMoeTargetName(encounter.enemies[idx]))
               : encounter.enemies[idx].contractWindow
-                ? buildMoeActionLine('交信成功', '会話に乗った。今なら積める。', encounter.enemies[idx].name)
-                : buildMoeActionLine('交信成功', '反応は良い。もう一押し。', encounter.enemies[idx].name);
+                ? buildMoeActionLine('交信成功', '会話に乗った。今なら積める。', getMoeTargetName(encounter.enemies[idx]))
+                : buildMoeActionLine('交信成功', '反応は良い。もう一押し。', getMoeTargetName(encounter.enemies[idx]));
         }
       } else {
         encounter.enemies[idx].pressure += 1;
@@ -2150,7 +2219,7 @@ function reducer(state: State, action: Action): State {
         }
         encounter.enemies[idx].intent = encounter.enemies[idx].temperament === 'hostile' ? 'attack' : 'curse';
         logs.push('> NEGOTIATION RESPONSE: REJECTED');
-        moeLine = buildMoeActionLine('交信失敗', '怒りが上がった。次手を変えよう。', encounter.enemies[idx].name);
+        moeLine = buildMoeActionLine('交信失敗', '怒りが上がった。次手を変えよう。', getMoeTargetName(encounter.enemies[idx]));
       }
       encounterPrep.firstTalkPending = false;
     }
@@ -2162,7 +2231,7 @@ function reducer(state: State, action: Action): State {
       const target = encounter.enemies[idx];
       if (!target.contractable || !target.contractWindow) {
         logs.push('> CONTRACT REJECTED: NO CONTRACT WINDOW');
-        moeLine = buildMoeActionLine('契約試行', '契約窓が未開放。TalkかS-Eを先に。', target.name);
+        moeLine = buildMoeActionLine('契約試行', '契約窓が未開放。TalkかS-Eを先に。', getMoeTargetName(target));
       } else if (!meetsContractCondition(target)) {
         logs.push('> CONTRACT REJECTED: CONDITION NOT MET');
         target.contractWindow = false;
@@ -2173,7 +2242,7 @@ function reducer(state: State, action: Action): State {
           armor = Math.max(0, armor - 1);
           logs.push('> ARMOR -1');
         }
-        moeLine = buildMoeActionLine('契約失敗', '条件不足。反動が来る。', target.name);
+        moeLine = buildMoeActionLine('契約失敗', '条件不足。反動が来る。', getMoeTargetName(target));
       } else {
         const contractCfg = getBalanceConfig().contract;
         const analyzedBonus = encounter.analyzedEnemyIds.includes(target.id) || target.revealed ? contractCfg.analyzeBonus : 0;
@@ -2213,7 +2282,7 @@ function reducer(state: State, action: Action): State {
             armor = Math.max(0, armor - 1);
             logs.push('> ARMOR -1');
           }
-          moeLine = buildMoeActionLine('契約失敗', '拒否された。まだ早い。', target.name);
+          moeLine = buildMoeActionLine('契約失敗', '拒否された。まだ早い。', getMoeTargetName(target));
         }
       }
     }
@@ -2238,10 +2307,10 @@ function reducer(state: State, action: Action): State {
       logs.push('> CHASSIS IMPACT CONFIRMED');
       logs.push('> ARMOR -1');
       moeLine = affinity === 'weak'
-        ? buildMoeActionLine('ラムアタック', '効いてる。押し切れる。', encounter.enemies[idx].name)
+        ? buildMoeActionLine('ラムアタック', '効いてる。押し切れる。', getMoeTargetName(encounter.enemies[idx]))
         : affinity === 'resist'
-          ? buildMoeActionLine('ラムアタック', '固い。正面突破は不利。', encounter.enemies[idx].name)
-          : buildMoeActionLine('ラムアタック', '衝突確認。こちらの装甲も削れてる。', encounter.enemies[idx].name);
+          ? buildMoeActionLine('ラムアタック', '固い。正面突破は不利。', getMoeTargetName(encounter.enemies[idx]))
+          : buildMoeActionLine('ラムアタック', '衝突確認。こちらの装甲も削れてる。', getMoeTargetName(encounter.enemies[idx]));
       if (encounter.enemies[idx].hp <= 0 && !encounter.enemies[idx].exit) {
         encounter.enemies[idx].exit = 'defeated';
         salvageCredits += 1;
@@ -2364,7 +2433,7 @@ function reducer(state: State, action: Action): State {
       story,
       encounterPrep,
       analyzeSuccessCount,
-      moeLine: '応答して。……だめ、車両信号が落ちてる。',
+      moeLine: getDialogueLine('moe.run.game_over', '応答して。……だめ、車両信号が落ちてる。'),
     };
   }
 
@@ -2393,7 +2462,7 @@ function reducer(state: State, action: Action): State {
         resultType: 'Boss Cleared',
         encounterPrep,
         analyzeSuccessCount,
-        moeLine: '帰還ゲート、見えた。まだ車は動くね。',
+        moeLine: getDialogueLine('moe.run.return_gate_seen', '帰還ゲート、見えた。まだ車は動くね。'),
       };
     }
 
@@ -2415,7 +2484,7 @@ function reducer(state: State, action: Action): State {
       rewardScope: state.encounter.kind === 'enc1' ? 'post_enc1' : 'post_enc2',
       encounterPrep,
       analyzeSuccessCount,
-      moeLine: '遭遇クリア。次の判断に備えよう。',
+      moeLine: getDialogueLine('moe.run.encounter_clear', '遭遇クリア。次の判断に備えよう。'),
     };
   }
 
@@ -2456,6 +2525,7 @@ export function App() {
   const [state, dispatch] = useReducer(reducer, undefined, initState);
   const [balanceConfig, setBalanceConfig] = useState<BalanceConfig>(defaultBalanceConfig);
   const [devilConfigVersion, setDevilConfigVersion] = useState(getDevilConfig().version);
+  const [dialogueConfigVersion, setDialogueConfigVersion] = useState(getDialogueConfig().version);
   const [autoplayRuns, setAutoplayRuns] = useState(() => defaultBalanceConfig.autoplay.defaultRuns);
   const [autoplayStrategy, setAutoplayStrategy] = useState<AutoPlayStrategy>('balanced');
   const [autoplayReport, setAutoplayReport] = useState<AutoPlayReport | null>(null);
@@ -2464,7 +2534,7 @@ export function App() {
   const [showArchive, setShowArchive] = useState(false);
   const [showUtilityPanels, setShowUtilityPanels] = useState(false);
   const [showRunHistory, setShowRunHistory] = useState(false);
-  const [hoveredMoeHint, setHoveredMoeHint] = useState('');
+  const [, setHoveredMoeHint] = useState('');
   const [hoveredEnemyId, setHoveredEnemyId] = useState<string | null>(null);
   const [telemetryRefresh, setTelemetryRefresh] = useState(0);
   const [saveRefresh, setSaveRefresh] = useState(0);
@@ -2529,6 +2599,7 @@ export function App() {
   const isRoadMoving = ['approach', 'route_choice', 'salvage', 'signal', 'boss_preview', 'reward', 'return_gate'].includes(state.gamePhase);
   const isRoadStopped = isBattlePhase || state.gamePhase === 'garage' || state.gamePhase === 'result' || state.gamePhase === 'game_over';
   const isEncounterActive = (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && state.encounter.phase === 'command';
+  const isWindshieldFolded = state.gamePhase === 'garage';
   const speed = isBattlePhase ? 0 : isRoadMoving ? 122 : state.gamePhase === 'prologue' ? 64 : 8;
   const enemyAssetMap = assetManifest.images.enemies ?? {};
   const playerAsset = resolveAssetUrl(assetManifest.images.player);
@@ -2548,6 +2619,7 @@ export function App() {
     isBossPhase ? 'BOSS CONTACT' : 'PATROL CONTACT',
     assetManifestLoaded ? `ASSET ${assetManifest.version.toUpperCase()}` : 'ASSET DEFAULT',
     `DEVIL CFG ${devilConfigVersion.toUpperCase()}`,
+    `DIALOGUE ${dialogueConfigVersion.toUpperCase()}`,
   ];
 
   const tacticalLines = [
@@ -2561,6 +2633,10 @@ export function App() {
   const contractEnabled = !!selectedEnemy && selectedEnemy.contractWindow && selectedEnemy.contractable;
   const selectedEnemyAnalyzed = !!selectedEnemy && (state.encounter.analyzedEnemyIds.includes(selectedEnemy.id) || selectedEnemy.affinityRevealed);
   const detailEnemyAnalyzed = !!detailEnemy && (state.encounter.analyzedEnemyIds.includes(detailEnemy.id) || detailEnemy.affinityRevealed);
+  const selectedEnemyDisplayLabel = selectedEnemyAnalyzed && selectedEnemy
+    ? encounterProfiles()[selectedEnemy.profile].label
+    : 'UNKNOWN SIGN';
+  const signalTunnelScenario = getRouteEventScenario('signal_tunnel_01');
   const detailIntentIconMap: Record<Intent, string> = {
     attack: '⚔',
     curse: '☣',
@@ -2591,20 +2667,6 @@ export function App() {
     guard: state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter',
     escape: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && state.fuel > 0,
   };
-  const defaultMoeCommandHint = (() => {
-    if (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') {
-      return moeCommandGuides[state.encounter.selectedCommand] ?? '状況を読んで、手を選ぼう。';
-    }
-    if (state.gamePhase === 'approach') return '接敵前の選択で流れが決まる。先制か交渉準備か選んで。';
-    if (state.gamePhase === 'route_choice') return '次の車線を選ぶ時間。補給、信号、強行、帰還。';
-    if (state.gamePhase === 'salvage') return '拾えるのはひとつ。次の遭遇に何が足りないかで決めよう。';
-    if (state.gamePhase === 'boss_preview') return '深層反応が見えてる。挑むか、補給か、引くか。';
-    if (state.gamePhase === 'return_gate') return '帰還ゲート確保。無理せず地上へ戻る手順。';
-    if (state.gamePhase === 'garage') return '積み替えと成長を済ませて、次のRunに備えよう。';
-    if (state.gamePhase === 'result' || state.gamePhase === 'game_over') return '結果を確認して次の判断へ。';
-    return 'コマンドを選ぶと、私は横で読み上げる。';
-  })();
-  const moeCommandHint = hoveredMoeHint || defaultMoeCommandHint;
   type AppRuntimeSaveSnapshot = {
     state: State;
     runIndex: number;
@@ -2649,7 +2711,7 @@ export function App() {
       memoryUnlockCount: moeMemoryEntries.length,
       previousRunSummaryText: latestRunRecord
         ? `${resultLabel(latestRunRecord.resultType)} / encounters ${latestRunRecord.encountersCleared} / contracts ${latestRunRecord.contractsAcquired.length}`
-        : 'No previous run data',
+        : getDialogueLine('ui.common.no_previous_run', 'No previous run data'),
       latestMoeSuggestion: latestRunRecord?.moeComment ?? (latestRunRecord ? buildMoeRunComment(latestRunRecord) : 'No suggestion yet'),
     }),
     [saveSnapshot.runHistory.length, archiveEntries.length, routeLogEntries.length, moeMemoryEntries.length, latestRunRecord],
@@ -2821,6 +2883,18 @@ export function App() {
 
   useEffect(() => {
     void loadScenarioPack();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      const loaded = await loadDialogueConfig();
+      if (!cancelled) setDialogueConfigVersion(loaded.version);
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -3187,6 +3261,10 @@ export function App() {
         touchRouteLog('signal', routeLogCatalog.signal.name, routeLogCatalog.signal.note);
         refreshSaveSnapshot();
       }
+      if (clean.startsWith('SIGNAL TUNNEL CHOICE:')) {
+        const rawChoice = clean.split('SIGNAL TUNNEL CHOICE:')[1]?.trim().toLowerCase();
+        if (rawChoice) emitTelemetry('route_choice_selected', { route: `signal:${rawChoice}` });
+      }
       if (clean === 'PUSH FORWARD SELECTED') {
         emitTelemetry('route_choice_selected', { route: 'push_forward' });
         if (activeRunRef.current) activeRunRef.current.routeChoices.push('push_forward');
@@ -3459,10 +3537,10 @@ export function App() {
       <main className="action-panel panel">
         <div className="panel-title">
           <span>WINDSHIELD ENCOUNTER VIEW</span>
-          <small>{state.gamePhase.toUpperCase()}</small>
+          <small>{isWindshieldFolded ? 'GARAGE / FOLDED' : state.gamePhase.toUpperCase()}</small>
         </div>
 
-        <section className={`battle-view ${isEncounterActive ? 'is-hot' : ''} ${isRoadMoving ? 'is-cruising' : ''} ${isRoadStopped ? 'is-stopped' : ''} ${isBossPhase ? 'is-boss' : ''} ${hitFxTone ? `is-hitfx-${hitFxTone}` : ''} ${isArmorCritical ? 'is-armor-critical' : ''}`}>
+        <section className={`battle-view ${isEncounterActive ? 'is-hot' : ''} ${isRoadMoving ? 'is-cruising' : ''} ${isRoadStopped ? 'is-stopped' : ''} ${isBossPhase ? 'is-boss' : ''} ${hitFxTone ? `is-hitfx-${hitFxTone}` : ''} ${isArmorCritical ? 'is-armor-critical' : ''} ${isWindshieldFolded ? 'is-folded' : ''}`}>
           <div className="battle-view__frame" aria-hidden="true">
             <span className="battle-view__pillar battle-view__pillar--left" />
             <span className="battle-view__pillar battle-view__pillar--right" />
@@ -3483,7 +3561,7 @@ export function App() {
           </div>
           <div className="battle-view__hud">
             <span>THREAT FIELD {aliveEnemies.length > 0 && (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') ? 'ACTIVE' : 'CLEAR'}</span>
-            <strong>{selectedEnemy ? encounterProfiles()[selectedEnemy.profile].label : 'ROAD OPEN'}</strong>
+            <strong>{selectedEnemy ? selectedEnemyDisplayLabel : 'ROAD OPEN'}</strong>
           </div>
           {isBossPhase && <div className="battle-view__boss-alert">
             <span>BOSS SIGNAL</span>
@@ -3517,6 +3595,33 @@ export function App() {
               getLikelyWeaknessSummary={getLikelyWeaknessSummary}
             />)}
           </div>
+          {(state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && detailEnemy && <section className="target-detail-panel target-detail-panel--overlay">
+            <div className="target-detail-panel__head">
+              <strong>TARGET DETAIL</strong>
+              <small>{detailEnemyAnalyzed ? detailEnemy.name.toUpperCase() : 'UNKNOWN SIGN'}</small>
+            </div>
+            <div className="target-detail-panel__core">
+              <span className={`target-detail-panel__intent intent--${detailEnemy.intent}`}>
+                {detailIntentIconMap[detailEnemy.intent]} {detailEnemyAnalyzed ? detailEnemy.intent.toUpperCase() : 'UNKNOWN'}
+              </span>
+              <span>HP {detailEnemy.hp}/{detailEnemy.maxHp}</span>
+              <span>{detailEnemyAnalyzed ? `${encounterProfiles()[detailEnemy.profile].contractable ? 'CONTRACTABLE' : 'HOSTILE'} / ${encounterProfiles()[detailEnemy.profile].threat}` : 'UNKNOWN / ---'}</span>
+            </div>
+            <div className="target-detail-panel__intel">
+              {detailEnemyAnalyzed
+                ? <>
+                  <small>TEMP: {detailEnemy.temperament.toUpperCase()}</small>
+                  <small>{getContractHint(detailEnemy)}</small>
+                  <small>
+                    AFF:
+                    {affinityOrder.map((affinity) => ` ${affinityLabel[affinity].slice(0, 3).toUpperCase()}-${getAffinityTag(detailEnemy.affinities[affinity])}`).join(' /')}
+                  </small>
+                </>
+                : <small>INTEL LOCKED / HOVER + ANALYZE TO REVEAL</small>}
+              {detailEnemy.contractWindow && <small className="battle-devil__window">CONTRACT WINDOW OPEN</small>}
+            </div>
+          </section>}
+          <div className="battle-view__folded-note">WINDSHIELD VIEW FOLDED IN GARAGE MODE</div>
         </section>
 
         <section className="battle-deck">
@@ -3561,43 +3666,12 @@ export function App() {
               </div>
               <div className="radio-bubble">
                 <p className="moe-live">「{narrativeMoeLine}」</p>
-                <p className="moe-command">M.O.E.: 「{moeCommandHint}」</p>
-                {selectedEnemy && (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && <p className="moe-command">
-                  「{selectedEnemy.contractWindow ? '契約窓、開いてる。今なら積める。' : getContractHint(selectedEnemy)}」
-                </p>}
               </div>
             </section>
             <div className="panel-title panel-title--compact">
               <span>COMMAND</span>
               <small>{(state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') ? 'SELECT ACTION' : state.gamePhase.toUpperCase()}</small>
             </div>
-
-            {(state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && detailEnemy && <section className="target-detail-panel">
-              <div className="target-detail-panel__head">
-                <strong>TARGET DETAIL</strong>
-                <small>{detailEnemyAnalyzed ? detailEnemy.name.toUpperCase() : 'UNKNOWN SIGN'}</small>
-              </div>
-              <div className="target-detail-panel__core">
-                <span className={`target-detail-panel__intent intent--${detailEnemy.intent}`}>
-                  {detailIntentIconMap[detailEnemy.intent]} {detailEnemyAnalyzed ? detailEnemy.intent.toUpperCase() : 'UNKNOWN'}
-                </span>
-                <span>HP {detailEnemy.hp}/{detailEnemy.maxHp}</span>
-                <span>{encounterProfiles()[detailEnemy.profile].contractable ? 'CONTRACTABLE' : 'HOSTILE'} / {encounterProfiles()[detailEnemy.profile].threat}</span>
-              </div>
-              <div className="target-detail-panel__intel">
-                {detailEnemyAnalyzed
-                  ? <>
-                    <small>TEMP: {detailEnemy.temperament.toUpperCase()}</small>
-                    <small>{getContractHint(detailEnemy)}</small>
-                    <small>
-                      AFF:
-                      {affinityOrder.map((affinity) => ` ${affinityLabel[affinity].slice(0, 3).toUpperCase()}-${getAffinityTag(detailEnemy.affinities[affinity])}`).join(' /')}
-                    </small>
-                  </>
-                  : <small>INTEL LOCKED / HOVER + ANALYZE TO REVEAL</small>}
-                {detailEnemy.contractWindow && <small className="battle-devil__window">CONTRACT WINDOW OPEN</small>}
-              </div>
-            </section>}
 
             {(state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && <>
               <div className="command-groups">
@@ -3624,12 +3698,16 @@ export function App() {
                             : command.id === 'se_harpoon'
                               ? `S-E ${selectedSE.name}。${selectedSE.description}（残弾 ${state.seAmmo}）`
                               : command.id === 'contract'
-                                ? (contractEnabled ? '契約窓が開いてる。今なら接続できる。' : '契約窓がまだ開いていない。TalkかS-Eを先に。')
-                                : moeCommandGuides[command.id];
+                                ? (
+                                    contractEnabled
+                                      ? getDialogueLine('hint.contract.window_open', '契約窓が開いてる。今なら接続できる。')
+                                      : getDialogueLine('hint.contract.window_closed', '契約窓がまだ開いていない。TalkかS-Eを先に。')
+                                  )
+                                : getMoeCommandGuide(command.id);
                         setHoveredMoeHint(hint);
                       }}
                       onMouseLeave={() => setHoveredMoeHint('')}
-                      onFocus={() => setHoveredMoeHint(moeCommandGuides[command.id])}
+                      onFocus={() => setHoveredMoeHint(getMoeCommandGuide(command.id))}
                       onBlur={() => setHoveredMoeHint('')}
                       data-desc={
                         command.id === 'main_gun'
@@ -3657,7 +3735,7 @@ export function App() {
             {state.gamePhase === 'reward' && <div className="command-window command-list">
               <button
                 className="command-button command-button--route"
-                onMouseEnter={() => setHoveredMoeHint('回収結果をまとめて次フェーズへ移る。')}
+                onMouseEnter={() => setHoveredMoeHint(getDialogueLine('hint.hover.proceed', '回収結果をまとめて次フェーズへ移る。'))}
                 onMouseLeave={() => setHoveredMoeHint('')}
                 onClick={() => dispatch({ type: 'REWARD_CONTINUE' })}
               >
@@ -3670,7 +3748,7 @@ export function App() {
                 ? <>
                   <button
                     className="command-button command-button--danger"
-                    onMouseEnter={() => setHoveredMoeHint('先制主砲。接敵前に削るけど交渉は荒れる。')}
+                    onMouseEnter={() => setHoveredMoeHint(getDialogueLine('hint.hover.approach.preemptive', '先制主砲。接敵前に削るけど交渉は荒れる。'))}
                     onMouseLeave={() => setHoveredMoeHint('')}
                     onClick={() => dispatch({ type: 'APPROACH_CHOOSE', option: 'preemptive_main_gun' })}
                     disabled={state.mainAmmo <= 0}
@@ -3678,15 +3756,15 @@ export function App() {
                   >
                     Preemptive Main Gun
                   </button>
-                  <button className="command-button command-button--danger" onMouseEnter={() => setHoveredMoeHint('轢き逃げ突破。成功すれば接敵を飛ばせる。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'APPROACH_CHOOSE', option: 'hit_and_run_ram' })} data-desc="轢き逃げ突破。Armor-1 Fuel-1 / 成功で遭遇回避">
+                  <button className="command-button command-button--danger" onMouseEnter={() => setHoveredMoeHint(getDialogueLine('hint.hover.approach.hit_and_run', '轢き逃げ突破。成功すれば接敵を飛ばせる。'))} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'APPROACH_CHOOSE', option: 'hit_and_run_ram' })} data-desc="轢き逃げ突破。Armor-1 Fuel-1 / 成功で遭遇回避">
                     Hit-and-Run Ram
                   </button>
-                  <button className="command-button command-button--route" onMouseEnter={() => setHoveredMoeHint('静穏接近。交渉初手を通しやすくする。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'APPROACH_CHOOSE', option: 'silent_coast' })} data-desc="静穏接近。Fuel-1 / 初手Talk成功率上昇 / 敵攻勢鈍化">
+                  <button className="command-button command-button--route" onMouseEnter={() => setHoveredMoeHint(getDialogueLine('hint.hover.approach.silent_coast', '静穏接近。交渉初手を通しやすくする。'))} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'APPROACH_CHOOSE', option: 'silent_coast' })} data-desc="静穏接近。Fuel-1 / 初手Talk成功率上昇 / 敵攻勢鈍化">
                     Silent Coast
                   </button>
                   <button
                     className="command-button command-button--contract"
-                    onMouseEnter={() => setHoveredMoeHint('先行交信。契約窓を開けたい時の前振り。')}
+                    onMouseEnter={() => setHoveredMoeHint(getDialogueLine('hint.hover.approach.open_channel', '先行交信。契約窓を開けたい時の前振り。'))}
                     onMouseLeave={() => setHoveredMoeHint('')}
                     onClick={() => dispatch({ type: 'APPROACH_CHOOSE', option: 'open_channel' })}
                     disabled={state.signal <= 0}
@@ -3695,16 +3773,16 @@ export function App() {
                     Open Channel
                   </button>
                 </>
-                : <button className="command-button command-button--danger" onMouseEnter={() => setHoveredMoeHint('不意打ち受領。被害を抑える準備を。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'APPROACH_CONTINUE' })}>
+                : <button className="command-button command-button--danger" onMouseEnter={() => setHoveredMoeHint(getDialogueLine('hint.hover.approach.brace', '不意打ち受領。被害を抑える準備を。'))} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'APPROACH_CONTINUE' })}>
                   Brace for Contact
                 </button>}
             </div>}
 
             {state.gamePhase === 'route_choice' && <div className="command-window command-list">
-              <button className="command-button command-button--route" onMouseEnter={() => setHoveredMoeHint('補給寄りレーン。立て直し向け。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'ROUTE_CHOICE', lane: 'salvage' })}>Salvage Lane</button>
-              <button className="command-button command-button--route" onMouseEnter={() => setHoveredMoeHint('Signal寄りレーン。解析と交渉を伸ばせる。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'ROUTE_CHOICE', lane: 'signal' })}>Signal Lane</button>
-              <button className="command-button command-button--route" onMouseEnter={() => setHoveredMoeHint('強行前進。次報酬は良いが被害リスク高。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'ROUTE_CHOICE', lane: 'push_forward' })}>Push Forward</button>
-              <button className="command-button command-button--danger" onMouseEnter={() => setHoveredMoeHint('ここで帰還。戦果を確実に持ち帰る。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'ROUTE_CHOICE', lane: 'return_gate' })}>Return Gate</button>
+              <button className="command-button command-button--route" onMouseEnter={() => setHoveredMoeHint(getDialogueLine('hint.hover.route.salvage', '補給寄りレーン。立て直し向け。'))} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'ROUTE_CHOICE', lane: 'salvage' })}>Salvage Lane</button>
+              <button className="command-button command-button--route" onMouseEnter={() => setHoveredMoeHint(getDialogueLine('hint.hover.route.signal', 'Signal寄りレーン。解析と交渉を伸ばせる。'))} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'ROUTE_CHOICE', lane: 'signal' })}>Signal Lane</button>
+              <button className="command-button command-button--route" onMouseEnter={() => setHoveredMoeHint(getDialogueLine('hint.hover.route.push_forward', '強行前進。次報酬は良いが被害リスク高。'))} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'ROUTE_CHOICE', lane: 'push_forward' })}>Push Forward</button>
+              <button className="command-button command-button--danger" onMouseEnter={() => setHoveredMoeHint(getDialogueLine('hint.hover.route.return_gate', 'ここで帰還。戦果を確実に持ち帰る。'))} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'ROUTE_CHOICE', lane: 'return_gate' })}>Return Gate</button>
             </div>}
 
             {state.gamePhase === 'salvage' && <div className="command-window command-list">
@@ -3720,17 +3798,41 @@ export function App() {
             </div>}
 
             {state.gamePhase === 'signal' && <div className="command-window command-list">
-              <button className="command-button command-button--route" onMouseEnter={() => setHoveredMoeHint('信号レーン抜け。次接敵へ移行する。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'SIGNAL_CONTINUE' })}>ENTER ENCOUNTER 2</button>
+              {(signalTunnelScenario?.choices && signalTunnelScenario.choices.length > 0
+                ? signalTunnelScenario.choices
+                : [
+                  { id: 'analyze_trace', label: 'Analyze Trace', text: '干渉源を解析し、断片ログを抽出する。' },
+                  { id: 'hold_lane', label: 'Keep Driving', text: '速度を維持し、次接敵を優先する。' },
+                  { id: 'open_radio', label: 'Open Radio Channel', text: 'AM帯を開いて交信を試みる。' },
+                ])
+                .map((choice) => {
+                  const choiceId = (choice.id === 'analyze_trace' || choice.id === 'hold_lane' || choice.id === 'open_radio')
+                    ? choice.id
+                    : 'hold_lane';
+                  const disabled = (choiceId === 'analyze_trace' || choiceId === 'open_radio') && state.signal <= 0;
+                  return (
+                    <button
+                      key={choice.id}
+                      className={choiceId === 'open_radio' ? 'command-button command-button--contract' : 'command-button command-button--route'}
+                      onMouseEnter={() => setHoveredMoeHint(choice.text || '')}
+                      onMouseLeave={() => setHoveredMoeHint('')}
+                      onClick={() => dispatch({ type: 'SIGNAL_ROUTE_CHOICE', choiceId })}
+                      disabled={disabled}
+                    >
+                      {choice.label}
+                    </button>
+                  );
+                })}
             </div>}
 
             {state.gamePhase === 'boss_preview' && <div className="command-window command-list">
-              <button className="command-button command-button--danger" onMouseEnter={() => setHoveredMoeHint('深層反応に挑む。高リスク高リターン。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'BOSS_PREVIEW_CHOICE', choice: 'challenge' })}>Challenge Deep Signal</button>
-              <button className="command-button command-button--route" onMouseEnter={() => setHoveredMoeHint('応急補給してから突入。安定重視。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'BOSS_PREVIEW_CHOICE', choice: 'emergency_salvage' })}>Emergency Salvage</button>
-              <button className="command-button command-button--route" onMouseEnter={() => setHoveredMoeHint('ここで撤退。戦果の確保を優先。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'BOSS_PREVIEW_CHOICE', choice: 'return_gate' })}>Return Gate</button>
+              <button className="command-button command-button--danger" onMouseEnter={() => setHoveredMoeHint(getDialogueLine('hint.hover.boss.challenge', '深層反応に挑む。高リスク高リターン。'))} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'BOSS_PREVIEW_CHOICE', choice: 'challenge' })}>Challenge Deep Signal</button>
+              <button className="command-button command-button--route" onMouseEnter={() => setHoveredMoeHint(getDialogueLine('hint.hover.boss.emergency_salvage', '応急補給してから突入。安定重視。'))} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'BOSS_PREVIEW_CHOICE', choice: 'emergency_salvage' })}>Emergency Salvage</button>
+              <button className="command-button command-button--route" onMouseEnter={() => setHoveredMoeHint(getDialogueLine('hint.hover.boss.return_gate', 'ここで撤退。戦果の確保を優先。'))} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'BOSS_PREVIEW_CHOICE', choice: 'return_gate' })}>Return Gate</button>
             </div>}
 
             {state.gamePhase === 'return_gate' && <div className="command-window command-list">
-              <button className="command-button command-button--route" onMouseEnter={() => setHoveredMoeHint('帰還処理を実行。地上へ戻る。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'RETURN_TO_SURFACE' })}>RETURN TO SURFACE</button>
+              <button className="command-button command-button--route" onMouseEnter={() => setHoveredMoeHint(getDialogueLine('hint.hover.return_to_surface', '帰還処理を実行。地上へ戻る。'))} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'RETURN_TO_SURFACE' })}>RETURN TO SURFACE</button>
             </div>}
 
             {state.gamePhase === 'garage' && <div className="command-window command-list">
@@ -3831,7 +3933,7 @@ export function App() {
               <span className="event-chip event-chip--route">LOADOUT READY</span>
             </div>
             <h2>Next Sortie Setup</h2>
-            <p>M.O.E.: 「戻れたね。次は出る前に少し積み替えよっか。」</p>
+            <p>M.O.E.: 「{getDialogueLine('moe.garage.enter', '戻れたね。次は出る前に少し積み替えよっか。')}」</p>
             <div className="garage-columns">
               <div className="garage-block">
                 <h3>PREVIOUS RUN</h3>
@@ -3853,7 +3955,7 @@ export function App() {
                     <p><span>Return Gate</span><strong>{latestRunRecord.returnGateUsed ? 'Used' : 'No'}</strong></p>
                     <p><span>Final</span><strong>{latestRunRecord.finalResources.fuel}/{latestRunRecord.finalResources.armor}/{latestRunRecord.finalResources.signal}/{latestRunRecord.finalResources.mainAmmo}/{latestRunRecord.finalResources.seAmmo}</strong></p>
                   </div>
-                  : <p>No previous run data</p>}
+                  : <p>{getDialogueLine('ui.common.no_previous_run', 'No previous run data')}</p>}
                 {latestRunRecord && <div className="command-window">
                   <strong>M.O.E. Suggestion</strong>
                   <p>M.O.E.: 「{latestRunRecord.moeComment ?? buildMoeRunComment(latestRunRecord)}」</p>
@@ -3919,7 +4021,7 @@ export function App() {
                         </div>;
                       })}
                     </div>
-                    <p>M.O.E.: 「断片が増えるほど、わたしの地図も変わる。」</p>
+                    <p>M.O.E.: 「{getDialogueLine('moe.garage.memory', '断片が増えるほど、わたしの地図も変わる。')}」</p>
                   </div>
                 </details>
               </div>
@@ -3998,7 +4100,7 @@ export function App() {
                 </div>
                 <h3>Tonight's Deep Signal</h3>
                 <p>TOLL GATE SAINT // armored / bargain / guard / toll demand</p>
-                <p>M.O.E.: 「料金所型の強い反応。主砲弾かS-E弾、どっちかは残しておきたいね。」</p>
+                <p>M.O.E.: 「{getDialogueLine('moe.garage.boss_tip', '料金所型の強い反応。主砲弾かS-E弾、どっちかは残しておきたいね。')}」</p>
                 <details className="garage-fold">
                   <summary>AUTOPLAY LAB (OPTIONAL)</summary>
                   <div className="garage-fold__body">
@@ -4223,6 +4325,14 @@ export function App() {
               <div className="event-kicker">SIGNAL LANE</div>
               <span className="event-chip event-chip--route">BOOSTED</span>
             </div>
+            <p>{signalTunnelScenario?.title ?? 'Signal Tunnel'}: {signalTunnelScenario?.body ?? 'AM帯干渉を検知。進入手順を選択してください。'}</p>
+            <div className="next-node-list">
+              {(signalTunnelScenario?.choices ?? []).map((choice) => <div key={`signal-choice-${choice.id}`} className="next-node">
+                <span>◎</span>
+                <strong>{choice.label}</strong>
+                <small>{choice.text}</small>
+              </div>)}
+            </div>
             <p>Signal boosted / NAVI Forecast temporarily enhanced ({state.tempForecastBoost > 1 ? '+2' : '+1'} lane gain).</p>
           </section>}
 
@@ -4238,7 +4348,7 @@ export function App() {
               <div className="next-node"><span>▲</span><strong>Suggested Weakness</strong><small>{bossIntel.likelyWeaknesses}</small></div>
               <div className="next-node"><span>▲</span><strong>Risk / Reward</strong><small>{bossIntel.riskTags} / {bossIntel.rewardTags}</small></div>
             </div>
-            <p>M.O.E.: 「主砲弾かS-E弾が足りないなら、帰るのも正解。」</p>
+            <p>M.O.E.: 「{getDialogueLine('moe.run.boss_preview', '料金所型の強い反応。無理なら引き返そ。')}」</p>
           </section>}
 
           {(state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && <section className="event-card">
