@@ -35,8 +35,8 @@ contract:
   maxSuccess: 0.95
 
 escape:
-  baseChance: 0.7
-  reaperPenalty: 0.15
+  baseChance: 0.62
+  reaperPenalty: 0.22
 
 approach:
   hitAndRunBaseChance: 0.6
@@ -57,30 +57,39 @@ weapons:
       damage: 4
       ammo: 8
     light_cannon:
-      damage: 3
+      damage: 4
       ammo: 12
     heavy_cannon:
       damage: 6
       ammo: 5
+    burst_cannon:
+      damage: 5
+      ammo: 9
   subGun:
     hood_mg:
-      damage: 1
+      damage: 2
     twin_mg:
-      damage: 1
+      damage: 2
       hits: 2
     suppression_mg:
-      damage: 1
+      damage: 2
       softenChance: 0.4
+    road_sweeper:
+      damage: 2
   specialEquipment:
     signal_harpoon:
       damage: 2
-      ammo: 4
+      ammo: 5
       seAmmoCost: 1
     micro_missile:
       damage: 3
-      ammo: 3
+      ammo: 4
       seAmmoCost: 1
     emp_flare:
       damage: 1
       ammo: 4
+      seAmmoCost: 1
+    jammer_pulse:
+      damage: 2
+      ammo: 5
       seAmmoCost: 1

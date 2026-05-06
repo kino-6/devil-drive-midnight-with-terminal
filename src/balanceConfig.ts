@@ -1,6 +1,6 @@
-type MainGunId = 'rusted_cannon' | 'light_cannon' | 'heavy_cannon';
-type SubGunId = 'hood_mg' | 'twin_mg' | 'suppression_mg';
-type SpecialEquipmentId = 'signal_harpoon' | 'micro_missile' | 'emp_flare';
+type MainGunId = 'rusted_cannon' | 'light_cannon' | 'heavy_cannon' | 'burst_cannon';
+type SubGunId = 'hood_mg' | 'twin_mg' | 'suppression_mg' | 'road_sweeper';
+type SpecialEquipmentId = 'signal_harpoon' | 'micro_missile' | 'emp_flare' | 'jammer_pulse';
 
 export type BalanceConfig = {
   version: string;

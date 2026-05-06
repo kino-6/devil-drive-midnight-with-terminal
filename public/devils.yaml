@@ -1,0 +1,222 @@
+# Runtime devil roster / encounter profile
+# This file is optional. Missing values fall back to built-in defaults.
+version: "tokyo-devils-v1"
+
+lineups:
+  enc1: "pixie_shibuya_glow, whisper_broker"
+  enc2: "no_face_taxi_passenger, abandoned_ai_navi"
+  boss: "toll_gate_saint"
+
+profiles:
+  whisper_broker:
+    label: "WHISPER BROKER"
+    subtitle: "A slim broker exchanging routes for promises."
+    threat: "MED"
+    signal: "CONTRACT TRACE / VIOLET BAND"
+    contractable: true
+
+  roadside_phone:
+    label: "ROADSIDE PHONE"
+    subtitle: "Ringing public line with an impossible child voice."
+    threat: "MED"
+    signal: "VOICE CARRIER / AM 666.0"
+    contractable: true
+
+  pixie_shibuya_glow:
+    label: "PIXIE // SHIBUYA GLOW"
+    subtitle: "Tiny city-light fairy that plays with lane signals."
+    threat: "LOW"
+    signal: "STREETLIGHT FRACTAL / SOFT CHIME"
+    contractable: true
+
+  foxfire_navi:
+    label: "FOXFIRE NAVI"
+    subtitle: "Kitsunebi guide flickering between shrine lanes and flyovers."
+    threat: "MED"
+    signal: "KITSUNEBI TRACE / ROUTE SPOOF"
+    contractable: true
+
+  no_face_taxi_passenger:
+    label: "NO-FACE TAXI PASSENGER"
+    subtitle: "A faceless rider waiting in the rear-view mirror."
+    threat: "HIGH"
+    signal: "METER DRIFT / BLANK ID"
+    contractable: true
+
+  silent_shape:
+    label: "SILENT SHAPE"
+    subtitle: "A black mass that swallows engine noise."
+    threat: "HIGH"
+    signal: "AUDIO NULL / EDGE BLUR"
+    contractable: true
+
+  abandoned_ai_navi:
+    label: "ABANDONED AI NAVI"
+    subtitle: "Cracked guidance unit with haunted pathing."
+    threat: "LOW"
+    signal: "LEGACY BUS / GHOST ARROW"
+    contractable: true
+
+  road_reaper:
+    label: "ROAD REAPER"
+    subtitle: "Traffic marshal silhouette with terminal intent."
+    threat: "CRITICAL"
+    signal: "HOSTILE SIGNAL / COLLISION VECTOR"
+    contractable: false
+
+  toll_gate_saint:
+    label: "TOLL GATE SAINT"
+    subtitle: "Armored toll keeper demanding passage."
+    threat: "CRITICAL"
+    signal: "DEEP SIGNAL / TOLL DEMAND"
+    contractable: true
+
+templates:
+  whisper_broker:
+    name: "Whisper Broker"
+    maxHp: 6
+    temperament: "hungry"
+    contractable: true
+    targetModuleId: "radio_voice"
+    affinities:
+      ballistic: "resist"
+      suppressive: "normal"
+      impact: "normal"
+      signal: "weak"
+      talk: "weak"
+
+  roadside_phone:
+    name: "Roadside Phone"
+    maxHp: 6
+    temperament: "lonely"
+    contractable: true
+    targetModuleId: "radio_voice"
+    affinities:
+      ballistic: "resist"
+      suppressive: "normal"
+      impact: "normal"
+      signal: "weak"
+      talk: "weak"
+
+  pixie_shibuya_glow:
+    name: "Pixie"
+    maxHp: 5
+    temperament: "curious"
+    contractable: true
+    targetModuleId: "radio_voice"
+    affinities:
+      ballistic: "resist"
+      suppressive: "normal"
+      impact: "normal"
+      signal: "weak"
+      talk: "weak"
+
+  foxfire_navi:
+    name: "Foxfire Navi"
+    maxHp: 6
+    temperament: "hungry"
+    contractable: true
+    targetModuleId: "radio_voice"
+    affinities:
+      ballistic: "normal"
+      suppressive: "normal"
+      impact: "resist"
+      signal: "weak"
+      talk: "weak"
+
+  no_face_taxi_passenger:
+    name: "No-Face Taxi Passenger"
+    maxHp: 7
+    temperament: "lonely"
+    contractable: true
+    targetModuleId: "silent_shape"
+    affinities:
+      ballistic: "resist"
+      suppressive: "normal"
+      impact: "normal"
+      signal: "normal"
+      talk: "weak"
+
+  silent_shape:
+    name: "Silent Shape"
+    maxHp: 7
+    temperament: "hostile"
+    contractable: true
+    targetModuleId: "silent_shape"
+    affinities:
+      ballistic: "normal"
+      suppressive: "resist"
+      impact: "normal"
+      signal: "weak"
+      talk: "normal"
+
+  abandoned_ai_navi:
+    name: "Abandoned AI Navi"
+    maxHp: 6
+    temperament: "machine"
+    contractable: true
+    targetModuleId: "abandoned_ai_navi"
+    affinities:
+      ballistic: "normal"
+      suppressive: "normal"
+      impact: "resist"
+      signal: "weak"
+      talk: "normal"
+
+  road_reaper:
+    name: "Road Reaper"
+    maxHp: 9
+    temperament: "proud"
+    contractable: false
+    affinities:
+      ballistic: "weak"
+      suppressive: "normal"
+      impact: "normal"
+      signal: "normal"
+      talk: "resist"
+
+  toll_gate_saint:
+    name: "Toll Gate Saint"
+    maxHp: 16
+    temperament: "proud"
+    contractable: true
+    armored: true
+    affinities:
+      ballistic: "normal"
+      suppressive: "resist"
+      impact: "resist"
+      signal: "weak"
+      talk: "normal"
+
+support:
+  effects:
+    whisper_broker: "Bargain traces boost negotiation readouts."
+    roadside_phone: "Talk effect +1 while AM 666.0 stays linked."
+    pixie_shibuya_glow: "Lane lights favor hidden routes and contract rewards."
+    foxfire_navi: "Route danger signatures become easier to read."
+    no_face_taxi_passenger: "Rear-view anomalies expose hostile intent shifts."
+    silent_shape: "Guard absorbs +1 damage once per encounter."
+    abandoned_ai_navi: "Analyze support + forecast stability improved."
+    road_reaper: "Hostile lane vectors are marked before impact."
+    toll_gate_saint: "Toll pulse stabilizes deep-route signal negotiation."
+
+  linkLogs:
+    whisper_broker: "WHISPER LINK: bargain static syncs with lane chatter."
+    roadside_phone: "AM 666.0 LINK: a child's voice counts your remaining exits."
+    pixie_shibuya_glow: "PIXIE LINK: lane lights flicker in a playful rhythm."
+    foxfire_navi: "FOXFIRE LINK: shrine-lights trace the next ramp."
+    no_face_taxi_passenger: "NO-FACE LINK: rear-view reflections delay by one breath."
+    silent_shape: "SILENT LINK: engine noise drops below measurable range."
+    abandoned_ai_navi: "NAVI LINK: an obsolete route map overlays the windshield."
+    road_reaper: "REAPER LINK: hostile vectors etch into the guardrail glow."
+    toll_gate_saint: "TOLL LINK: gate pulse resonates through the dashboard frame."
+
+  stability:
+    whisper_broker: "HUNGRY"
+    roadside_phone: "NOISY"
+    pixie_shibuya_glow: "NOISY"
+    foxfire_navi: "STABLE"
+    no_face_taxi_passenger: "UNKNOWN"
+    silent_shape: "UNKNOWN"
+    abandoned_ai_navi: "NOISY"
+    toll_gate_saint: "STABLE"

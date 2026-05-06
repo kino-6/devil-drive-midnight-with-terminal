@@ -18,22 +18,15 @@ media:
     garage_enter: "sfx/garage_enter.wav"
 
 images:
-  logo: "ui/logo.png"
-  player: "ui/player.png"
-  moe: "ui/moe.png"
+  moe: "images/moe/MOE_Default.png"
   enemies:
-    whisper_broker: "enemies/whisper_broker.png"
-    roadside_phone: "enemies/roadside_phone.png"
-    pixie_shibuya_glow: "enemies/pixie_shibuya_glow.png"
-    foxfire_navi: "enemies/foxfire_navi.png"
-    no_face_taxi_passenger: "enemies/no_face_taxi_passenger.png"
-    silent_shape: "enemies/silent_shape.png"
-    abandoned_ai_navi: "enemies/abandoned_ai_navi.png"
-    road_reaper: "enemies/road_reaper.png"
-    toll_gate_saint: "enemies/toll_gate_saint.png"
+    pixie_shibuya_glow: "images/devil/Pixie.png"
+    silent_shape: "images/devil/Silent_Shape.png"
+    abandoned_ai_navi: "images/devil/Abandoned_AI_Navi.png"
+    road_reaper: "images/devil/Closure_Ogre.png"
+    toll_gate_saint: "images/devil/Toll_Gate_Saint.png"
   ui:
-    windshield: "ui/windshield_bg.png"
-    roadOverlay: "ui/road_overlay.png"
+    windshield: "images/ui/nightloop.png"
 
 ui:
   shellClass: "theme-midnight"

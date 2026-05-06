@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/assetmanifest.ts","./src/balanceconfig.ts","./src/main.tsx"],"version":"5.9.3"}
+{"root":["./src/app.tsx","./src/assetmanifest.ts","./src/balanceconfig.ts","./src/devilconfig.ts","./src/main.tsx","./src/savesystem.ts","./src/telemetry.ts","./src/components/dashboardwidgets.tsx","./src/components/encountervisuals.tsx","./src/game/runinsights.ts","./src/game/types.ts"],"version":"5.9.3"}

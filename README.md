@@ -30,6 +30,7 @@ React + TypeScript + Viteで作られた、**Run-first** の短編MVPです。
 - Story断片ログ回収（Result反映 + Garage閲覧）
 - YAMLベースの外部設定:
   - `public/balance.yaml`（ゲームバランス）
+  - `public/devils.yaml`（敵プロファイル/相性/ラインナップ/支援ログ）
   - `public/assets/manifest.yaml`（BGM/SFX/画像/UI差し替え）
 
 ## セットアップ
@@ -112,7 +113,21 @@ Garageの `AUTOPLAY LAB` は、この設定値を使ってシミュレーショ�
 
 すべてフォールバック実装済みで、指定アセットが見つからない場合は既存描画（SVG/既定UI）を使用します。
 
+### 3) Devilデータ設定
+
+- ファイル: `public/devils.yaml`
+- 読み込みタイミング: 起動時
+- 主な調整項目:
+  - `lineups`（enc1 / enc2 / boss）
+  - `profiles`（表示名、脅威、Signal文言、契約可否）
+  - `templates`（HP、temperament、affinity、契約モジュール）
+  - `support`（Active Support Daemonの効果文、リンクログ、stability）
+
+`public/devils.yaml` が欠落・不整合の場合は、ビルトイン定義へ自動フォールバックします。
+
 ## ドキュメント
 
 - 仕様概要: [docs/game-design.md](docs/game-design.md)
 - 改善バックログ（草案）: [docs/mvp-improvement-issues.md](docs/mvp-improvement-issues.md)
+- LLM/Agent編集導線: [docs/llm-code-map.md](docs/llm-code-map.md)
+- Save仕様: [docs/save-system.md](docs/save-system.md)
