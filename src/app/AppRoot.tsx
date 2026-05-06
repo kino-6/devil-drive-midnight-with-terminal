@@ -38,7 +38,7 @@ import {
   getRouteEventScenario,
 } from '../scenario/scenarioLoader';
 import { ResourceMeter } from '../components/DashboardWidgets';
-import { ApproachContactMarker, AssetFigure, BattleDevilSprite } from '../components/EncounterVisuals';
+import { AssetFigure } from '../components/EncounterVisuals';
 import { buildMoeRunComment, resultLabel } from '../game/runInsights';
 import { getDevilConfig } from '../devilConfig';
 import {
@@ -124,6 +124,8 @@ import { useRuntimeConfigEffects } from './hooks/useRuntimeConfigEffects';
 import { useAudioEffects } from './hooks/useAudioEffects';
 import { CockpitHeader } from './components/CockpitHeader';
 import { PrologueOverlay } from './components/PrologueOverlay';
+import { BattleView } from './components/BattleView';
+import { TerminalPanel } from './components/TerminalPanel';
 
 export function App() {
   const [state, dispatch] = useReducer(reducer, undefined, initState);
@@ -150,7 +152,7 @@ export function App() {
   const [assetManifest, setAssetManifest] = useState<AssetManifest>(defaultAssetManifest);
   const [assetManifestLoaded, setAssetManifestLoaded] = useState(false);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
-  const terminalLogRef = useRef<HTMLUListElement | null>(null);
+  const terminalLogRef = useRef<HTMLUListElement>(null);
   const bgmRef = useRef<HTMLAudioElement | null>(null);
   const lastSfxAtRef = useRef(0);
   const phaseRef = useRef<GamePhase>(state.gamePhase);
@@ -166,6 +168,7 @@ export function App() {
   const selectedSubGun = getSubGunSpec(state.selectedLoadout.subGunId);
   const selectedSE = getSpecialEquipmentSpec(state.selectedLoadout.specialEquipmentId);
   const selectedSupport = contractSupportCatalog[state.selectedLoadout.contractSupportId];
+  const encounterProfileMap = encounterProfiles();
   const selectedStageProfile = getStageProfile(state.stage);
   const selectedStageAdvisory = getGarageStageAdvisory(state, state.stage);
   const nextRunPreview = getRunStartResources(state.selectedLoadout, state.vehicleUpgrades);
@@ -284,10 +287,10 @@ export function App() {
   ];
 
   const contractEnabled = !!selectedEnemy && selectedEnemy.contractWindow && selectedEnemy.contractable;
-  const selectedEnemyAnalyzed = !!selectedEnemy && (isBossProfile(selectedEnemy.profile) || state.encounter.analyzedEnemyIds.includes(selectedEnemy.id) || selectedEnemy.affinityRevealed);
-  const detailEnemyAnalyzed = !!detailEnemy && (isBossProfile(detailEnemy.profile) || state.encounter.analyzedEnemyIds.includes(detailEnemy.id) || detailEnemy.affinityRevealed);
+  const selectedEnemyAnalyzed = !!selectedEnemy && (isBossProfile(selectedEnemy.profile) || state.encounter.analyzedEnemyIds.includes(selectedEnemy.id) || !!selectedEnemy.affinityRevealed);
+  const detailEnemyAnalyzed = !!detailEnemy && (isBossProfile(detailEnemy.profile) || state.encounter.analyzedEnemyIds.includes(detailEnemy.id) || !!detailEnemy.affinityRevealed);
   const selectedEnemyDisplayLabel = selectedEnemyAnalyzed && selectedEnemy
-    ? encounterProfiles()[selectedEnemy.profile].label
+    ? encounterProfileMap[selectedEnemy.profile].label
     : 'UNKNOWN SIGN';
   const approachRevealIdentity = false;
   const windshieldThreatLabel = (() => {
@@ -1146,135 +1149,57 @@ export function App() {
           <small>{isWindshieldFolded ? 'GARAGE / FOLDED' : state.gamePhase.toUpperCase()}</small>
         </div>
 
-        <section className={`battle-view ${isEncounterActive ? 'is-hot' : ''} ${isRoadMoving ? 'is-cruising' : ''} ${isRoadStopped ? 'is-stopped' : ''} ${isBossPhase ? 'is-boss' : ''} ${hitFxTone ? `is-hitfx-${hitFxTone}` : ''} ${isArmorCritical ? 'is-armor-critical' : ''} ${isWindshieldFolded ? 'is-folded' : ''}`}>
-          <div className="battle-view__frame" aria-hidden="true">
-            <span className="battle-view__pillar battle-view__pillar--left" />
-            <span className="battle-view__pillar battle-view__pillar--right" />
-            <span className="battle-view__dashboard-lip" />
-          </div>
-          <div className="battle-view__road">
-            <span className="battle-view__roadline" />
-            <span className="battle-view__rail battle-view__rail--left" />
-            <span className="battle-view__rail battle-view__rail--right" />
-            <span className="battle-view__viaduct" />
-            <span className="battle-view__streetlights" />
-            <span className="battle-view__city" />
-            <span className="battle-view__speedlines" />
-            <span className="battle-view__mist" />
-            <span className="battle-view__headlights" />
-            <span className="battle-view__armor-crack" />
-            <span key={`hitfx-${hitFxPulse}`} className="battle-view__impact-fx" />
-          </div>
-          <div className="battle-view__hud">
-            <span>THREAT FIELD {aliveEnemies.length > 0 && (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') ? 'ACTIVE' : 'CLEAR'}</span>
-            <strong>{windshieldThreatLabel}</strong>
-          </div>
-          {isBossPhase && <div className="battle-view__boss-alert">
-            <span>BOSS SIGNAL</span>
-            <strong>TOLL GATE SAINT</strong>
-          </div>}
-          {state.gamePhase === 'approach' && <div className="battle-view__ingress">
-            {ingressSteps.map((step, idx) => <div key={step.label} className={`battle-view__ingress-step ${step.done ? 'is-done' : ''} ${idx === ingressSteps.length - 1 ? 'is-current' : ''}`}>
-              <span>{step.label}</span>
-            </div>)}
-          </div>}
-          <div className="battle-view__devils">
-            {(state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter' || state.gamePhase === 'reward') && state.encounter.enemies.map((enemy, index) => {
-              const analyzed = isBossProfile(enemy.profile) || state.encounter.analyzedEnemyIds.includes(enemy.id) || enemy.revealed;
-              const imageSrc = analyzed
-                ? resolveEnemyAsset(enemy.profile, enemyAssetMap)
-                : resolveUnknownEnemyAsset(index);
-              return <BattleDevilSprite
-                key={enemy.id}
-                devil={enemy}
-                lane={resolveEnemyLane(index, state.encounter.enemies.length, state.gamePhase === 'boss_encounter')}
-                focused={enemy.id === state.encounter.selectedEnemyId}
-                analyzed={analyzed}
-                imageSrc={imageSrc}
-                hitFx={enemy.id === state.encounter.selectedEnemyId ? hitFxTone ?? undefined : undefined}
-                onSelect={() => dispatch({ type: 'SELECT_ENEMY', enemyId: enemy.id })}
-                onHoverEnemy={setHoveredEnemyId}
-                encounterProfiles={encounterProfiles()}
-              />;
-            })}
-            {state.gamePhase === 'approach' && approachLineup.map((profile, index) => <ApproachContactMarker
-              key={`${profile}-${index}`}
-              profile={profile}
-              lane={index === 0 ? 'left' : index === 1 ? 'center' : 'right'}
-              scanSuccess={!!state.approach?.scanSuccess}
-              revealIdentity={approachRevealIdentity}
-              imageSrc={approachRevealIdentity ? resolveEnemyAsset(profile, enemyAssetMap) : resolveUnknownEnemyAsset(index)}
-              encounterProfiles={encounterProfiles()}
-              getLikelyWeaknessSummary={getLikelyWeaknessSummary}
-            />)}
-          </div>
-          {(state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && detailEnemy && <section className="target-detail-panel target-detail-panel--overlay">
-            <div className="target-detail-panel__head">
-              <strong>TARGET DETAIL</strong>
-              <small>{detailEnemyAnalyzed ? detailEnemy.name.toUpperCase() : 'UNKNOWN SIGN'}</small>
-            </div>
-            <div className="target-detail-panel__core">
-              <span className={`target-detail-panel__intent intent--${detailEnemy.intent}`}>
-                {detailIntentIconMap[detailEnemy.intent]} {detailEnemyAnalyzed ? detailEnemy.intent.toUpperCase() : 'UNKNOWN'}
-              </span>
-              {detailEnemyAnalyzed && <span>HP {detailEnemy.hp}/{detailEnemy.maxHp}</span>}
-              <span>{detailEnemyAnalyzed ? `${encounterProfiles()[detailEnemy.profile].contractable ? 'CONTRACTABLE' : 'HOSTILE'} / ${encounterProfiles()[detailEnemy.profile].threat}` : 'UNKNOWN / ---'}</span>
-            </div>
-            <div className="target-detail-panel__intel">
-              {detailEnemyAnalyzed
-                ? <>
-                  <small>{getContractHint(detailEnemy)}</small>
-                </>
-                : <small>INTEL LOCKED / HOVER + ANALYZE TO REVEAL</small>}
-              {detailEnemy.contractWindow && <small className="battle-devil__window">CONTRACT WINDOW OPEN</small>}
-            </div>
-          </section>}
-          <div className="battle-view__folded-note">WINDSHIELD VIEW FOLDED IN GARAGE MODE</div>
-        </section>
+        <BattleView
+          gamePhase={state.gamePhase}
+          enemies={state.encounter.enemies}
+          selectedEnemyId={state.encounter.selectedEnemyId}
+          analyzedEnemyIds={state.encounter.analyzedEnemyIds}
+          approachLineup={approachLineup}
+          approachScanSuccess={!!state.approach?.scanSuccess}
+          approachRevealIdentity={approachRevealIdentity}
+          isEncounterActive={isEncounterActive}
+          isRoadMoving={isRoadMoving}
+          isRoadStopped={isRoadStopped}
+          isBossPhase={isBossPhase}
+          isArmorCritical={isArmorCritical}
+          isWindshieldFolded={isWindshieldFolded}
+          hitFxTone={hitFxTone}
+          hitFxPulse={hitFxPulse}
+          aliveEnemiesCount={aliveEnemies.length}
+          ingressSteps={ingressSteps}
+          windshieldThreatLabel={windshieldThreatLabel}
+          detailEnemy={detailEnemy}
+          detailEnemyAnalyzed={detailEnemyAnalyzed}
+          detailIntentIconMap={detailIntentIconMap}
+          profiles={encounterProfileMap}
+          getContractHint={getContractHint}
+          isBossProfile={isBossProfile}
+          resolveUnknownEnemyAsset={resolveUnknownEnemyAsset}
+          resolveEnemyAsset={(profile) => resolveEnemyAsset(profile, enemyAssetMap)}
+          resolveEnemyLane={resolveEnemyLane}
+          getLikelyWeaknessSummary={getLikelyWeaknessSummary}
+          onSelectEnemy={(enemyId) => dispatch({ type: 'SELECT_ENEMY', enemyId })}
+          onHoverEnemy={setHoveredEnemyId}
+        />
 
         <section className="battle-deck">
-          <section className="terminal-stack panel">
-            <section className="radio-panel radio-panel--terminal">
-              <div className="radio-panel__head">
-                <span>
-                  <AssetFigure
-                    src={moeAsset}
-                    alt="M.O.E."
-                    className="radio-panel__avatar radio-panel__avatar--moe"
-                    fallback={<></>}
-                    transparencyMode="auto-corner"
-                  />
-                  M.O.E. // NAVI AI
-                </span>
-                <small>{state.gamePhase.toUpperCase()} / {state.signal <= 2 ? 'NOISY' : 'CLEAR'}</small>
-              </div>
-              <div className="radio-bubble">
-                <p className="moe-live">「{liveMoeLine}」</p>
-              </div>
-            </section>
-            <section className={`terminal terminal-log ${isEncounterActive ? 'terminal--anomaly' : ''}`}>
-              <div className="terminal__head terminal-status">
-                <strong>DEVIL TERMINAL</strong>
-                <span>{runStatus}</span>
-              </div>
-              <div className="terminal-status__chips">
-                {terminalStatus.map((status) => <span key={status} className="terminal-status__chip">{status}</span>)}
-                {tacticalLines.map((line) => <span key={line} className="terminal-status__chip terminal-status__chip--tactical">{line}</span>)}
-              </div>
-              <ul ref={terminalLogRef} className="terminal-log__list">
-                {logLines.map((log, i, logs) => {
-                  const kind = classifyLog(log);
-                  return <li key={`${log}-${i}`} className={`terminal-log__line log-${kind} ${i === logs.length - 1 ? 'is-latest' : ''}`}>
-                    <span className="terminal-log__time">{getPseudoTimecode(i, logs.length, state.encounterIndex, state.encounter.turn)}</span>
-                    <span className="terminal-log__badge">{getLogBadge(kind)}</span>
-                    <span className="terminal-log__caret">&gt;</span>
-                    <span className="terminal-log__text">{log}</span>
-                  </li>;
-                })}
-              </ul>
-            </section>
-
-          </section>
+          <TerminalPanel
+            moeAsset={moeAsset}
+            gamePhase={state.gamePhase}
+            signal={state.signal}
+            liveMoeLine={liveMoeLine}
+            runStatus={runStatus}
+            terminalStatus={terminalStatus}
+            tacticalLines={tacticalLines}
+            logLines={logLines}
+            encounterIndex={state.encounterIndex}
+            encounterTurn={state.encounter.turn}
+            isEncounterActive={isEncounterActive}
+            terminalLogRef={terminalLogRef}
+            classifyLog={classifyLog}
+            getLogBadge={getLogBadge}
+            getPseudoTimecode={getPseudoTimecode}
+          />
 
           <section className={`command-core ${!(state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') ? 'command-core--standby' : ''}`}>
             <div className="panel-title panel-title--compact">
@@ -2010,7 +1935,7 @@ export function App() {
               : <div className="next-node-list">
                 {archiveEntries.map((entry) => {
                   const profileId = entry.profile as EncounterId | undefined;
-                  const profile = profileId ? encounterProfiles()[profileId] : undefined;
+                  const profile = profileId ? encounterProfileMap[profileId] : undefined;
                   return <div key={entry.id} className="next-node">
                     <span>{entry.analyzed ? '◎' : '□'}</span>
                     <strong>{entry.name.toUpperCase()}</strong>

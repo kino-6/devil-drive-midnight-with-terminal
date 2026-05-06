@@ -1,0 +1,170 @@
+import { ApproachContactMarker, BattleDevilSprite } from '../../components/EncounterVisuals';
+import type { EncounterProfile } from '../../devilConfig';
+import type { Devil, EncounterId, GamePhase, HitFxTone, Intent } from '../../game/types';
+
+type IngressStep = {
+  label: string;
+  done: boolean;
+};
+
+type BattleViewProps = {
+  gamePhase: GamePhase;
+  enemies: Devil[];
+  selectedEnemyId: string;
+  analyzedEnemyIds: string[];
+  approachLineup: EncounterId[];
+  approachScanSuccess: boolean;
+  approachRevealIdentity: boolean;
+  isEncounterActive: boolean;
+  isRoadMoving: boolean;
+  isRoadStopped: boolean;
+  isBossPhase: boolean;
+  isArmorCritical: boolean;
+  isWindshieldFolded: boolean;
+  hitFxTone: HitFxTone | null;
+  hitFxPulse: number;
+  aliveEnemiesCount: number;
+  ingressSteps: IngressStep[];
+  windshieldThreatLabel: string;
+  detailEnemy?: Devil;
+  detailEnemyAnalyzed: boolean;
+  detailIntentIconMap: Record<Intent, string>;
+  profiles: Record<EncounterId, EncounterProfile>;
+  getContractHint: (enemy: Devil) => string;
+  isBossProfile: (profile: EncounterId) => boolean;
+  resolveUnknownEnemyAsset: (index: number) => string | undefined;
+  resolveEnemyAsset: (profile: EncounterId) => string | undefined;
+  resolveEnemyLane: (index: number, total: number, isBoss: boolean) => 'left' | 'center' | 'right';
+  getLikelyWeaknessSummary: (profile: EncounterId) => string;
+  onSelectEnemy: (enemyId: string) => void;
+  onHoverEnemy: (enemyId: string | null) => void;
+};
+
+export const BattleView = ({
+  gamePhase,
+  enemies,
+  selectedEnemyId,
+  analyzedEnemyIds,
+  approachLineup,
+  approachScanSuccess,
+  approachRevealIdentity,
+  isEncounterActive,
+  isRoadMoving,
+  isRoadStopped,
+  isBossPhase,
+  isArmorCritical,
+  isWindshieldFolded,
+  hitFxTone,
+  hitFxPulse,
+  aliveEnemiesCount,
+  ingressSteps,
+  windshieldThreatLabel,
+  detailEnemy,
+  detailEnemyAnalyzed,
+  detailIntentIconMap,
+  profiles,
+  getContractHint,
+  isBossProfile,
+  resolveUnknownEnemyAsset,
+  resolveEnemyAsset,
+  resolveEnemyLane,
+  getLikelyWeaknessSummary,
+  onSelectEnemy,
+  onHoverEnemy,
+}: BattleViewProps) => (
+  <section
+    className={`battle-view ${isEncounterActive ? 'is-hot' : ''} ${isRoadMoving ? 'is-cruising' : ''} ${isRoadStopped ? 'is-stopped' : ''} ${isBossPhase ? 'is-boss' : ''} ${hitFxTone ? `is-hitfx-${hitFxTone}` : ''} ${isArmorCritical ? 'is-armor-critical' : ''} ${isWindshieldFolded ? 'is-folded' : ''}`}
+  >
+    <div className="battle-view__frame" aria-hidden="true">
+      <span className="battle-view__pillar battle-view__pillar--left" />
+      <span className="battle-view__pillar battle-view__pillar--right" />
+      <span className="battle-view__dashboard-lip" />
+    </div>
+    <div className="battle-view__road">
+      <span className="battle-view__roadline" />
+      <span className="battle-view__rail battle-view__rail--left" />
+      <span className="battle-view__rail battle-view__rail--right" />
+      <span className="battle-view__viaduct" />
+      <span className="battle-view__streetlights" />
+      <span className="battle-view__city" />
+      <span className="battle-view__speedlines" />
+      <span className="battle-view__mist" />
+      <span className="battle-view__headlights" />
+      <span className="battle-view__armor-crack" />
+      <span key={`hitfx-${hitFxPulse}`} className="battle-view__impact-fx" />
+    </div>
+    <div className="battle-view__hud">
+      <span>THREAT FIELD {aliveEnemiesCount > 0 && (gamePhase === 'encounter' || gamePhase === 'boss_encounter') ? 'ACTIVE' : 'CLEAR'}</span>
+      <strong>{windshieldThreatLabel}</strong>
+    </div>
+    {isBossPhase && (
+      <div className="battle-view__boss-alert">
+        <span>BOSS SIGNAL</span>
+        <strong>TOLL GATE SAINT</strong>
+      </div>
+    )}
+    {gamePhase === 'approach' && (
+      <div className="battle-view__ingress">
+        {ingressSteps.map((step, idx) => (
+          <div key={step.label} className={`battle-view__ingress-step ${step.done ? 'is-done' : ''} ${idx === ingressSteps.length - 1 ? 'is-current' : ''}`}>
+            <span>{step.label}</span>
+          </div>
+        ))}
+      </div>
+    )}
+    <div className="battle-view__devils">
+      {(gamePhase === 'encounter' || gamePhase === 'boss_encounter' || gamePhase === 'reward') &&
+        enemies.map((enemy, index) => {
+          const analyzed = isBossProfile(enemy.profile) || analyzedEnemyIds.includes(enemy.id) || enemy.revealed;
+          const imageSrc = analyzed ? resolveEnemyAsset(enemy.profile) : resolveUnknownEnemyAsset(index);
+          return (
+            <BattleDevilSprite
+              key={enemy.id}
+              devil={enemy}
+              lane={resolveEnemyLane(index, enemies.length, gamePhase === 'boss_encounter')}
+              focused={enemy.id === selectedEnemyId}
+              analyzed={analyzed}
+              imageSrc={imageSrc}
+              hitFx={enemy.id === selectedEnemyId ? hitFxTone ?? undefined : undefined}
+              onSelect={() => onSelectEnemy(enemy.id)}
+              onHoverEnemy={onHoverEnemy}
+              encounterProfiles={profiles}
+            />
+          );
+        })}
+      {gamePhase === 'approach' &&
+        approachLineup.map((profile, index) => (
+          <ApproachContactMarker
+            key={`${profile}-${index}`}
+            profile={profile}
+            lane={index === 0 ? 'left' : index === 1 ? 'center' : 'right'}
+            scanSuccess={approachScanSuccess}
+            revealIdentity={approachRevealIdentity}
+            imageSrc={approachRevealIdentity ? resolveEnemyAsset(profile) : resolveUnknownEnemyAsset(index)}
+            encounterProfiles={profiles}
+            getLikelyWeaknessSummary={getLikelyWeaknessSummary}
+          />
+        ))}
+    </div>
+    {(gamePhase === 'encounter' || gamePhase === 'boss_encounter') && detailEnemy && (
+      <section className="target-detail-panel target-detail-panel--overlay">
+        <div className="target-detail-panel__head">
+          <strong>TARGET DETAIL</strong>
+          <small>{detailEnemyAnalyzed ? detailEnemy.name.toUpperCase() : 'UNKNOWN SIGN'}</small>
+        </div>
+        <div className="target-detail-panel__core">
+          <span className={`target-detail-panel__intent intent--${detailEnemy.intent}`}>
+            {detailIntentIconMap[detailEnemy.intent]} {detailEnemyAnalyzed ? detailEnemy.intent.toUpperCase() : 'UNKNOWN'}
+          </span>
+          {detailEnemyAnalyzed && <span>HP {detailEnemy.hp}/{detailEnemy.maxHp}</span>}
+          <span>{detailEnemyAnalyzed ? `${profiles[detailEnemy.profile].contractable ? 'CONTRACTABLE' : 'HOSTILE'} / ${profiles[detailEnemy.profile].threat}` : 'UNKNOWN / ---'}</span>
+        </div>
+        <div className="target-detail-panel__intel">
+          {detailEnemyAnalyzed ? <small>{getContractHint(detailEnemy)}</small> : <small>INTEL LOCKED / HOVER + ANALYZE TO REVEAL</small>}
+          {detailEnemy.contractWindow && <small className="battle-devil__window">CONTRACT WINDOW OPEN</small>}
+        </div>
+      </section>
+    )}
+    <div className="battle-view__folded-note">WINDSHIELD VIEW FOLDED IN GARAGE MODE</div>
+  </section>
+);
