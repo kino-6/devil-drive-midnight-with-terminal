@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { AffinityType, Devil, EncounterId, HitFxTone } from '../game/types';
+import type { Devil, EncounterId, HitFxTone } from '../game/types';
 
 function renderDevilArt(profile: EncounterId) {
   if (profile === 'whisper_broker') {
@@ -93,32 +93,34 @@ export function AssetFigure({
 
 type EncounterProfile = { label: string; threat: 'LOW' | 'MED' | 'HIGH' | 'CRITICAL'; signal: string; contractable: boolean };
 
+const intentIconMap: Record<Devil['intent'], string> = {
+  attack: '⚔',
+  curse: '☣',
+  bargain: '◇',
+  guard: '🛡',
+  flee: '↯',
+};
+
 export function BattleDevilSprite({
   devil,
   focused,
   lane,
   analyzed,
   onSelect,
+  onHoverEnemy,
   imageSrc,
   hitFx,
   encounterProfiles,
-  affinityOrder,
-  affinityLabel,
-  getAffinityTag,
-  getContractHint,
 }: {
   devil: Devil;
   focused: boolean;
   lane: 'left' | 'center' | 'right';
   analyzed: boolean;
   onSelect: () => void;
+  onHoverEnemy?: (enemyId: string | null) => void;
   imageSrc?: string;
   hitFx?: HitFxTone;
   encounterProfiles: Record<EncounterId, EncounterProfile>;
-  affinityOrder: AffinityType[];
-  affinityLabel: Record<AffinityType, string>;
-  getAffinityTag: (rating: Devil['affinities'][AffinityType]) => string;
-  getContractHint: (enemy: Devil) => string;
 }) {
   const profile = encounterProfiles[devil.profile];
   const hpPct = Math.max(0, (devil.hp / devil.maxHp) * 100);
@@ -133,6 +135,10 @@ export function BattleDevilSprite({
         onSelect();
       }
     }}
+    onMouseEnter={() => onHoverEnemy?.(devil.id)}
+    onMouseLeave={() => onHoverEnemy?.(null)}
+    onFocus={() => onHoverEnemy?.(devil.id)}
+    onBlur={() => onHoverEnemy?.(null)}
   >
     <div className="battle-devil__body">
       <div className="battle-devil__art">
@@ -145,30 +151,14 @@ export function BattleDevilSprite({
       </div>
       <div className="battle-devil__label">
         <strong>{analyzed ? devil.name.toUpperCase() : 'UNKNOWN SIGN'}</strong>
-        <span>{profile.contractable ? 'CONTRACTABLE' : 'HOSTILE'} / {profile.threat}</span>
       </div>
       <div className="battle-devil__hp">
         <span>HP {devil.hp}/{devil.maxHp}</span>
         <div><i style={{ width: `${hpPct}%` }} /></div>
       </div>
-      <div className="battle-devil__intel">
-        {analyzed
-          ? <>
-            <small>TEMP: {devil.temperament.toUpperCase()}</small>
-            <small>INTENT: {devil.intent.toUpperCase()}</small>
-            <small className="battle-devil__affinity">
-              AFF:
-              {affinityOrder.map((affinity) => <span key={`${devil.id}-${affinity}`} className={`affinity-chip affinity-chip--${devil.affinities[affinity]}`}>
-                {affinityLabel[affinity].slice(0, 3).toUpperCase()} {getAffinityTag(devil.affinities[affinity])}
-              </span>)}
-            </small>
-            <small>{getContractHint(devil)}</small>
-          </>
-          : <>
-            <small>INTEL: UNKNOWN / ANALYZE REQUIRED</small>
-            <small className="battle-devil__affinity">AFF: UNKNOWN</small>
-          </>}
-        {devil.contractWindow && <small className="battle-devil__window">CONTRACT WINDOW OPEN</small>}
+      <div className="battle-devil__intent">
+        <span className={`battle-devil__intent-icon intent--${devil.intent}`}>{intentIconMap[devil.intent]}</span>
+        <small>{analyzed ? devil.intent.toUpperCase() : 'UNKNOWN'}</small>
       </div>
     </div>
     {focused && <span className="battle-devil__target">TARGET LOCK</span>}

@@ -218,3 +218,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local AI scenario authoring workflow
+# - generated drafts are local scratch and can be discarded
+# - reviewed JSON is intended for tracking/review
+drafts/scenarios/generated/*
+!drafts/scenarios/generated/.gitkeep

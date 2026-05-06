@@ -33,6 +33,13 @@ import {
   type PersistentProgressionSnapshot,
   type TelemetryEventName,
 } from './telemetry';
+import {
+  getEncounterScenario,
+  getMoeLine,
+  getRouteEventScenario,
+  getScenarioLine,
+  loadScenarioPack,
+} from './scenario/scenarioLoader';
 import { ResourceMeter, StatusLamp } from './components/DashboardWidgets';
 import { ApproachContactMarker, AssetFigure, BattleDevilSprite } from './components/EncounterVisuals';
 import { buildMoeRunComment, resultLabel } from './game/runInsights';
@@ -110,7 +117,7 @@ const defaultLoadout: Loadout = {
   mainGunId: 'light_cannon',
   subGunId: 'hood_mg',
   specialEquipmentId: 'signal_harpoon',
-  contractSupportId: 'moe_core',
+  contractSupportId: 'none',
 };
 
 const mainGunCatalog: Record<MainGunId, MainGun> = {
@@ -167,15 +174,15 @@ const getSpecialEquipmentSpec = (id: SpecialEquipmentId): SpecialEquipment => {
 };
 
 const contractSupportCatalog: Record<ContractSupportId, ContractSupport> = {
-  moe_core: { id: 'moe_core', name: 'M.O.E. Core', description: '標準搭載NAVI。ベース会話補助と戦術読み上げ。' },
+  none: { id: 'none', name: 'None', description: '追加サポートなし。M.O.E.は標準機能として常時稼働。' },
   radio_voice: { id: 'radio_voice', name: 'Radio Voice', description: 'Talk成功率 +5% / Signal Lane強化 / AM 666.0ノイズ' },
   silent_shape: { id: 'silent_shape', name: 'Silent Shape', description: '各Encounter最初のArmorダメージ-1 / 20%で開始時Fuel-1' },
   abandoned_ai_navi: { id: 'abandoned_ai_navi', name: 'Abandoned AI Navi', description: 'NAVI Forecast +1 turn / 20%で誤予測' },
 };
 
 const commandOptions: { id: CommandId; label: string; tone: 'danger' | 'contract' | 'route' | 'system'; group: 'WEAPON' | 'TERMINAL' | 'DRIVE' }[] = [
-  { id: 'main_gun', label: 'Main Gun', tone: 'danger', group: 'WEAPON' },
-  { id: 'sub_gun', label: 'Sub Gun', tone: 'danger', group: 'WEAPON' },
+  { id: 'main_gun', label: 'Main Cannon', tone: 'danger', group: 'WEAPON' },
+  { id: 'sub_gun', label: 'Sub Cannon', tone: 'danger', group: 'WEAPON' },
   { id: 'se_harpoon', label: 'S-E', tone: 'contract', group: 'WEAPON' },
   { id: 'analyze', label: 'Analyze', tone: 'system', group: 'TERMINAL' },
   { id: 'talk', label: 'Talk', tone: 'route', group: 'TERMINAL' },
@@ -195,6 +202,18 @@ const commandDescriptions: Record<CommandId, { description: string }> = {
   ram: { description: '体当たり3ダメージ。Armor-1。' },
   guard: { description: '次の被弾を軽減。' },
   escape: { description: 'Fuel-1で70%離脱。' },
+};
+
+const moeCommandGuides: Record<CommandId, string> = {
+  main_gun: '主砲を叩き込む。怒らせるけど、確実に削れる。',
+  sub_gun: '副砲で牽制。複数の敵に触って流れを作る。',
+  se_harpoon: 'S-Eは切り札。契約狙いか妨害か、撃ちどころが命。',
+  analyze: 'まず読む。相性を見れば無駄打ちを減らせる。',
+  talk: '会話は最短ルートになり得る。圧を上げすぎないで。',
+  contract: '契約窓が開いたら一気に。迷うと閉じる。',
+  ram: '体当たりは強いけど車体を削る。短期決戦向き。',
+  guard: '防御姿勢。次の被害を抑えて立て直す手。',
+  escape: '帰還も勝ち筋。持ち帰って次へ繋げよう。',
 };
 
 const affinityOrder: AffinityType[] = ['ballistic', 'suppressive', 'impact', 'signal', 'talk'];
@@ -563,6 +582,10 @@ const bossIntel = {
   rewardTags: 'deep salvage / gate control',
 };
 
+const routeScenarioIdMap: Partial<Record<'salvage' | 'signal' | 'push_forward' | 'return_gate', string>> = {
+  signal: 'signal_tunnel_01',
+};
+
 const computeAffinityDamage = (baseDamage: number, rating: AffinityRating) => {
   const affinity = getBalanceConfig().affinity;
   if (baseDamage <= 0) return 0;
@@ -591,6 +614,9 @@ const getLikelyWeaknessSummary = (profile: EncounterId): string => {
   if (weak.length === 0) return 'No clear weakness';
   return weak.map((affinity) => affinityToCommandLabel[affinity]).join(' / ');
 };
+
+const getEncounterIntroLine = (profile: EncounterId): string | undefined =>
+  getScenarioLine(getEncounterScenario(profile)?.intro);
 
 const buildMoeActionLine = (action: string, result: string, target?: string) =>
   target ? `${target}へ${action}。${result}` : `${action}。${result}`;
@@ -769,13 +795,22 @@ const resolveStoryFromRun = (state: State, resultType: ResultType): StoryState =
 
 const getNarrativeMoeLine = (state: State): string => {
   if (state.gamePhase === 'prologue') {
-    return '午前0時。夜環、開いたよ。浅層サルベージ任務……ってことになってる。本命は、前任者のログ反応。まだ消えてない。';
+    return getMoeLine(
+      'prologue.open',
+      '午前0時。夜環、開いたよ。浅層サルベージ任務……ってことになってる。本命は、前任者のログ反応。まだ消えてない。',
+    );
   }
   if (state.story.recoveredLogs.includes('LOG_01') && state.gamePhase === 'boss_preview') {
-    return '料金所の反応、前よりは読める。通行料を払う相手を間違えないで。';
+    return getMoeLine(
+      'boss_preview.toll_gate',
+      '料金所の反応、前よりは読める。通行料を払う相手を間違えないで。',
+    );
   }
   if (state.story.recoveredLogs.includes('LOG_00') && state.gamePhase === 'garage') {
-    return '前任者の声……記録には残ってない。でも、知ってる気がする。';
+    return getMoeLine(
+      'garage.after_log00',
+      '前任者の声……記録には残ってない。でも、知ってる気がする。',
+    );
   }
   return state.moeLine;
 };
@@ -1020,10 +1055,11 @@ const sanitizeRestoredState = (raw: unknown, fallback: State): State => {
     id === 'signal_harpoon' || id === 'micro_missile' || id === 'emp_flare' || id === 'jammer_pulse'
       ? id
       : fallback.selectedLoadout.specialEquipmentId;
-  const normalizeSupport = (id: unknown): ContractSupportId =>
-    id === 'moe_core' || id === 'radio_voice' || id === 'silent_shape' || id === 'abandoned_ai_navi'
-      ? id
-      : fallback.selectedLoadout.contractSupportId;
+  const normalizeSupport = (id: unknown): ContractSupportId => {
+    if (id === 'radio_voice' || id === 'silent_shape' || id === 'abandoned_ai_navi' || id === 'none') return id;
+    if (id === 'moe_core') return 'none';
+    return fallback.selectedLoadout.contractSupportId;
+  };
   const normalizePhase = (value: unknown): GamePhase => {
     const phases: GamePhase[] = [
       'prologue',
@@ -1314,6 +1350,9 @@ function reducer(state: State, action: Action): State {
     let mainAmmo = baseState.mainAmmo;
     let seAmmo = baseState.seAmmo;
     const logs = [...baseState.logs];
+    const introTarget = encounter.enemies.find(isAlive);
+    const introLine = introTarget ? getEncounterIntroLine(introTarget.profile) : undefined;
+    if (introLine) logs.push(`> ${introLine}`);
     const prep = { ...baseState.encounterPrep };
 
     if (!baseState.approach.scanSuccess) {
@@ -1413,6 +1452,9 @@ function reducer(state: State, action: Action): State {
     let seAmmo = state.seAmmo;
     let salvageCredits = state.salvageCredits;
     const logs = [...state.logs];
+    const introTarget = encounter.enemies.find(isAlive);
+    const introLine = introTarget ? getEncounterIntroLine(introTarget.profile) : undefined;
+    if (introLine) logs.push(`> ${introLine}`);
     const prep = createEmptyEncounterPrep();
     const baseTalkBonus = state.skillLevels.translation_assist * 0.03;
 
@@ -2149,6 +2191,8 @@ function reducer(state: State, action: Action): State {
             logs.push(`> MODULE SLOT UPDATED: ${contractModules[target.targetModuleId].name.toUpperCase()}`);
           }
           logs.push(`> CONTRACT REGISTERED: ${target.name.toUpperCase()}`);
+          const contractSuccessLine = getScenarioLine(getEncounterScenario(target.profile)?.contract?.success);
+          if (contractSuccessLine) logs.push(`> ${contractSuccessLine}`);
           activeSupportDaemon = makeActiveSupportDaemon(target);
           logs.push(`> SUPPORT DAEMON LINKED: ${target.name.toUpperCase()} // ${activeSupportDaemon.effectLabel.toUpperCase()}`);
           logs.push(`> ${supportDaemonLinkFlavorLogs()[activeSupportDaemon.profile]}`);
@@ -2418,7 +2462,10 @@ export function App() {
   const [showPlaytestReport, setShowPlaytestReport] = useState(false);
   const [showSaveTools, setShowSaveTools] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
+  const [showUtilityPanels, setShowUtilityPanels] = useState(false);
   const [showRunHistory, setShowRunHistory] = useState(false);
+  const [hoveredMoeHint, setHoveredMoeHint] = useState('');
+  const [hoveredEnemyId, setHoveredEnemyId] = useState<string | null>(null);
   const [telemetryRefresh, setTelemetryRefresh] = useState(0);
   const [saveRefresh, setSaveRefresh] = useState(0);
   const [debugSaveHeaders, setDebugSaveHeaders] = useState<Array<{ id: string; label?: string; createdAt: number }>>([]);
@@ -2458,6 +2505,11 @@ export function App() {
   const vehicleUpgradeOrder: VehicleUpgradeId[] = ['fuel_tank', 'armor_plating', 'ammo_rack', 'se_rack'];
 
   const selectedEnemy = useMemo(() => getSelectedEnemy(state.encounter), [state.encounter]);
+  const hoveredEnemy = useMemo(
+    () => (hoveredEnemyId ? state.encounter.enemies.find((enemy) => enemy.id === hoveredEnemyId) : undefined),
+    [hoveredEnemyId, state.encounter.enemies],
+  );
+  const detailEnemy = hoveredEnemy && isAlive(hoveredEnemy) ? hoveredEnemy : selectedEnemy;
   const runGrowth = useMemo(() => getRunGrowth(state), [state]);
   const narrativeMoeLine = useMemo(() => getNarrativeMoeLine(state), [state]);
   const aliveEnemies = state.encounter.enemies.filter(isAlive);
@@ -2508,6 +2560,21 @@ export function App() {
 
   const contractEnabled = !!selectedEnemy && selectedEnemy.contractWindow && selectedEnemy.contractable;
   const selectedEnemyAnalyzed = !!selectedEnemy && (state.encounter.analyzedEnemyIds.includes(selectedEnemy.id) || selectedEnemy.affinityRevealed);
+  const detailEnemyAnalyzed = !!detailEnemy && (state.encounter.analyzedEnemyIds.includes(detailEnemy.id) || detailEnemy.affinityRevealed);
+  const detailIntentIconMap: Record<Intent, string> = {
+    attack: '⚔',
+    curse: '☣',
+    bargain: '◇',
+    guard: '🛡',
+    flee: '↯',
+  };
+  const resolveEnemyLane = (index: number, total: number, isBoss: boolean): 'left' | 'center' | 'right' => {
+    if (isBoss || total <= 1) return 'center';
+    if (total === 2) return index === 0 ? 'left' : 'right';
+    if (index === 0) return 'left';
+    if (index === 1) return 'center';
+    return 'right';
+  };
   const commandAffinityTagMap: Partial<Record<CommandId, string>> = selectedEnemyAnalyzed && selectedEnemy
     ? Object.fromEntries(
       (Object.entries(commandAffinityMap) as Array<[CommandId, AffinityType]>).map(([commandId, affinity]) => [commandId, getAffinityTag(selectedEnemy.affinities[affinity])]),
@@ -2524,6 +2591,20 @@ export function App() {
     guard: state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter',
     escape: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && state.fuel > 0,
   };
+  const defaultMoeCommandHint = (() => {
+    if (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') {
+      return moeCommandGuides[state.encounter.selectedCommand] ?? '状況を読んで、手を選ぼう。';
+    }
+    if (state.gamePhase === 'approach') return '接敵前の選択で流れが決まる。先制か交渉準備か選んで。';
+    if (state.gamePhase === 'route_choice') return '次の車線を選ぶ時間。補給、信号、強行、帰還。';
+    if (state.gamePhase === 'salvage') return '拾えるのはひとつ。次の遭遇に何が足りないかで決めよう。';
+    if (state.gamePhase === 'boss_preview') return '深層反応が見えてる。挑むか、補給か、引くか。';
+    if (state.gamePhase === 'return_gate') return '帰還ゲート確保。無理せず地上へ戻る手順。';
+    if (state.gamePhase === 'garage') return '積み替えと成長を済ませて、次のRunに備えよう。';
+    if (state.gamePhase === 'result' || state.gamePhase === 'game_over') return '結果を確認して次の判断へ。';
+    return 'コマンドを選ぶと、私は横で読み上げる。';
+  })();
+  const moeCommandHint = hoveredMoeHint || defaultMoeCommandHint;
   type AppRuntimeSaveSnapshot = {
     state: State;
     runIndex: number;
@@ -2739,6 +2820,10 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    void loadScenarioPack();
+  }, []);
+
+  useEffect(() => {
     const cssVars = assetManifest.ui.cssVars ?? {};
     const root = document.documentElement;
     const touched: string[] = [];
@@ -2852,6 +2937,10 @@ export function App() {
     state.selectedLoadout.specialEquipmentId,
     state.selectedLoadout.contractSupportId,
   ]);
+
+  useEffect(() => {
+    setHoveredMoeHint('');
+  }, [state.gamePhase]);
 
   useEffect(() => {
     latestStateRef.current = state;
@@ -3364,15 +3453,6 @@ export function App() {
           <StatusLamp label="SYS" active tone={state.gamePhase === 'game_over' ? 'red' : 'green'} />
           <StatusLamp label="NAVI" active={state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter'} tone="cyan" />
           <StatusLamp label="WARN" active={state.fuel <= 3 || state.armor <= 3 || state.signal <= 1} tone="red" />
-          <button className="command-button command-button--system command-button--inline" onClick={() => setShowPlaytestReport((open) => !open)}>
-            {showPlaytestReport ? 'HIDE REPORT' : 'PLAYTEST REPORT'}
-          </button>
-          <button className="command-button command-button--system command-button--inline" onClick={() => setShowSaveTools((open) => !open)}>
-            {showSaveTools ? 'HIDE SAVE' : 'SAVE TOOLS'}
-          </button>
-          <button className="command-button command-button--system command-button--inline" onClick={() => setShowArchive((open) => !open)}>
-            {showArchive ? 'HIDE ARCHIVE' : 'ARCHIVE'}
-          </button>
         </div>
       </header>
 
@@ -3418,17 +3498,14 @@ export function App() {
             {(state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter' || state.gamePhase === 'reward') && state.encounter.enemies.map((enemy, index) => <BattleDevilSprite
               key={enemy.id}
               devil={enemy}
-              lane={index === 0 ? 'left' : index === 1 ? 'center' : 'right'}
+              lane={resolveEnemyLane(index, state.encounter.enemies.length, state.gamePhase === 'boss_encounter')}
               focused={enemy.id === state.encounter.selectedEnemyId}
               analyzed={state.encounter.analyzedEnemyIds.includes(enemy.id) || enemy.revealed}
               imageSrc={resolveAssetUrl(enemyAssetMap[enemy.profile])}
               hitFx={enemy.id === state.encounter.selectedEnemyId ? hitFxTone ?? undefined : undefined}
               onSelect={() => dispatch({ type: 'SELECT_ENEMY', enemyId: enemy.id })}
+              onHoverEnemy={setHoveredEnemyId}
               encounterProfiles={encounterProfiles()}
-              affinityOrder={affinityOrder}
-              affinityLabel={affinityLabel}
-              getAffinityTag={getAffinityTag}
-              getContractHint={getContractHint}
             />)}
             {state.gamePhase === 'approach' && approachLineup.map((profile, index) => <ApproachContactMarker
               key={`${profile}-${index}`}
@@ -3466,7 +3543,10 @@ export function App() {
               </ul>
             </section>
 
-            <section className="radio-panel">
+          </section>
+
+          <section className={`command-core ${!(state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') ? 'command-core--standby' : ''}`}>
+            <section className="radio-panel radio-panel--command">
               <div className="radio-panel__head">
                 <span>
                   <AssetFigure
@@ -3475,24 +3555,49 @@ export function App() {
                     className="radio-panel__avatar"
                     fallback={<></>}
                   />
-                  RADIO // M.O.E.
+                  M.O.E. // NAVI AI
                 </span>
                 <small>{state.gamePhase.toUpperCase()} / {state.signal <= 2 ? 'NOISY' : 'CLEAR'}</small>
               </div>
               <div className="radio-bubble">
                 <p className="moe-live">「{narrativeMoeLine}」</p>
+                <p className="moe-command">M.O.E.: 「{moeCommandHint}」</p>
                 {selectedEnemy && (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && <p className="moe-command">
                   「{selectedEnemy.contractWindow ? '契約窓、開いてる。今なら積める。' : getContractHint(selectedEnemy)}」
                 </p>}
               </div>
             </section>
-          </section>
-
-          <section className={`command-core ${!(state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') ? 'command-core--standby' : ''}`}>
             <div className="panel-title panel-title--compact">
-              <span>RPG COMMAND</span>
+              <span>COMMAND</span>
               <small>{(state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') ? 'SELECT ACTION' : state.gamePhase.toUpperCase()}</small>
             </div>
+
+            {(state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && detailEnemy && <section className="target-detail-panel">
+              <div className="target-detail-panel__head">
+                <strong>TARGET DETAIL</strong>
+                <small>{detailEnemyAnalyzed ? detailEnemy.name.toUpperCase() : 'UNKNOWN SIGN'}</small>
+              </div>
+              <div className="target-detail-panel__core">
+                <span className={`target-detail-panel__intent intent--${detailEnemy.intent}`}>
+                  {detailIntentIconMap[detailEnemy.intent]} {detailEnemyAnalyzed ? detailEnemy.intent.toUpperCase() : 'UNKNOWN'}
+                </span>
+                <span>HP {detailEnemy.hp}/{detailEnemy.maxHp}</span>
+                <span>{encounterProfiles()[detailEnemy.profile].contractable ? 'CONTRACTABLE' : 'HOSTILE'} / {encounterProfiles()[detailEnemy.profile].threat}</span>
+              </div>
+              <div className="target-detail-panel__intel">
+                {detailEnemyAnalyzed
+                  ? <>
+                    <small>TEMP: {detailEnemy.temperament.toUpperCase()}</small>
+                    <small>{getContractHint(detailEnemy)}</small>
+                    <small>
+                      AFF:
+                      {affinityOrder.map((affinity) => ` ${affinityLabel[affinity].slice(0, 3).toUpperCase()}-${getAffinityTag(detailEnemy.affinities[affinity])}`).join(' /')}
+                    </small>
+                  </>
+                  : <small>INTEL LOCKED / HOVER + ANALYZE TO REVEAL</small>}
+                {detailEnemy.contractWindow && <small className="battle-devil__window">CONTRACT WINDOW OPEN</small>}
+              </div>
+            </section>}
 
             {(state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && <>
               <div className="command-groups">
@@ -3511,6 +3616,21 @@ export function App() {
                       }}
                       disabled={!commandEnabledMap[command.id]}
                       type="button"
+                      onMouseEnter={() => {
+                        const hint = command.id === 'main_gun'
+                          ? `主砲 ${selectedMainGun.name}。威力 ${selectedMainGun.damage}、残弾 ${state.mainAmmo}。`
+                          : command.id === 'sub_gun'
+                            ? `副砲 ${selectedSubGun.name}。${selectedSubGun.description}`
+                            : command.id === 'se_harpoon'
+                              ? `S-E ${selectedSE.name}。${selectedSE.description}（残弾 ${state.seAmmo}）`
+                              : command.id === 'contract'
+                                ? (contractEnabled ? '契約窓が開いてる。今なら接続できる。' : '契約窓がまだ開いていない。TalkかS-Eを先に。')
+                                : moeCommandGuides[command.id];
+                        setHoveredMoeHint(hint);
+                      }}
+                      onMouseLeave={() => setHoveredMoeHint('')}
+                      onFocus={() => setHoveredMoeHint(moeCommandGuides[command.id])}
+                      onBlur={() => setHoveredMoeHint('')}
                       data-desc={
                         command.id === 'main_gun'
                           ? `${selectedMainGun.name}: DMG ${selectedMainGun.damage} / AMMO ${state.mainAmmo}`
@@ -3535,7 +3655,14 @@ export function App() {
             </>}
 
             {state.gamePhase === 'reward' && <div className="command-window command-list">
-              <button className="command-button command-button--route" onClick={() => dispatch({ type: 'REWARD_CONTINUE' })}>PROCEED</button>
+              <button
+                className="command-button command-button--route"
+                onMouseEnter={() => setHoveredMoeHint('回収結果をまとめて次フェーズへ移る。')}
+                onMouseLeave={() => setHoveredMoeHint('')}
+                onClick={() => dispatch({ type: 'REWARD_CONTINUE' })}
+              >
+                PROCEED
+              </button>
             </div>}
 
             {state.gamePhase === 'approach' && state.approach && <div className="command-window command-list">
@@ -3543,20 +3670,24 @@ export function App() {
                 ? <>
                   <button
                     className="command-button command-button--danger"
+                    onMouseEnter={() => setHoveredMoeHint('先制主砲。接敵前に削るけど交渉は荒れる。')}
+                    onMouseLeave={() => setHoveredMoeHint('')}
                     onClick={() => dispatch({ type: 'APPROACH_CHOOSE', option: 'preemptive_main_gun' })}
                     disabled={state.mainAmmo <= 0}
                     data-desc="先制主砲。接敵前に削る / MainAmmo-1 / 交渉難化"
                   >
                     Preemptive Main Gun
                   </button>
-                  <button className="command-button command-button--danger" onClick={() => dispatch({ type: 'APPROACH_CHOOSE', option: 'hit_and_run_ram' })} data-desc="轢き逃げ突破。Armor-1 Fuel-1 / 成功で遭遇回避">
+                  <button className="command-button command-button--danger" onMouseEnter={() => setHoveredMoeHint('轢き逃げ突破。成功すれば接敵を飛ばせる。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'APPROACH_CHOOSE', option: 'hit_and_run_ram' })} data-desc="轢き逃げ突破。Armor-1 Fuel-1 / 成功で遭遇回避">
                     Hit-and-Run Ram
                   </button>
-                  <button className="command-button command-button--route" onClick={() => dispatch({ type: 'APPROACH_CHOOSE', option: 'silent_coast' })} data-desc="静穏接近。Fuel-1 / 初手Talk成功率上昇 / 敵攻勢鈍化">
+                  <button className="command-button command-button--route" onMouseEnter={() => setHoveredMoeHint('静穏接近。交渉初手を通しやすくする。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'APPROACH_CHOOSE', option: 'silent_coast' })} data-desc="静穏接近。Fuel-1 / 初手Talk成功率上昇 / 敵攻勢鈍化">
                     Silent Coast
                   </button>
                   <button
                     className="command-button command-button--contract"
+                    onMouseEnter={() => setHoveredMoeHint('先行交信。契約窓を開けたい時の前振り。')}
+                    onMouseLeave={() => setHoveredMoeHint('')}
                     onClick={() => dispatch({ type: 'APPROACH_CHOOSE', option: 'open_channel' })}
                     disabled={state.signal <= 0}
                     data-desc="先行交信。Signal-1 / interest上昇 / hostile相手は逆上リスク"
@@ -3564,22 +3695,24 @@ export function App() {
                     Open Channel
                   </button>
                 </>
-                : <button className="command-button command-button--danger" onClick={() => dispatch({ type: 'APPROACH_CONTINUE' })}>
+                : <button className="command-button command-button--danger" onMouseEnter={() => setHoveredMoeHint('不意打ち受領。被害を抑える準備を。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'APPROACH_CONTINUE' })}>
                   Brace for Contact
                 </button>}
             </div>}
 
             {state.gamePhase === 'route_choice' && <div className="command-window command-list">
-              <button className="command-button command-button--route" onClick={() => dispatch({ type: 'ROUTE_CHOICE', lane: 'salvage' })}>Salvage Lane</button>
-              <button className="command-button command-button--route" onClick={() => dispatch({ type: 'ROUTE_CHOICE', lane: 'signal' })}>Signal Lane</button>
-              <button className="command-button command-button--route" onClick={() => dispatch({ type: 'ROUTE_CHOICE', lane: 'push_forward' })}>Push Forward</button>
-              <button className="command-button command-button--danger" onClick={() => dispatch({ type: 'ROUTE_CHOICE', lane: 'return_gate' })}>Return Gate</button>
+              <button className="command-button command-button--route" onMouseEnter={() => setHoveredMoeHint('補給寄りレーン。立て直し向け。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'ROUTE_CHOICE', lane: 'salvage' })}>Salvage Lane</button>
+              <button className="command-button command-button--route" onMouseEnter={() => setHoveredMoeHint('Signal寄りレーン。解析と交渉を伸ばせる。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'ROUTE_CHOICE', lane: 'signal' })}>Signal Lane</button>
+              <button className="command-button command-button--route" onMouseEnter={() => setHoveredMoeHint('強行前進。次報酬は良いが被害リスク高。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'ROUTE_CHOICE', lane: 'push_forward' })}>Push Forward</button>
+              <button className="command-button command-button--danger" onMouseEnter={() => setHoveredMoeHint('ここで帰還。戦果を確実に持ち帰る。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'ROUTE_CHOICE', lane: 'return_gate' })}>Return Gate</button>
             </div>}
 
             {state.gamePhase === 'salvage' && <div className="command-window command-list">
               {state.rewardOptions.map((option) => <button
                 key={option.id}
                 className="command-button command-button--route"
+                onMouseEnter={() => setHoveredMoeHint(`回収候補: ${option.label} / ${option.detail}`)}
+                onMouseLeave={() => setHoveredMoeHint('')}
                 onClick={() => dispatch({ type: 'SALVAGE_PICK', rewardId: option.id })}
               >
                 {option.label} <span>{option.detail}</span>
@@ -3587,17 +3720,17 @@ export function App() {
             </div>}
 
             {state.gamePhase === 'signal' && <div className="command-window command-list">
-              <button className="command-button command-button--route" onClick={() => dispatch({ type: 'SIGNAL_CONTINUE' })}>ENTER ENCOUNTER 2</button>
+              <button className="command-button command-button--route" onMouseEnter={() => setHoveredMoeHint('信号レーン抜け。次接敵へ移行する。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'SIGNAL_CONTINUE' })}>ENTER ENCOUNTER 2</button>
             </div>}
 
             {state.gamePhase === 'boss_preview' && <div className="command-window command-list">
-              <button className="command-button command-button--danger" onClick={() => dispatch({ type: 'BOSS_PREVIEW_CHOICE', choice: 'challenge' })}>Challenge Deep Signal</button>
-              <button className="command-button command-button--route" onClick={() => dispatch({ type: 'BOSS_PREVIEW_CHOICE', choice: 'emergency_salvage' })}>Emergency Salvage</button>
-              <button className="command-button command-button--route" onClick={() => dispatch({ type: 'BOSS_PREVIEW_CHOICE', choice: 'return_gate' })}>Return Gate</button>
+              <button className="command-button command-button--danger" onMouseEnter={() => setHoveredMoeHint('深層反応に挑む。高リスク高リターン。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'BOSS_PREVIEW_CHOICE', choice: 'challenge' })}>Challenge Deep Signal</button>
+              <button className="command-button command-button--route" onMouseEnter={() => setHoveredMoeHint('応急補給してから突入。安定重視。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'BOSS_PREVIEW_CHOICE', choice: 'emergency_salvage' })}>Emergency Salvage</button>
+              <button className="command-button command-button--route" onMouseEnter={() => setHoveredMoeHint('ここで撤退。戦果の確保を優先。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'BOSS_PREVIEW_CHOICE', choice: 'return_gate' })}>Return Gate</button>
             </div>}
 
             {state.gamePhase === 'return_gate' && <div className="command-window command-list">
-              <button className="command-button command-button--route" onClick={() => dispatch({ type: 'RETURN_TO_SURFACE' })}>RETURN TO SURFACE</button>
+              <button className="command-button command-button--route" onMouseEnter={() => setHoveredMoeHint('帰還処理を実行。地上へ戻る。')} onMouseLeave={() => setHoveredMoeHint('')} onClick={() => dispatch({ type: 'RETURN_TO_SURFACE' })}>RETURN TO SURFACE</button>
             </div>}
 
             {state.gamePhase === 'garage' && <div className="command-window command-list">
@@ -3658,7 +3791,8 @@ export function App() {
                   <span className="module-card__band">EXPIRES: RUN END</span>
                 </article>
                 : <div className="empty-slot">No active support. Contract a demon to establish a temporary daemon link.</div>}
-              <div className="empty-slot">SUPPORT: {selectedSupport.name}</div>
+              <div className="empty-slot">NAVI: M.O.E. CORE (DEFAULT)</div>
+              <div className="empty-slot">SUPPORT SLOT: {selectedSupport.name}</div>
               <div className="empty-slot">MAIN: {selectedMainGun.name} / SUB: {selectedSubGun.name} / S-E: {selectedSE.name} ({state.seAmmo}/{state.maxSeAmmo})</div>
               <div className="empty-slot">GUARD: {state.encounter.guardActive ? 'ACTIVE' : 'OFF'}</div>
               <div className="empty-slot">SALVAGE CREDIT: {state.salvageCredits}</div>
@@ -3670,6 +3804,25 @@ export function App() {
           <div className="encounter-stinger">
             <span>{state.gamePhase.toUpperCase()}</span>
             <strong>{state.gamePhase === 'garage' ? 'MIDNIGHT BAY' : state.resultType ?? `ENCOUNTER ${state.encounterIndex + 1}/3`}</strong>
+          </div>
+          <div className="utility-strip">
+            <button
+              className="command-button command-button--ghost command-button--inline"
+              onClick={() => setShowUtilityPanels((open) => !open)}
+            >
+              {showUtilityPanels ? '▼ HIDE DEV PANELS' : '▶ DEV PANELS'}
+            </button>
+            {showUtilityPanels && <div className="utility-strip__toggles">
+              <button className="command-button command-button--system command-button--inline" onClick={() => setShowPlaytestReport((open) => !open)}>
+                {showPlaytestReport ? 'HIDE REPORT' : 'PLAYTEST REPORT'}
+              </button>
+              <button className="command-button command-button--system command-button--inline" onClick={() => setShowSaveTools((open) => !open)}>
+                {showSaveTools ? 'HIDE SAVE' : 'SAVE TOOLS'}
+              </button>
+              <button className="command-button command-button--system command-button--inline" onClick={() => setShowArchive((open) => !open)}>
+                {showArchive ? 'HIDE ARCHIVE' : 'ARCHIVE'}
+              </button>
+            </div>}
           </div>
 
           {state.gamePhase === 'garage' && <section className="event-card garage-grid-card">
@@ -3717,53 +3870,58 @@ export function App() {
                     <small>contracts: {run.contractsAcquired.length} / boss: {run.bossChallenged ? (run.bossCleared ? 'cleared' : 'challenged') : 'no'} / encounters: {run.encountersCleared}</small>
                   </div>)}
                 </div>}
-                <h3>Archive</h3>
-                <div className="negotiation-grid">
-                  <p><span>Chapter</span><strong>{state.story.chapter}</strong></p>
-                  <p><span>M.O.E. Memory</span><strong>{state.story.moeMemory}</strong></p>
-                  <p><span>Driver Clues</span><strong>{state.story.previousDriverClues}</strong></p>
-                  <p><span>Recovered</span><strong>{state.story.recoveredLogs.length}/{storyLogCatalog.length}</strong></p>
-                </div>
-                <h3>ROUTE LOG</h3>
-                <div className="negotiation-grid">
-                  <p><span>Routes discovered</span><strong>{routeLogEntries.length}</strong></p>
-                </div>
-                {routeLogEntries.length > 0
-                  ? <div className="next-node-list">
-                    {routeLogEntries.slice(0, 8).map((entry) => <div key={entry.id} className="next-node">
-                      <span>◎</span>
-                      <strong>{entry.name}</strong>
-                      <small>chosen {entry.seenCount}x / {new Date(entry.lastChosenAt).toLocaleString()}</small>
-                      <small>{entry.notes?.[0] ?? 'Route trace recorded.'}</small>
-                    </div>)}
+                <details className="garage-fold">
+                  <summary>ARCHIVE / ROUTE LOG / M.O.E. MEMORY</summary>
+                  <div className="garage-fold__body">
+                    <h3>Archive</h3>
+                    <div className="negotiation-grid">
+                      <p><span>Chapter</span><strong>{state.story.chapter}</strong></p>
+                      <p><span>M.O.E. Memory</span><strong>{state.story.moeMemory}</strong></p>
+                      <p><span>Driver Clues</span><strong>{state.story.previousDriverClues}</strong></p>
+                      <p><span>Recovered</span><strong>{state.story.recoveredLogs.length}/{storyLogCatalog.length}</strong></p>
+                    </div>
+                    <h3>ROUTE LOG</h3>
+                    <div className="negotiation-grid">
+                      <p><span>Routes discovered</span><strong>{routeLogEntries.length}</strong></p>
+                    </div>
+                    {routeLogEntries.length > 0
+                      ? <div className="next-node-list">
+                        {routeLogEntries.slice(0, 8).map((entry) => <div key={entry.id} className="next-node">
+                          <span>◎</span>
+                          <strong>{entry.name}</strong>
+                          <small>chosen {entry.seenCount}x / {new Date(entry.lastChosenAt).toLocaleString()}</small>
+                          <small>{entry.notes?.[0] ?? 'Route trace recorded.'}</small>
+                        </div>)}
+                      </div>
+                      : <p>No route records yet.</p>}
+                    <h3>M.O.E. MEMORY</h3>
+                    <div className="negotiation-grid">
+                      <p><span>Unlocked memories</span><strong>{moeMemoryEntries.length}</strong></p>
+                    </div>
+                    {moeMemoryEntries.length > 0
+                      ? <div className="next-node-list">
+                        {moeMemoryEntries.slice(0, 10).map((entry) => <div key={entry.id} className="next-node">
+                          <span>◎</span>
+                          <strong>{entry.title}</strong>
+                          <small>{entry.text}</small>
+                          <small>{new Date(entry.unlockedAt).toLocaleString()} / {entry.source.toUpperCase()}</small>
+                        </div>)}
+                      </div>
+                      : <p>No memory fragments unlocked yet.</p>}
+                    <h3>Story Logs</h3>
+                    <div className="next-node-list">
+                      {storyLogCatalog.map((entry) => {
+                        const unlocked = state.story.recoveredLogs.includes(entry.id);
+                        return <div key={entry.id} className="next-node">
+                          <span>{unlocked ? '◎' : '□'}</span>
+                          <strong>{entry.id}: {entry.title}</strong>
+                          <small>{unlocked ? entry.text : 'LOCKED'}</small>
+                        </div>;
+                      })}
+                    </div>
+                    <p>M.O.E.: 「断片が増えるほど、わたしの地図も変わる。」</p>
                   </div>
-                  : <p>No route records yet.</p>}
-                <h3>M.O.E. MEMORY</h3>
-                <div className="negotiation-grid">
-                  <p><span>Unlocked memories</span><strong>{moeMemoryEntries.length}</strong></p>
-                </div>
-                {moeMemoryEntries.length > 0
-                  ? <div className="next-node-list">
-                    {moeMemoryEntries.slice(0, 10).map((entry) => <div key={entry.id} className="next-node">
-                      <span>◎</span>
-                      <strong>{entry.title}</strong>
-                      <small>{entry.text}</small>
-                      <small>{new Date(entry.unlockedAt).toLocaleString()} / {entry.source.toUpperCase()}</small>
-                    </div>)}
-                  </div>
-                  : <p>No memory fragments unlocked yet.</p>}
-                <h3>Story Logs</h3>
-                <div className="next-node-list">
-                  {storyLogCatalog.map((entry) => {
-                    const unlocked = state.story.recoveredLogs.includes(entry.id);
-                    return <div key={entry.id} className="next-node">
-                      <span>{unlocked ? '◎' : '□'}</span>
-                      <strong>{entry.id}: {entry.title}</strong>
-                      <small>{unlocked ? entry.text : 'LOCKED'}</small>
-                    </div>;
-                  })}
-                </div>
-                <p>M.O.E.: 「断片が増えるほど、わたしの地図も変わる。」</p>
+                </details>
               </div>
               <div className="garage-block">
                 <h3>Loadout</h3>
@@ -3782,7 +3940,7 @@ export function App() {
                   <button className={`command-button command-button--contract ${state.selectedLoadout.specialEquipmentId === 'emp_flare' ? 'is-selected' : ''}`} onClick={() => dispatch({ type: 'GARAGE_SET_SPECIAL', id: 'emp_flare' })}>EMP Flare</button>
                   <button className={`command-button command-button--contract ${state.selectedLoadout.specialEquipmentId === 'jammer_pulse' ? 'is-selected' : ''}`} onClick={() => dispatch({ type: 'GARAGE_SET_SPECIAL', id: 'jammer_pulse' })}>Jammer Pulse</button>
 
-                  <button className={`command-button ${state.selectedLoadout.contractSupportId === 'moe_core' ? 'is-selected' : ''}`} onClick={() => dispatch({ type: 'GARAGE_SET_SUPPORT', id: 'moe_core' })}>Support: M.O.E. Core</button>
+                  <button className={`command-button ${state.selectedLoadout.contractSupportId === 'none' ? 'is-selected' : ''}`} onClick={() => dispatch({ type: 'GARAGE_SET_SUPPORT', id: 'none' })}>Support: None</button>
                   <button className={`command-button ${state.selectedLoadout.contractSupportId === 'radio_voice' ? 'is-selected' : ''}`} onClick={() => dispatch({ type: 'GARAGE_SET_SUPPORT', id: 'radio_voice' })}>Support: Radio Voice</button>
                   <button className={`command-button ${state.selectedLoadout.contractSupportId === 'silent_shape' ? 'is-selected' : ''}`} onClick={() => dispatch({ type: 'GARAGE_SET_SUPPORT', id: 'silent_shape' })}>Support: Silent Shape</button>
                   <button className={`command-button ${state.selectedLoadout.contractSupportId === 'abandoned_ai_navi' ? 'is-selected' : ''}`} onClick={() => dispatch({ type: 'GARAGE_SET_SUPPORT', id: 'abandoned_ai_navi' })}>Support: AI Navi</button>
@@ -3841,52 +3999,56 @@ export function App() {
                 <h3>Tonight's Deep Signal</h3>
                 <p>TOLL GATE SAINT // armored / bargain / guard / toll demand</p>
                 <p>M.O.E.: 「料金所型の強い反応。主砲弾かS-E弾、どっちかは残しておきたいね。」</p>
-                <h3>AUTOPLAY LAB</h3>
-                <p>Balance Profile: {balanceConfig.version}</p>
-                <div className="autoplay-controls">
-                  <label>
-                    Runs
-                    <input
-                      type="number"
-                      min={balanceConfig.autoplay.minRuns}
-                      max={balanceConfig.autoplay.maxRuns}
-                      step={10}
-                      value={autoplayRuns}
-                      onChange={(event) => setAutoplayRuns(
-                        clamp(
-                          Number(event.target.value) || balanceConfig.autoplay.minRuns,
-                          balanceConfig.autoplay.minRuns,
-                          balanceConfig.autoplay.maxRuns,
-                        ),
-                      )}
-                    />
-                  </label>
-                  <label>
-                    Strategy
-                    <select value={autoplayStrategy} onChange={(event) => setAutoplayStrategy(event.target.value as AutoPlayStrategy)}>
-                      <option value="balanced">Balanced</option>
-                      <option value="aggressive">Aggressive</option>
-                      <option value="safe">Safe</option>
-                      <option value="contract">Contract</option>
-                    </select>
-                  </label>
-                  <button className="command-button command-button--system" onClick={runAutoplay}>RUN AUTOPLAY</button>
-                </div>
-                {autoplayReport && <div className="autoplay-report">
-                  <p><span>Runs</span><strong>{autoplayReport.runs}</strong></p>
-                  <p><span>Win Rate</span><strong>{autoplayReport.winRate.toFixed(1)}%</strong></p>
-                  <p><span>Boss Cleared</span><strong>{autoplayReport.counts['Boss Cleared']}</strong></p>
-                  <p><span>Boss Avoided</span><strong>{autoplayReport.counts['Boss Avoided']}</strong></p>
-                  <p><span>Early Return</span><strong>{autoplayReport.counts['Early Return']}</strong></p>
-                  <p><span>Disabled</span><strong>{autoplayReport.counts['Vehicle Disabled']}</strong></p>
-                  <p><span>Avg Encounter</span><strong>{autoplayReport.avgEncounters.toFixed(2)}</strong></p>
-                  <p><span>Avg Contract</span><strong>{autoplayReport.avgContracts.toFixed(2)}</strong></p>
-                  <p><span>Avg Salvage</span><strong>{autoplayReport.avgSalvage.toFixed(2)}</strong></p>
-                  <p><span>Avg Fuel</span><strong>{autoplayReport.avgFuel.toFixed(2)}</strong></p>
-                  <p><span>Avg Armor</span><strong>{autoplayReport.avgArmor.toFixed(2)}</strong></p>
-                  <p><span>Avg Signal</span><strong>{autoplayReport.avgSignal.toFixed(2)}</strong></p>
-                  <p><span>Avg S-E Ammo</span><strong>{autoplayReport.avgSeAmmo.toFixed(2)}</strong></p>
-                </div>}
+                <details className="garage-fold">
+                  <summary>AUTOPLAY LAB (OPTIONAL)</summary>
+                  <div className="garage-fold__body">
+                    <p>Balance Profile: {balanceConfig.version}</p>
+                    <div className="autoplay-controls">
+                      <label>
+                        Runs
+                        <input
+                          type="number"
+                          min={balanceConfig.autoplay.minRuns}
+                          max={balanceConfig.autoplay.maxRuns}
+                          step={10}
+                          value={autoplayRuns}
+                          onChange={(event) => setAutoplayRuns(
+                            clamp(
+                              Number(event.target.value) || balanceConfig.autoplay.minRuns,
+                              balanceConfig.autoplay.minRuns,
+                              balanceConfig.autoplay.maxRuns,
+                            ),
+                          )}
+                        />
+                      </label>
+                      <label>
+                        Strategy
+                        <select value={autoplayStrategy} onChange={(event) => setAutoplayStrategy(event.target.value as AutoPlayStrategy)}>
+                          <option value="balanced">Balanced</option>
+                          <option value="aggressive">Aggressive</option>
+                          <option value="safe">Safe</option>
+                          <option value="contract">Contract</option>
+                        </select>
+                      </label>
+                      <button className="command-button command-button--system" onClick={runAutoplay}>RUN AUTOPLAY</button>
+                    </div>
+                    {autoplayReport && <div className="autoplay-report">
+                      <p><span>Runs</span><strong>{autoplayReport.runs}</strong></p>
+                      <p><span>Win Rate</span><strong>{autoplayReport.winRate.toFixed(1)}%</strong></p>
+                      <p><span>Boss Cleared</span><strong>{autoplayReport.counts['Boss Cleared']}</strong></p>
+                      <p><span>Boss Avoided</span><strong>{autoplayReport.counts['Boss Avoided']}</strong></p>
+                      <p><span>Early Return</span><strong>{autoplayReport.counts['Early Return']}</strong></p>
+                      <p><span>Disabled</span><strong>{autoplayReport.counts['Vehicle Disabled']}</strong></p>
+                      <p><span>Avg Encounter</span><strong>{autoplayReport.avgEncounters.toFixed(2)}</strong></p>
+                      <p><span>Avg Contract</span><strong>{autoplayReport.avgContracts.toFixed(2)}</strong></p>
+                      <p><span>Avg Salvage</span><strong>{autoplayReport.avgSalvage.toFixed(2)}</strong></p>
+                      <p><span>Avg Fuel</span><strong>{autoplayReport.avgFuel.toFixed(2)}</strong></p>
+                      <p><span>Avg Armor</span><strong>{autoplayReport.avgArmor.toFixed(2)}</strong></p>
+                      <p><span>Avg Signal</span><strong>{autoplayReport.avgSignal.toFixed(2)}</strong></p>
+                      <p><span>Avg S-E Ammo</span><strong>{autoplayReport.avgSeAmmo.toFixed(2)}</strong></p>
+                    </div>}
+                  </div>
+                </details>
               </div>
             </div>
           </section>}
@@ -4042,13 +4204,17 @@ export function App() {
               <span className="event-chip event-chip--route">CHOOSE NEXT LANE</span>
             </div>
             <div className="next-node-list">
-              {(['salvage', 'signal', 'push_forward', 'return_gate'] as const).map((lane) => <div key={lane} className="next-node">
-                <span>◎</span>
-                <strong>{routeIntelCatalog[lane].label}</strong>
-                <small>likely: {routeIntelCatalog[lane].likelyEnemyTags}</small>
-                <small>suggested: {routeIntelCatalog[lane].likelyWeaknesses}</small>
-                <small>risk: {routeIntelCatalog[lane].riskTags} / reward: {routeIntelCatalog[lane].rewardTags}</small>
-              </div>)}
+              {(['salvage', 'signal', 'push_forward', 'return_gate'] as const).map((lane) => {
+                const scenario = routeScenarioIdMap[lane] ? getRouteEventScenario(routeScenarioIdMap[lane] ?? '') : undefined;
+                return <div key={lane} className="next-node">
+                  <span>◎</span>
+                  <strong>{routeIntelCatalog[lane].label}</strong>
+                  <small>likely: {routeIntelCatalog[lane].likelyEnemyTags}</small>
+                  <small>suggested: {routeIntelCatalog[lane].likelyWeaknesses}</small>
+                  <small>risk: {routeIntelCatalog[lane].riskTags} / reward: {routeIntelCatalog[lane].rewardTags}</small>
+                  {scenario?.body && <small>{scenario.body}</small>}
+                </div>;
+              })}
             </div>
           </section>}
 

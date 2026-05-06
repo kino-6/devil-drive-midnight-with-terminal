@@ -1,0 +1,12 @@
+{
+  "id": "roadside_phone",
+  "name": "Roadside Phone",
+  "intro": [
+    "The payphone rings once, then speaks before you answer."
+  ],
+  "contract": {
+    "success": [
+      "ROADSIDE LINK ESTABLISHED: AM 666.0 remains open behind the windshield hiss."
+    ]
+  }
+}

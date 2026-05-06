@@ -1,0 +1,12 @@
+{
+  "id": "pixie_shibuya_glow",
+  "name": "Pixie // Shibuya Glow",
+  "intro": [
+    "A tiny city-light pixie hops through lane markers, laughing on AM noise."
+  ],
+  "contract": {
+    "success": [
+      "PIXIE LINK ESTABLISHED: hidden lane hints now pulse in soft cyan."
+    ]
+  }
+}

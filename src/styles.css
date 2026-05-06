@@ -907,27 +907,27 @@ body {
 
 .battle-devil {
   position: absolute;
-  width: min(28%, 190px);
+  width: min(23%, 176px);
   cursor: pointer;
   transition: transform 180ms ease, opacity 180ms ease;
 }
 
 .battle-devil--left {
   left: 2%;
-  bottom: 8%;
-  transform: scale(0.9);
+  bottom: 10%;
+  transform: scale(0.88);
 }
 
 .battle-devil--center {
   left: 50%;
-  bottom: 2%;
-  transform: translateX(-50%) scale(1.08);
+  bottom: 4%;
+  transform: translateX(-50%) scale(1.03);
 }
 
 .battle-devil--right {
   right: 2%;
   bottom: 10%;
-  transform: scale(0.88);
+  transform: scale(0.86);
 }
 
 .battle-devil__body {
@@ -935,12 +935,12 @@ body {
   background: linear-gradient(180deg, rgba(22, 27, 36, 0.78), rgba(14, 18, 25, 0.78));
   padding: 6px;
   display: grid;
-  gap: 4px;
+  gap: 5px;
 }
 
 .battle-devil__art {
   color: #c1b7cf;
-  height: 110px;
+  height: 132px;
   display: grid;
   place-items: center;
   border: 1px solid rgba(113, 102, 134, 0.35);
@@ -966,19 +966,13 @@ body {
 
 .battle-devil__label {
   display: grid;
-  gap: 2px;
+  gap: 1px;
 }
 
 .battle-devil__label strong {
   color: #e8cb95;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   line-height: 1.2;
-}
-
-.battle-devil__label span {
-  color: #b9c2cd;
-  font-size: 0.62rem;
-  letter-spacing: 0.03em;
 }
 
 .battle-devil__hp {
@@ -1003,40 +997,36 @@ body {
   background: linear-gradient(90deg, #b36862, #d09087);
 }
 
-.battle-devil__intel {
-  display: grid;
-  gap: 2px;
-}
-
-.battle-devil__intel small {
-  color: #95a3b1;
-  font-size: 0.6rem;
-  letter-spacing: 0.03em;
-}
-
-.battle-devil__affinity {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
+.battle-devil__intent {
+  display: inline-flex;
   align-items: center;
+  gap: 6px;
+  color: #c4cdd5;
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
 }
 
-.affinity-chip {
-  border: 1px solid #465768;
-  background: #111923;
-  color: #9fb0c1;
-  font-size: 0.55rem;
-  padding: 1px 4px;
+.battle-devil__intent-icon {
+  width: 18px;
+  height: 18px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid #4f3d2e;
+  background: #111720;
+  color: #dfa566;
+  font-size: 0.74rem;
 }
 
-.affinity-chip--weak {
-  border-color: #3e6f7f;
-  color: #7dc8dd;
-}
-
-.affinity-chip--resist {
-  border-color: #6c3d39;
+.battle-devil__intent-icon.intent--attack {
   color: #df8c82;
+}
+
+.battle-devil__intent-icon.intent--curse {
+  color: #af8ed8;
+}
+
+.battle-devil__intent-icon.intent--guard {
+  color: #92b2ca;
 }
 
 .battle-devil__window {
@@ -1082,6 +1072,23 @@ body {
 
 .battle-devil.is-defeated .battle-devil__target {
   display: none;
+}
+
+.battle-view.is-boss .battle-view__devils {
+  inset: 11% 22px 34px 22px;
+}
+
+.battle-view.is-boss .battle-devil--center {
+  width: min(44%, 360px);
+  bottom: -2%;
+  transform: translateX(-50%) scale(1.48);
+  z-index: 7;
+}
+
+.battle-view.is-boss .battle-devil--left,
+.battle-view.is-boss .battle-devil--right {
+  opacity: 0.2;
+  filter: blur(1px) grayscale(0.2);
 }
 
 .approach-contact {
@@ -1165,6 +1172,83 @@ body {
   opacity: 0.94;
 }
 
+.target-detail-panel {
+  border: 1px solid #5a4731;
+  background: linear-gradient(180deg, rgba(19, 25, 35, 0.96), rgba(13, 18, 26, 0.96));
+  padding: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.target-detail-panel__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.target-detail-panel__head strong {
+  color: #ddb27a;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+}
+
+.target-detail-panel__head small {
+  color: #d8dde2;
+  font-size: 0.72rem;
+}
+
+.target-detail-panel__core {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+}
+
+.target-detail-panel__core span {
+  border: 1px solid #495666;
+  background: #111924;
+  color: #c8d1d9;
+  font-size: 0.62rem;
+  padding: 2px 6px;
+}
+
+.target-detail-panel__intent.intent--attack {
+  border-color: #6c3d39;
+  color: #df8c82;
+}
+
+.target-detail-panel__intent.intent--curse {
+  border-color: #66408a;
+  color: #bda2de;
+}
+
+.target-detail-panel__intent.intent--bargain {
+  border-color: #6a5e3f;
+  color: #ddb27a;
+}
+
+.target-detail-panel__intent.intent--guard {
+  border-color: #48627a;
+  color: #92b2ca;
+}
+
+.target-detail-panel__intent.intent--flee {
+  border-color: #5d676f;
+  color: #b4bcc5;
+}
+
+.target-detail-panel__intel {
+  display: grid;
+  gap: 3px;
+}
+
+.target-detail-panel__intel small {
+  color: #9eadba;
+  font-size: 0.62rem;
+  letter-spacing: 0.03em;
+}
+
 .command-groups {
   display: grid;
   gap: 8px;
@@ -1217,6 +1301,21 @@ body {
   gap: 6px;
 }
 
+.radio-panel--command {
+  border-color: #6a5238;
+  background: linear-gradient(180deg, rgba(20, 24, 33, 0.98), rgba(14, 18, 26, 0.98));
+  box-shadow: inset 0 0 0 1px rgba(215, 166, 92, 0.2);
+}
+
+.radio-panel--command .radio-panel__head span {
+  font-size: 0.8rem;
+}
+
+.radio-panel--command .radio-bubble {
+  padding: 10px;
+  gap: 7px;
+}
+
 .radio-panel__head {
   display: flex;
   justify-content: space-between;
@@ -1254,6 +1353,20 @@ body {
   gap: 5px;
 }
 
+.radio-bubble .moe-live {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: #e3d0a5;
+}
+
+.radio-bubble .moe-command {
+  margin: 0;
+  font-size: 0.79rem;
+  line-height: 1.45;
+  color: #cfd6df;
+}
+
 .command-hint {
   color: #9aa3ac;
   font-size: 0.65rem;
@@ -1266,6 +1379,17 @@ body {
 .system-event-panel {
   display: grid;
   gap: 8px;
+}
+
+.utility-strip {
+  display: grid;
+  gap: 6px;
+}
+
+.utility-strip__toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .node-quickbar {
@@ -1458,6 +1582,41 @@ body {
   gap: 12px;
 }
 
+.garage-fold {
+  border: 1px solid #3f3024;
+  background: #111821;
+}
+
+.garage-fold > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 7px 9px;
+  color: #d5af73;
+  font-size: 0.74rem;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #3f3024;
+  user-select: none;
+}
+
+.garage-fold > summary::-webkit-details-marker {
+  display: none;
+}
+
+.garage-fold > summary::before {
+  content: "▶ ";
+  color: #d39a4a;
+}
+
+.garage-fold[open] > summary::before {
+  content: "▼ ";
+}
+
+.garage-fold__body {
+  padding: 8px;
+  display: grid;
+  gap: 8px;
+}
+
 .garage-columns {
   display: grid;
   grid-template-columns: 1fr 1.35fr 1fr;
@@ -1592,6 +1751,14 @@ body {
   position: relative;
 }
 
+.command-button--inline {
+  width: auto;
+  min-width: 0;
+  display: inline-flex;
+  padding: 6px 8px;
+  font-size: 0.72rem;
+}
+
 .command-button__label {
   display: inline-flex;
   align-items: center;
@@ -1618,7 +1785,7 @@ body {
 }
 
 .command-button::before {
-  content: "▶ ";
+  content: "> ";
   color: #d0a063;
   margin-right: 4px;
 }

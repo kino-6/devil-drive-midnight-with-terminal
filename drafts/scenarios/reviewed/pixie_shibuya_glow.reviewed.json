@@ -1,0 +1,42 @@
+{
+  "id": "pixie_shibuya_glow",
+  "name": "Pixie // Shibuya Glow",
+  "intro": [
+    "Shibuya lane lights blink out of phase. A tiny pixie signal laughs in the median haze."
+  ],
+  "analyze": {
+    "success": [
+      "Signature resolves as fairy-grade transit noise with playful intent."
+    ],
+    "fail": [
+      "Scan jitters. The pixie keeps moving one lane ahead of lock."
+    ]
+  },
+  "talk": {
+    "success": [
+      "The pixie mirrors your indicator once, then waits."
+    ],
+    "fail": [
+      "It spins your words into static and vanishes behind taillights."
+    ]
+  },
+  "contract": {
+    "offer": [
+      "Offer a cleaner line and a promise to return."
+    ],
+    "success": [
+      "PIXIE LINK: lane lights flicker in a playful rhythm."
+    ],
+    "failure": [
+      "The pixie bows, declines, and dissolves into rain-noise."
+    ]
+  },
+  "supportDaemon": {
+    "linked": [
+      "Support daemon trace stabilized in the lane-light circuit."
+    ],
+    "disconnected": [
+      "Pixie trace released at gate boundary."
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "default": "night-loop-demo.scenario.json",
+  "packs": [
+    {
+      "id": "night-loop-demo-v1",
+      "title": "Night Loop Demo Scenario",
+      "path": "night-loop-demo.scenario.json",
+      "enabled": true
+    }
+  ],
+  "notes": [
+    "This index is optional. Loader falls back to /scenarios/night-loop-demo.scenario.json if missing or invalid."
+  ]
+}
