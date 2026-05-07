@@ -1,5 +1,6 @@
 import { getBalanceConfig } from '../../balanceConfig';
 import { getDialogueLine } from '../../dialogueConfig';
+import { limitStateLogs } from '../../runtimeLimits';
 import {
   getEncounterScenario,
   getMoeLine,
@@ -235,6 +236,7 @@ const buildDevil = (kind: EncounterId, index: number, stage = 1): Devil => {
     affinityRevealed,
     intelProgress: persistedIntel,
     intelThreshold,
+    analyzeVulnerableTurns: 0,
     profile: t.profile,
     empDisabledTurns: 0,
   };
@@ -730,7 +732,7 @@ export const runAutoplayBatch = (loadout: Loadout, runs: number, strategy: AutoP
 export const sanitizeRestoredState = (raw: unknown, fallback: State): State =>
   sanitizeRestoredStateWithDeps(raw, fallback, { initState, buildEncounter });
 
-export function reducer(state: State, action: Action): State {
+function reducerCore(state: State, action: Action): State {
   if (action.type === 'DEBUG_RESTORE') {
     return action.snapshot;
   }
@@ -1534,4 +1536,12 @@ export function reducer(state: State, action: Action): State {
     buildForecast,
     hasAiNaviContract,
   });
+}
+
+export function reducer(state: State, action: Action): State {
+  const next = reducerCore(state, action);
+  if (next.logs === state.logs) return next;
+  const trimmed = limitStateLogs(next.logs);
+  if (trimmed.length === next.logs.length) return next;
+  return { ...next, logs: trimmed };
 }

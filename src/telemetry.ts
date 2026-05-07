@@ -83,11 +83,12 @@ const readSafe = (): TelemetryEvent[] => {
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter((item): item is TelemetryEvent => {
+    const sanitized = parsed.filter((item): item is TelemetryEvent => {
       if (!item || typeof item !== 'object') return false;
       const v = item as Record<string, unknown>;
       return typeof v.id === 'string' && typeof v.name === 'string' && typeof v.timestamp === 'string' && typeof v.payload === 'object';
     });
+    return limitTail(sanitized, MAX_TELEMETRY_EVENTS);
   } catch {
     return [];
   }
@@ -111,7 +112,7 @@ export const trackEvent = (name: TelemetryEventName, payload: Record<string, unk
     payload,
   };
   events.push(entry);
-  writeSafe(events);
+  writeSafe(limitTail(events, MAX_TELEMETRY_EVENTS));
   return entry;
 };
 
@@ -310,3 +311,4 @@ export const buildPlaytestReport = (
   const report = { ...base, notes };
   return { ...report, markdown: buildMarkdown(report) };
 };
+import { MAX_TELEMETRY_EVENTS, limitTail } from './runtimeLimits';

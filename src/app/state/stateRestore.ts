@@ -1,4 +1,5 @@
 import { contractModules } from '../../game/catalogs';
+import { limitStateLogs } from '../../runtimeLimits';
 import {
   asNum,
   asRec,
@@ -144,7 +145,7 @@ export const sanitizeRestoredStateWithDeps = (raw: unknown, fallback: State, dep
     encounterIndex: Math.max(0, asNum(source.encounterIndex, fallback.encounterIndex)),
     contracts: pickContracts(source.contracts),
     logs: Array.isArray(source.logs)
-      ? source.logs.filter((line): line is string => typeof line === 'string').slice(-200)
+      ? limitStateLogs(source.logs.filter((line): line is string => typeof line === 'string'))
       : fallback.logs,
     selectedLoadout,
     activeSupportDaemon,

@@ -1,3 +1,5 @@
+import { MAX_DEBUG_SAVE_ENTRIES, limitStateLogs } from './runtimeLimits';
+
 export type SaveVersion = 1;
 
 export type RunRecord = {
@@ -329,9 +331,26 @@ const safeJsonClone = <T>(value: T): T | null => {
   }
 };
 
+const trimSnapshotLogsInPlace = (snapshot: unknown) => {
+  if (!snapshot || typeof snapshot !== 'object') return;
+  const root = snapshot as Record<string, unknown>;
+
+  if (Array.isArray(root.logs)) {
+    root.logs = limitStateLogs(root.logs.filter((line): line is string => typeof line === 'string'));
+  }
+
+  const nestedState = root.state;
+  if (!nestedState || typeof nestedState !== 'object') return;
+  const nested = nestedState as Record<string, unknown>;
+  if (Array.isArray(nested.logs)) {
+    nested.logs = limitStateLogs(nested.logs.filter((line): line is string => typeof line === 'string'));
+  }
+};
+
 export const saveAutoSaveSnapshot = <T>(snapshot: T, reason = 'auto'): AutoSaveSnapshot<T> | null => {
   const cloned = safeJsonClone(snapshot);
   if (!cloned) return null;
+  trimSnapshotLogsInPlace(cloned);
   const payload: AutoSaveSnapshot<T> = {
     version: 1,
     savedAt: now(),
@@ -415,6 +434,7 @@ const writeDebugSaveStore = <T>(entries: DebugSaveEntry<T>[]) => {
 export const saveDebugSnapshot = <T>(snapshot: T, label?: string): DebugSaveEntry<T> | null => {
   const cloned = safeJsonClone(snapshot);
   if (!cloned) return null;
+  trimSnapshotLogsInPlace(cloned);
   const entry: DebugSaveEntry<T> = {
     id: `dbg-${now()}-${Math.random().toString(36).slice(2, 8)}`,
     label,
@@ -422,7 +442,7 @@ export const saveDebugSnapshot = <T>(snapshot: T, label?: string): DebugSaveEntr
     snapshot: cloned,
   };
   const current = loadDebugSaveStore<T>();
-  const next = [entry, ...current].slice(0, 20);
+  const next = [entry, ...current].slice(0, MAX_DEBUG_SAVE_ENTRIES);
   writeDebugSaveStore(next);
   return entry;
 };
