@@ -1,38 +1,13 @@
-import { useEffect, useMemo, useReducer, useRef, useState, type ChangeEvent } from 'react';
+import { useMemo, useReducer, useRef, useState } from 'react';
 import { defaultAssetManifest, resolveAssetUrl, type AssetManifest } from '../assetManifest';
 import { defaultBalanceConfig, getBalanceConfig, type BalanceConfig } from '../balanceConfig';
 import { getDialogueConfig, getDialogueLine } from '../dialogueConfig';
 import {
-  clearAutoSaveSnapshot,
-  clearSaveData,
-  clearDebugSaves,
-  exportAutoSaveJson,
-  exportCorruptSaveBackupJson,
-  exportDebugSavesJson,
-  exportSaveJson,
-  importSaveJson,
-  listDebugSaveHeaders,
-  loadAutoSaveSnapshot,
-  loadDebugSnapshotById,
-  loadLatestDebugSnapshot,
-  loadSaveData,
-  recordRunResult,
-  saveAutoSaveSnapshot,
-  saveDebugSnapshot,
-  touchDemonArchive,
-  touchRouteLog,
-  unlockMoeMemory,
-  updateSaveData,
-  type RunRecord,
 } from '../saveSystem';
 import {
   buildPlaytestReport,
-  clearTelemetryEvents,
-  exportTelemetryJson,
   getTelemetryEvents,
-  trackEvent,
   type PersistentProgressionSnapshot,
-  type TelemetryEventName,
 } from '../telemetry';
 import {
   getRouteEventScenario,
@@ -40,46 +15,35 @@ import {
 import { buildMoeRunComment, resultLabel } from '../game/runInsights';
 import { getDevilConfig } from '../devilConfig';
 import {
-  type AffinityRating,
-  type AffinityType,
   type AutoPlayReport,
   type AutoPlayStrategy,
-  type CommandId,
-  type GamePhase,
-  type HitFxTone,
   type Intent,
-  type State,
   type UpgradeId,
   type VehicleUpgradeId,
 } from '../game/types';
 import {
-  commandAffinityMap,
-  commandOptions,
   contractSupportCatalog,
   demonArchiveFlavor,
-  routeLogCatalog,
-  storyLogById,
 } from '../game/catalogs';
 import {
-  devilTemplates,
   encounterProfiles,
   getMainGunSpec,
   getMoeCommandGuide,
   getSpecialEquipmentSpec,
   getSubGunSpec,
+  getEnemyRevealState,
   isAlive,
   resolveEnemyAsset,
+  UNKNOWN_SIGN_LABEL,
 } from '../game/runtimeHelpers';
 
 // Contributor note:
 // Editing guide for LLM/agents lives in docs/llm-code-map.md
 import {
   classifyLog,
-  damageVarianceByCommand,
   getGarageStageAdvisory,
   getLogBadge,
   getPseudoTimecode,
-  getRollBounds,
   getRunGrowth,
   getRunStartResources,
   getSelectedEnemy,
@@ -89,27 +53,28 @@ import {
   getLikelyWeaknessSummary,
   getNarrativeMoeLine,
   getContractHint,
-  getAffinityTag,
   isBossProfile,
   initState,
   pickSfxCueFromLog,
   reducer,
-  resolveDamageRoll,
   runAutoplayBatch,
   sanitizeRestoredState,
   stageProfiles,
 } from './state/stateReducer';
 import { useRuntimeConfigEffects } from './hooks/useRuntimeConfigEffects';
 import { useAudioEffects } from './hooks/useAudioEffects';
+import { useCommandDerived } from './hooks/useCommandDerived';
+import { useUiEffects } from './hooks/useUiEffects';
+import { useSaveRuntime } from './hooks/useSaveRuntime';
+import { useSaveTools } from './hooks/useSaveTools';
+import { useTelemetryEffects } from './hooks/useTelemetryEffects';
 import { CockpitHeader } from './components/CockpitHeader';
 import { PrologueOverlay } from './components/PrologueOverlay';
 import { BattleView } from './components/BattleView';
 import { TerminalPanel } from './components/TerminalPanel';
 import { CommandPanel, type SignalChoice } from './components/CommandPanel';
-import { GaragePanel } from './components/GaragePanel';
-import { UtilityPanels } from './components/UtilityPanels';
-import { EventPanels } from './components/EventPanels';
 import { VehiclePanel } from './components/VehiclePanel';
+import { SystemEventPanel } from './components/SystemEventPanel';
 
 export function App() {
   const [state, dispatch] = useReducer(reducer, undefined, initState);
@@ -128,25 +93,12 @@ export function App() {
   const [, setHoveredMoeHint] = useState('');
   const [hoveredEnemyId, setHoveredEnemyId] = useState<string | null>(null);
   const [telemetryRefresh, setTelemetryRefresh] = useState(0);
-  const [saveRefresh, setSaveRefresh] = useState(0);
-  const [debugSaveHeaders, setDebugSaveHeaders] = useState<Array<{ id: string; label?: string; createdAt: number }>>([]);
-  const [saveMessage, setSaveMessage] = useState('');
-  const [hitFxTone, setHitFxTone] = useState<HitFxTone | null>(null);
-  const [hitFxPulse, setHitFxPulse] = useState(0);
   const [assetManifest, setAssetManifest] = useState<AssetManifest>(defaultAssetManifest);
   const [assetManifestLoaded, setAssetManifestLoaded] = useState(false);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const terminalLogRef = useRef<HTMLUListElement>(null);
   const bgmRef = useRef<HTMLAudioElement | null>(null);
   const lastSfxAtRef = useRef(0);
-  const phaseRef = useRef<GamePhase>(state.gamePhase);
-  const bossChallengedRef = useRef(state.bossChallenged);
-  const runIndexRef = useRef(0);
-  const processedLogCountRef = useRef(0);
-  const loadoutHashRef = useRef(JSON.stringify(state.selectedLoadout));
-  const activeRunRef = useRef<RunRecord | null>(null);
-  const lastAutoSaveAtRef = useRef(0);
-  const latestStateRef = useRef(state);
   const saveImportInputRef = useRef<HTMLInputElement>(null);
   const selectedMainGun = getMainGunSpec(state.selectedLoadout.mainGunId);
   const selectedSubGun = getSubGunSpec(state.selectedLoadout.subGunId);
@@ -276,18 +228,17 @@ const tacticalLinesCompact = tacticalLines
     .filter((_, index) => index === 0 || (isEncounterActive && index === 1))
     .slice(0, 2);
 
-  const contractEnabled = !!selectedEnemy && selectedEnemy.contractWindow && selectedEnemy.contractable;
-  const selectedEnemyAnalyzed = !!selectedEnemy && (isBossProfile(selectedEnemy.profile) || state.encounter.analyzedEnemyIds.includes(selectedEnemy.id) || !!selectedEnemy.affinityRevealed);
-  const detailEnemyAnalyzed = !!detailEnemy && (isBossProfile(detailEnemy.profile) || state.encounter.analyzedEnemyIds.includes(detailEnemy.id) || !!detailEnemy.affinityRevealed);
-  const selectedEnemyDisplayLabel = selectedEnemyAnalyzed && selectedEnemy
+  const selectedEnemyReveal = selectedEnemy ? getEnemyRevealState(selectedEnemy, state.encounter.analyzedEnemyIds) : undefined;
+  const selectedEnemyAnalyzed = !!selectedEnemyReveal?.showAffinity;
+  const selectedEnemyDisplayLabel = selectedEnemyReveal?.showName && selectedEnemy
     ? encounterProfileMap[selectedEnemy.profile].label
-    : 'UNKNOWN SIGN';
+    : UNKNOWN_SIGN_LABEL;
   const approachRevealIdentity = false;
   const windshieldThreatLabel = (() => {
-    if (state.gamePhase === 'approach') return 'UNKNOWN SIGN';
+    if (state.gamePhase === 'approach') return UNKNOWN_SIGN_LABEL;
     if (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') {
       if (state.gamePhase === 'boss_encounter') return 'TOLL GATE SAINT';
-      return selectedEnemy ? selectedEnemyDisplayLabel : 'UNKNOWN SIGN';
+      return selectedEnemy ? selectedEnemyDisplayLabel : UNKNOWN_SIGN_LABEL;
     }
     return 'ROAD OPEN';
   })();
@@ -323,72 +274,42 @@ const tacticalLinesCompact = tacticalLines
     if (index === 1) return 'center';
     return 'right';
   };
-  const commandAffinityTagMap: Partial<Record<CommandId, string>> = selectedEnemyAnalyzed && selectedEnemy
-    ? Object.fromEntries(
-      (Object.entries(commandAffinityMap) as Array<[CommandId, AffinityType]>).map(([commandId, affinity]) => [commandId, getAffinityTag(selectedEnemy.affinities[affinity])]),
-    )
-    : {};
-  const commandEnabledMap: Record<CommandId, boolean> = {
-    main_gun: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && !!selectedEnemy && selectedEnemy.hp > 0 && state.mainAmmo > 0,
-    sub_gun: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && aliveEnemies.length > 0,
-    se_harpoon: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && !!selectedEnemy && selectedEnemy.hp > 0 && state.seAmmo >= selectedSE.seAmmoCost,
-    analyze: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && !!selectedEnemy && selectedEnemy.hp > 0 && state.signal > 0,
-    talk: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && !!selectedEnemy && selectedEnemy.hp > 0,
-    contract: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && contractEnabled,
-    ram: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && !!selectedEnemy && selectedEnemy.hp > 0 && state.armor > 0,
-    guard: state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter',
-    escape: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && state.fuel > 0,
-  };
-  const getPredictedDamageLabel = (commandId: 'main_gun' | 'sub_gun' | 'se_harpoon' | 'ram') => {
-    const target = selectedEnemy;
-    const targetAnalyzed = !!target && (state.encounter.analyzedEnemyIds.includes(target.id) || target.revealed || target.affinityRevealed);
-    const getAffinityFor = (affinity: AffinityType): AffinityRating =>
-      target && targetAnalyzed ? target.affinities[affinity] : 'normal';
-    const shield = target?.guardStacks && target.guardStacks > 0 ? 1 : 0;
-    if (commandId === 'main_gun') {
-      const roll = resolveDamageRoll({
-        baseDamage: selectedMainGun.damage,
-        affinity: getAffinityFor('ballistic'),
-        variance: damageVarianceByCommand.main_gun,
-        flatReduction: shield,
-      });
-      return `${roll.min}-${roll.max}`;
-    }
-    if (commandId === 'sub_gun') {
-      const roll = resolveDamageRoll({
-        baseDamage: selectedSubGun.damage,
-        affinity: getAffinityFor('suppressive'),
-        variance: damageVarianceByCommand.sub_gun,
-        flatReduction: shield,
-        armored: !!target?.armored,
-      });
-      return `${roll.min}-${roll.max}`;
-    }
-    if (commandId === 'se_harpoon') {
-      const roll = resolveDamageRoll({
-        baseDamage: selectedSE.damage,
-        affinity: getAffinityFor('signal'),
-        variance: damageVarianceByCommand.se_harpoon,
-        flatReduction: shield,
-      });
-      return `${roll.min}-${roll.max}`;
-    }
-    const ramBase = target?.intent === 'guard' ? 2 : 3;
-    const roll = resolveDamageRoll({
-      baseDamage: ramBase,
-      affinity: getAffinityFor('impact'),
-      variance: damageVarianceByCommand.ram,
-      flatReduction: shield,
-    });
-    return `${roll.min}-${roll.max}`;
-  };
-  type AppRuntimeSaveSnapshot = {
-    state: State;
-    runIndex: number;
-    activeRun: RunRecord | null;
-  };
-  const saveSnapshot = useMemo(() => loadSaveData(), [saveRefresh]);
-  const autoSaveSnapshot = useMemo(() => loadAutoSaveSnapshot<AppRuntimeSaveSnapshot>(), [saveRefresh]);
+  const {
+    contractEnabled,
+    commandAffinityTagMap,
+    commandEnabledMap,
+    getPredictedDamageLabel,
+    approachMainGunDesc,
+  } = useCommandDerived({
+    state,
+    selectedEnemy,
+    selectedEnemyAnalyzed,
+    selectedMainGun,
+    selectedSubGun,
+    selectedSE,
+  });
+  const {
+    saveSnapshot,
+    autoSaveSnapshot,
+    saveMessage,
+    setSaveMessage,
+    debugSaveHeaders,
+    refreshSaveSnapshot,
+    refreshDebugHeaders,
+    buildRuntimeSnapshot,
+    autoSaveNow,
+    beginRunRecord,
+    finalizeRunRecord,
+    phaseRef,
+    bossChallengedRef,
+    runIndexRef,
+    processedLogCountRef,
+    loadoutHashRef,
+    activeRunRef,
+  } = useSaveRuntime({
+    state,
+    narrativeMoeLine,
+  });
   const canUpdateDriverSkill = skillOrder
     .filter((skillId) => skillId === 'ram_control' || skillId === 'gunnery')
     .some((skillId) => state.driverXpBank >= getSkillCost(state.skillLevels[skillId]));
@@ -443,658 +364,74 @@ const tacticalLinesCompact = tacticalLines
     () => buildPlaytestReport(telemetryEvents, persistentProgression),
     [telemetryEvents, persistentProgression],
   );
-
-  const buildTelemetryContext = (): Record<string, unknown> => ({
-    gamePhase: state.gamePhase,
-    runIndex: runIndexRef.current,
-    stage: state.stage,
-    encounterIndex: state.encounterIndex,
-    turn: state.encounter.turn,
-    resources: {
-      fuel: state.fuel,
-      armor: state.armor,
-      signal: state.signal,
-      mainAmmo: state.mainAmmo,
-      seAmmo: state.seAmmo,
-    },
-    contracts: state.contracts.map((contract) => contract.id),
-    loadout: {
-      mainGunId: state.selectedLoadout.mainGunId,
-      subGunId: state.selectedLoadout.subGunId,
-      specialEquipmentId: state.selectedLoadout.specialEquipmentId,
-      contractSupportId: state.selectedLoadout.contractSupportId,
-    },
+  const { hitFxTone, hitFxPulse } = useUiEffects({
+    state,
+    dispatch,
+    showGarageLaunchConfirm,
+    setShowGarageLaunchConfirm,
+    terminalLogRef,
+    resetAutoplayReport: () => setAutoplayReport(null),
+    clearHoveredHint: () => setHoveredMoeHint(''),
   });
 
-  const emitTelemetry = (name: TelemetryEventName, payload: Record<string, unknown> = {}) => {
-    trackEvent(name, { ...buildTelemetryContext(), ...payload });
-    setTelemetryRefresh((value) => value + 1);
-  };
-  const refreshSaveSnapshot = () => setSaveRefresh((value) => value + 1);
-  const buildRuntimeSnapshot = (): AppRuntimeSaveSnapshot => ({
-    state: latestStateRef.current,
-    runIndex: runIndexRef.current,
-    activeRun: activeRunRef.current,
+  useTelemetryEffects({
+    state,
+    setTelemetryRefresh,
+    runIndexRef,
+    phaseRef,
+    bossChallengedRef,
+    processedLogCountRef,
+    loadoutHashRef,
+    activeRunRef,
+    beginRunRecord,
+    finalizeRunRecord,
+    refreshSaveSnapshot,
+    refreshDebugHeaders,
+    autoSaveNow,
   });
-  const autoSaveNow = (reason: string) => {
-    const saved = saveAutoSaveSnapshot(buildRuntimeSnapshot(), reason);
-    if (saved) {
-      lastAutoSaveAtRef.current = saved.savedAt;
-      setSaveMessage(`AutoSaved: ${new Date(saved.savedAt).toLocaleTimeString()} (${reason})`);
-      refreshSaveSnapshot();
-    }
-  };
-  const refreshDebugHeaders = () => {
-    setDebugSaveHeaders(listDebugSaveHeaders());
-  };
-  const beginRunRecord = () => {
-    const ts = Date.now();
-    const id = `run-${ts}-${Math.random().toString(36).slice(2, 8)}`;
-    activeRunRef.current = {
-      id,
-      startedAt: ts,
-      endedAt: ts,
-      encountersCleared: 0,
-      bossChallenged: false,
-      bossCleared: false,
-      contractsAcquired: [],
-      defeatedEnemies: [],
-      analyzedEnemies: [],
-      routeChoices: [],
-      returnGateUsed: false,
-      finalResources: {
-        fuel: state.fuel,
-        armor: state.armor,
-        signal: state.signal,
-        mainAmmo: state.mainAmmo,
-        seAmmo: state.seAmmo,
-      },
-      moeComment: narrativeMoeLine,
-    };
-    updateSaveData((current) => ({ ...current, totalRuns: current.totalRuns + 1 }));
-    refreshSaveSnapshot();
-    autoSaveNow('run_start');
-  };
-  const finalizeRunRecord = (resultType: string, gameOverReason?: string) => {
-    const current = activeRunRef.current;
-    if (!current) return;
-    const endedAt = Date.now();
-    const finalizedBase: RunRecord = {
-      ...current,
-      endedAt,
-      resultType,
-      encountersCleared: state.runSummary.cleared,
-      bossChallenged: state.bossChallenged,
-      bossCleared: resultType === 'Boss Cleared',
-      returnGateUsed: resultType === 'Early Return' || resultType === 'Boss Avoided' || resultType === 'Boss Cleared',
-      contractsAcquired: Array.from(new Set([...current.contractsAcquired, ...state.contracts.map((contract) => contract.id)])),
-      finalResources: {
-        fuel: state.fuel,
-        armor: state.armor,
-        signal: state.signal,
-        mainAmmo: state.mainAmmo,
-        seAmmo: state.seAmmo,
-      },
-      moeComment: undefined,
-      gameOverReason,
-    };
-    const finalized: RunRecord = {
-      ...finalizedBase,
-      moeComment: buildMoeRunComment(finalizedBase),
-    };
-    recordRunResult(finalized);
-    if (resultType === 'Boss Cleared') {
-      unlockMoeMemory({
-        id: `boss-clear-${state.stage}`,
-        title: `Stage ${state.stage} Cleared`,
-        text: 'Toll Gate Saint route stabilized. M.O.E. memory trace deepened.',
-        source: 'boss',
-      });
-      unlockMoeMemory({
-        id: 'memory_previous_driver',
-        title: 'Previous Driver',
-        text: 'M.O.E., if you hear this, do not trust the toll gate.',
-        source: 'boss',
-      });
-    }
-    activeRunRef.current = null;
-    refreshSaveSnapshot();
-    autoSaveNow('run_end');
-  };
 
-  useEffect(() => {
-    if (state.gamePhase !== 'garage' && showGarageLaunchConfirm) {
-      setShowGarageLaunchConfirm(false);
-    }
-  }, [state.gamePhase, showGarageLaunchConfirm]);
-
-  useEffect(() => {
-    const log = state.logs[state.logs.length - 1] ?? '';
-    let nextTone: HitFxTone | null = null;
-    if (log.includes('WEAK POINT DETECTED')) nextTone = 'weak';
-    else if (log.includes('RESISTED')) nextTone = 'resist';
-    else if (log.includes('IMPACT CONFIRMED') || log.includes('MULTI TARGET HIT') || log.includes('CHASSIS IMPACT CONFIRMED')) nextTone = 'hit';
-    if (!nextTone) return;
-    setHitFxTone(nextTone);
-    setHitFxPulse((prev) => prev + 1);
-    const timer = setTimeout(() => setHitFxTone(null), 420);
-    return () => clearTimeout(timer);
-  }, [state.logs]);
-
-  useEffect(() => {
-    if (!terminalLogRef.current) return;
-    terminalLogRef.current.scrollTop = terminalLogRef.current.scrollHeight;
-  }, [state.logs.length]);
-
-  useEffect(() => {
-    if (!(state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter')) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.metaKey || event.ctrlKey || event.altKey) return;
-      const target = event.target as HTMLElement | null;
-      if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
-      const commandIds = commandOptions.map((option) => option.id);
-      const currentIndex = commandIds.findIndex((id) => id === state.encounter.selectedCommand);
-      if (event.key === 'ArrowUp') {
-        event.preventDefault();
-        dispatch({ type: 'SELECT_COMMAND', command: commandIds[(currentIndex - 1 + commandIds.length) % commandIds.length] });
-      } else if (event.key === 'ArrowDown') {
-        event.preventDefault();
-        dispatch({ type: 'SELECT_COMMAND', command: commandIds[(currentIndex + 1) % commandIds.length] });
-      } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-        event.preventDefault();
-        const live = state.encounter.enemies.filter((enemy) => enemy.hp > 0);
-        if (live.length <= 1) return;
-        const idx = live.findIndex((enemy) => enemy.id === state.encounter.selectedEnemyId);
-        const next = event.key === 'ArrowLeft' ? (idx - 1 + live.length) % live.length : (idx + 1) % live.length;
-        dispatch({ type: 'SELECT_ENEMY', enemyId: live[next].id });
-      } else if (event.key === 'Enter') {
-        event.preventDefault();
-        dispatch({ type: 'EXECUTE_COMMAND' });
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [state.gamePhase, state.encounter]);
-
-  useEffect(() => {
-    setAutoplayReport(null);
-  }, [
-    state.selectedLoadout.mainGunId,
-    state.selectedLoadout.subGunId,
-    state.selectedLoadout.specialEquipmentId,
-    state.selectedLoadout.contractSupportId,
-  ]);
-
-  useEffect(() => {
-    setHoveredMoeHint('');
-  }, [state.gamePhase]);
-
-  useEffect(() => {
-    latestStateRef.current = state;
-  }, [state]);
-
-  useEffect(() => {
-    emitTelemetry('app_loaded');
-    emitTelemetry('prologue_started');
-    updateSaveData((current) => current);
-    refreshSaveSnapshot();
-    refreshDebugHeaders();
-    phaseRef.current = state.gamePhase;
-    bossChallengedRef.current = state.bossChallenged;
-    processedLogCountRef.current = state.logs.length;
-    autoSaveNow('app_loaded');
-  }, []);
-
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      autoSaveNow('interval');
-    }, 20000);
-    return () => window.clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    autoSaveNow(`phase:${state.gamePhase}`);
-  }, [state.gamePhase]);
-
-  useEffect(() => {
-    const prevPhase = phaseRef.current;
-    if (prevPhase !== state.gamePhase) {
-      if (state.gamePhase === 'prologue') emitTelemetry('prologue_started');
-      if (state.gamePhase === 'approach') emitTelemetry('approach_started');
-      if (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') {
-        emitTelemetry('encounter_started', {
-          encounterKind: state.encounter.kind,
-          enemies: state.encounter.enemies.map((enemy) => ({ id: enemy.id, profile: enemy.profile })),
-        });
-        for (const enemy of state.encounter.enemies) {
-          touchDemonArchive(enemy.profile, {
-            name: enemy.name,
-            profile: enemy.profile,
-            intelProgress: enemy.intelProgress,
-          });
-        }
-        refreshSaveSnapshot();
-      }
-      if (state.gamePhase === 'reward') emitTelemetry('reward_shown');
-      if (state.gamePhase === 'route_choice') emitTelemetry('route_choice_shown');
-      if (state.gamePhase === 'boss_preview') {
-        emitTelemetry('boss_preview_seen');
-        unlockMoeMemory({
-          id: 'memory_toll_gate',
-          title: 'Toll Gate Signal',
-          text: 'The toll is not fuel, not a name. It is the will to return.',
-          source: 'boss',
-        });
-        refreshSaveSnapshot();
-      }
-      if (state.gamePhase === 'garage') emitTelemetry('garage_entered');
-      if (state.gamePhase === 'game_over') emitTelemetry('game_over');
-      if (state.gamePhase === 'result') {
-        emitTelemetry('result_shown', { resultType: state.resultType ?? 'unknown' });
-        if (prevPhase === 'return_gate' || state.resultType === 'Early Return' || state.resultType === 'Boss Avoided') {
-          emitTelemetry('return_gate_used', { resultType: state.resultType ?? 'unknown' });
-        }
-        if (state.resultType === 'Early Return' || state.resultType === 'Boss Avoided') {
-          emitTelemetry('route_choice_selected', { route: 'return_gate' });
-        }
-        if (state.resultType === 'Boss Cleared') emitTelemetry('boss_cleared');
-        finalizeRunRecord(state.resultType ?? 'Unknown');
-      }
-      if (state.gamePhase === 'game_over') {
-        finalizeRunRecord('Vehicle Disabled', 'fuel_or_armor_zero');
-      }
-      phaseRef.current = state.gamePhase;
-    }
-  }, [state.gamePhase, state.encounter, state.resultType]);
-
-  useEffect(() => {
-    if (!bossChallengedRef.current && state.bossChallenged) emitTelemetry('boss_challenged');
-    if (!bossChallengedRef.current && state.bossChallenged && activeRunRef.current) {
-      activeRunRef.current.bossChallenged = true;
-    }
-    bossChallengedRef.current = state.bossChallenged;
-  }, [state.bossChallenged]);
-
-  useEffect(() => {
-    if (state.gamePhase !== 'garage') return;
-    const nextHash = JSON.stringify(state.selectedLoadout);
-    if (loadoutHashRef.current !== nextHash) {
-      emitTelemetry('loadout_changed', { loadout: state.selectedLoadout });
-      loadoutHashRef.current = nextHash;
-    }
-  }, [state.gamePhase, state.selectedLoadout]);
-
-  useEffect(() => {
-    if (state.story.recentRecoveredLogs.length === 0) return;
-    for (const id of state.story.recentRecoveredLogs) {
-      const log = storyLogById[id];
-      if (!log) continue;
-      unlockMoeMemory({
-        id: `story-${id}`,
-        title: log.title,
-        text: log.text,
-        source: 'story',
-      });
-      if (id === 'LOG_00') {
-        unlockMoeMemory({
-          id: 'memory_previous_driver',
-          title: 'Previous Driver',
-          text: 'M.O.E., if you hear this, do not trust the toll gate.',
-          source: 'story',
-        });
-      }
-      if (id === 'LOG_02') {
-        unlockMoeMemory({
-          id: 'memory_am_666',
-          title: 'AM 666.0',
-          text: 'AM 666.0 does not broadcast the future. It broadcasts the roads we did not choose.',
-          source: 'story',
-        });
-      }
-    }
-    refreshSaveSnapshot();
-  }, [state.story.recentRecoveredLogs]);
-
-  useEffect(() => {
-    const startIndex = processedLogCountRef.current;
-    if (startIndex >= state.logs.length) return;
-    const fresh = state.logs.slice(startIndex);
-    for (const line of fresh) {
-      const clean = line.replace(/^>\s*/, '').trim();
-      if (clean.startsWith('RUN START')) {
-        runIndexRef.current += 1;
-        emitTelemetry('run_started', { runIndex: runIndexRef.current });
-        if (runIndexRef.current >= 2) emitTelemetry('next_run_started', { runIndex: runIndexRef.current });
-        beginRunRecord();
-      }
-      if (clean.startsWith('COMMAND:')) {
-        const token = clean.split(':')[1]?.split('/')[0]?.trim().toLowerCase() ?? 'unknown';
-        const commandId = token;
-        const selected = getSelectedEnemy(state.encounter);
-        emitTelemetry('command_used', {
-          commandId,
-          enemyId: selected?.id,
-          enemyProfile: selected?.profile,
-        });
-        if (commandId === 'analyze') emitTelemetry('analyze_used');
-        if (commandId === 'talk') emitTelemetry('talk_used');
-        if (commandId === 'contract') emitTelemetry('contract_attempted');
-      }
-      if (clean.includes('SIGNATURE SCAN COMPLETE')) {
-        emitTelemetry('analyze_success');
-        const selected = getSelectedEnemy(state.encounter);
-        if (selected && activeRunRef.current) {
-          if (selected.intelProgress >= selected.intelThreshold) {
-            activeRunRef.current.analyzedEnemies = Array.from(new Set([...activeRunRef.current.analyzedEnemies, selected.profile]));
-          }
-          touchDemonArchive(selected.profile, {
-            name: selected.name,
-            profile: selected.profile,
-            analyzed: selected.intelProgress >= selected.intelThreshold,
-            affinityRevealed: !!selected.affinityRevealed,
-            intelProgress: selected.intelProgress,
-            affinities: Object.fromEntries(
-              Object.entries(selected.affinities).map(([key, value]) => [key, String(value)]),
-            ),
-          });
-          refreshSaveSnapshot();
-        }
-      }
-      if (clean.includes('CONTRACT WINDOW OPEN') || clean.includes('CONTRACT WINDOW: PARTIAL OPEN')) emitTelemetry('contract_window_opened');
-      if (clean.includes('CONTRACT REGISTERED')) {
-        emitTelemetry('contract_success');
-        if (activeRunRef.current) {
-          activeRunRef.current.contractsAcquired = Array.from(new Set([
-            ...activeRunRef.current.contractsAcquired,
-            ...state.contracts.map((contract) => contract.id),
-          ]));
-        }
-        const contractTargetName = clean.split('CONTRACT REGISTERED:')[1]?.trim();
-        if (contractTargetName) {
-          const match = Object.entries(devilTemplates()).find(([, template]) => template.name.toUpperCase() === contractTargetName.toUpperCase());
-          if (match) {
-            const [profile, template] = match;
-            touchDemonArchive(profile, {
-              name: template.name,
-              profile,
-              analyzed: true,
-            });
-            if (profile === 'abandoned_ai_navi') {
-              unlockMoeMemory({
-                id: 'memory_moe_identity',
-                title: 'M.O.E. Identity',
-                text: 'I am registered as a navigation AI. Then who recorded this voice?',
-                source: 'contract',
-              });
-            }
-            refreshSaveSnapshot();
-          }
-        }
-      }
-      if (clean.includes('SUPPORT DAEMON LINKED:')) {
-        const daemonName = clean.split('SUPPORT DAEMON LINKED:')[1]?.split('//')[0]?.trim();
-        if (daemonName) {
-          const match = Object.entries(devilTemplates()).find(([, template]) => template.name.toUpperCase() === daemonName.toUpperCase());
-          if (match) {
-            const [profile, template] = match;
-            touchDemonArchive(profile, {
-              name: template.name,
-              profile,
-              contractedDelta: 1,
-              analyzed: true,
-            });
-            refreshSaveSnapshot();
-          }
-        }
-      }
-      if (clean.includes('TARGET DOWN:')) {
-        const enemyName = clean.split('TARGET DOWN:')[1]?.split('/')[0]?.trim();
-        emitTelemetry('enemy_defeated', { enemyName });
-        const match = Object.entries(devilTemplates()).find(([, template]) => template.name.toUpperCase() === (enemyName ?? '').toUpperCase());
-        if (match && activeRunRef.current) {
-          const [profile, template] = match;
-          activeRunRef.current.defeatedEnemies = Array.from(new Set([...activeRunRef.current.defeatedEnemies, profile]));
-          touchDemonArchive(profile, {
-            name: template.name,
-            profile,
-            defeatedDelta: 1,
-            intelProgress: Math.max(100, state.encounter.enemies.find((enemy) => enemy.profile === profile)?.intelProgress ?? 0),
-          });
-          refreshSaveSnapshot();
-        }
-      }
-      if (clean.includes('SALVAGE APPLIED:')) {
-        const rewardName = clean.split('SALVAGE APPLIED:')[1]?.trim();
-        emitTelemetry('reward_selected', { rewardName });
-      }
-      if (clean === 'SALVAGE LANE SELECTED') {
-        emitTelemetry('route_choice_selected', { route: 'salvage' });
-        if (activeRunRef.current) activeRunRef.current.routeChoices.push('salvage');
-        touchRouteLog('salvage', routeLogCatalog.salvage.name, routeLogCatalog.salvage.note);
-        refreshSaveSnapshot();
-      }
-      if (clean === 'SIGNAL LANE SELECTED') {
-        emitTelemetry('route_choice_selected', { route: 'signal' });
-        if (activeRunRef.current) activeRunRef.current.routeChoices.push('signal');
-        touchRouteLog('signal', routeLogCatalog.signal.name, routeLogCatalog.signal.note);
-        refreshSaveSnapshot();
-      }
-      if (clean.startsWith('SIGNAL TUNNEL CHOICE:')) {
-        const rawChoice = clean.split('SIGNAL TUNNEL CHOICE:')[1]?.trim().toLowerCase();
-        if (rawChoice) emitTelemetry('route_choice_selected', { route: `signal:${rawChoice}` });
-      }
-      if (clean === 'PUSH FORWARD SELECTED') {
-        emitTelemetry('route_choice_selected', { route: 'push_forward' });
-        if (activeRunRef.current) activeRunRef.current.routeChoices.push('push_forward');
-        touchRouteLog('push_forward', routeLogCatalog.push_forward.name, routeLogCatalog.push_forward.note);
-        refreshSaveSnapshot();
-      }
-      if (clean.includes('RETURN GATE ROUTE OPEN')) {
-        emitTelemetry('route_choice_selected', { route: 'return_gate' });
-        if (activeRunRef.current) activeRunRef.current.routeChoices.push('return_gate');
-        touchRouteLog('return_gate', routeLogCatalog.return_gate.name, routeLogCatalog.return_gate.note);
-        refreshSaveSnapshot();
-      }
-      if (clean.includes('BOSS ENCOUNTER: TOLL GATE SAINT')) {
-        if (activeRunRef.current) activeRunRef.current.routeChoices.push('boss');
-        touchRouteLog('boss', routeLogCatalog.boss.name, routeLogCatalog.boss.note);
-        refreshSaveSnapshot();
-      }
-      if (clean.includes('AM 666.0')) {
-        unlockMoeMemory({
-          id: 'memory_am_666',
-          title: 'AM 666.0',
-          text: 'AM 666.0 does not broadcast the future. It broadcasts the roads we did not choose.',
-          source: 'run',
-        });
-        refreshSaveSnapshot();
-      }
-    }
-    processedLogCountRef.current = state.logs.length;
-  }, [state.logs, state.encounter, state.gamePhase]);
+  const {
+    saveDebugNow,
+    restoreAutoSaveNow,
+    restoreLatestDebugNow,
+    restoreDebugById,
+    clearAutoSaveNow,
+    clearDebugSavesNow,
+    downloadSaveJson,
+    resetMainSaveNow,
+    triggerSaveImport,
+    onImportSaveFile,
+    downloadDebugSavesJson,
+    downloadAutoSaveJson,
+    downloadCorruptBackupJson,
+    copyMarkdownReport,
+    downloadTelemetryJson,
+    resetTelemetry,
+  } = useSaveTools({
+    state,
+    dispatch,
+    playtestMarkdown: playtestReport.markdown,
+    saveImportInputRef,
+    setTelemetryRefresh,
+    setSaveMessage,
+    refreshSaveSnapshot,
+    refreshDebugHeaders,
+    buildRuntimeSnapshot,
+    sanitizeRestoredState,
+    runIndexRef,
+    activeRunRef,
+    phaseRef,
+    bossChallengedRef,
+    processedLogCountRef,
+    loadoutHashRef,
+  });
 
   const logLines = state.logs.slice(-24);
   const groupOrder: ('WEAPON' | 'TERMINAL' | 'DRIVE')[] = ['WEAPON', 'TERMINAL', 'DRIVE'];
   const runAutoplay = () => {
     setAutoplayReport(runAutoplayBatch(state.selectedLoadout, autoplayRuns, autoplayStrategy));
   };
-  const approachMainGunDesc = `先制主砲。予測DMG ${getRollBounds(selectedMainGun.damage + state.skillLevels.gunnery, damageVarianceByCommand.approach_main_gun).min}-${getRollBounds(selectedMainGun.damage + state.skillLevels.gunnery, damageVarianceByCommand.approach_main_gun).max} / MainAmmo-1 / 交渉難化`;
   const showFirstGarageGuide = state.gamePhase === 'prologue' && !state.previousRun;
-  const saveDebugNow = () => {
-    const label = `${state.gamePhase} / STG${state.stage}-ENC${state.encounterIndex + 1}`;
-    const saved = saveDebugSnapshot(buildRuntimeSnapshot(), label);
-    if (saved) {
-      setSaveMessage(`Debug saved: ${new Date(saved.createdAt).toLocaleTimeString()}`);
-      refreshDebugHeaders();
-      refreshSaveSnapshot();
-    }
-  };
-  const restoreAutoSaveNow = () => {
-    const snap = loadAutoSaveSnapshot<AppRuntimeSaveSnapshot>();
-    if (!snap?.snapshot?.state) {
-      setSaveMessage('AutoSave not found.');
-      return;
-    }
-    const safeState = sanitizeRestoredState(snap.snapshot.state, state);
-    dispatch({ type: 'DEBUG_RESTORE', snapshot: safeState });
-    runIndexRef.current = typeof snap.snapshot.runIndex === 'number' ? snap.snapshot.runIndex : runIndexRef.current;
-    activeRunRef.current = snap.snapshot.activeRun ?? null;
-    phaseRef.current = safeState.gamePhase;
-    bossChallengedRef.current = safeState.bossChallenged;
-    processedLogCountRef.current = safeState.logs.length;
-    loadoutHashRef.current = JSON.stringify(safeState.selectedLoadout);
-    setSaveMessage(`Restored AutoSave (${new Date(snap.savedAt).toLocaleTimeString()})`);
-    refreshSaveSnapshot();
-  };
-  const restoreLatestDebugNow = () => {
-    const latest = loadLatestDebugSnapshot<AppRuntimeSaveSnapshot>();
-    if (!latest?.snapshot?.state) {
-      setSaveMessage('Debug save not found.');
-      return;
-    }
-    const safeState = sanitizeRestoredState(latest.snapshot.state, state);
-    dispatch({ type: 'DEBUG_RESTORE', snapshot: safeState });
-    runIndexRef.current = typeof latest.snapshot.runIndex === 'number' ? latest.snapshot.runIndex : runIndexRef.current;
-    activeRunRef.current = latest.snapshot.activeRun ?? null;
-    phaseRef.current = safeState.gamePhase;
-    bossChallengedRef.current = safeState.bossChallenged;
-    processedLogCountRef.current = safeState.logs.length;
-    loadoutHashRef.current = JSON.stringify(safeState.selectedLoadout);
-    setSaveMessage(`Restored Debug: ${latest.label ?? latest.id}`);
-    refreshSaveSnapshot();
-  };
-  const restoreDebugById = (id: string) => {
-    const entry = loadDebugSnapshotById<AppRuntimeSaveSnapshot>(id);
-    if (!entry?.snapshot?.state) {
-      setSaveMessage('Selected debug save is invalid.');
-      return;
-    }
-    const safeState = sanitizeRestoredState(entry.snapshot.state, state);
-    dispatch({ type: 'DEBUG_RESTORE', snapshot: safeState });
-    runIndexRef.current = typeof entry.snapshot.runIndex === 'number' ? entry.snapshot.runIndex : runIndexRef.current;
-    activeRunRef.current = entry.snapshot.activeRun ?? null;
-    phaseRef.current = safeState.gamePhase;
-    bossChallengedRef.current = safeState.bossChallenged;
-    processedLogCountRef.current = safeState.logs.length;
-    loadoutHashRef.current = JSON.stringify(safeState.selectedLoadout);
-    setSaveMessage(`Restored Debug Slot: ${entry.label ?? entry.id}`);
-    refreshSaveSnapshot();
-  };
-  const clearAutoSaveNow = () => {
-    clearAutoSaveSnapshot();
-    setSaveMessage('AutoSave cleared.');
-    refreshSaveSnapshot();
-  };
-  const clearDebugSavesNow = () => {
-    clearDebugSaves();
-    refreshDebugHeaders();
-    setSaveMessage('Debug saves cleared.');
-  };
-  const downloadSaveJson = () => {
-    const blob = new Blob([exportSaveJson()], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'devil-drive-midnight-save.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-  const resetMainSaveNow = () => {
-    const agreed = window.confirm('Reset local main save data? This cannot be undone.');
-    if (!agreed) return;
-    clearSaveData();
-    setSaveMessage('Main save reset. Reloading...');
-    setTimeout(() => window.location.reload(), 150);
-  };
-  const triggerSaveImport = () => {
-    saveImportInputRef.current?.click();
-  };
-  const onImportSaveFile = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    try {
-      const text = await file.text();
-      const result = importSaveJson(text);
-      if (!result.ok) {
-        setSaveMessage(`Import failed: ${result.error}`);
-        return;
-      }
-      refreshSaveSnapshot();
-      refreshDebugHeaders();
-      setSaveMessage(`Save imported: ${new Date(result.data.updatedAt).toLocaleString()}`);
-    } catch {
-      setSaveMessage('Import failed: unable to read file.');
-    } finally {
-      event.currentTarget.value = '';
-    }
-  };
-  const downloadDebugSavesJson = () => {
-    const blob = new Blob([exportDebugSavesJson()], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `devil-drive-debug-saves-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-  const downloadAutoSaveJson = () => {
-    const blob = new Blob([exportAutoSaveJson()], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `devil-drive-autosave-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-  const downloadCorruptBackupJson = () => {
-    const blob = new Blob([exportCorruptSaveBackupJson()], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `devil-drive-save-corrupt-backup-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-  const copyMarkdownReport = async () => {
-    const text = playtestReport.markdown;
-    try {
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        return;
-      }
-    } catch {
-      // fallback below
-    }
-    const area = document.createElement('textarea');
-    area.value = text;
-    document.body.appendChild(area);
-    area.select();
-    document.execCommand('copy');
-    document.body.removeChild(area);
-  };
-  const downloadTelemetryJson = () => {
-    const blob = new Blob([exportTelemetryJson()], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `devil-drive-telemetry-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-  const resetTelemetry = () => {
-    clearTelemetryEvents();
-    setTelemetryRefresh((value) => value + 1);
-  };
   const onGarageEnterNightLoop = () => {
     setShowGarageLaunchConfirm(true);
   };
@@ -1177,7 +514,6 @@ const tacticalLinesCompact = tacticalLines
           ingressSteps={ingressSteps}
           windshieldThreatLabel={windshieldThreatLabel}
           detailEnemy={detailEnemy}
-          detailEnemyAnalyzed={detailEnemyAnalyzed}
           detailIntentIconMap={detailIntentIconMap}
           profiles={encounterProfileMap}
           getContractHint={getContractHint}
@@ -1228,6 +564,8 @@ const tacticalLinesCompact = tacticalLines
             clearHoveredHint={() => setHoveredMoeHint('')}
             onExecuteCommand={(command) => dispatch({ type: 'EXECUTE_COMMAND', command })}
             onSelectCommand={(command) => dispatch({ type: 'SELECT_COMMAND', command })}
+            onTalkChoose={(choiceId) => dispatch({ type: 'TALK_CHOOSE', choiceId })}
+            onTalkCancel={() => dispatch({ type: 'TALK_CANCEL' })}
             onRewardContinue={() => dispatch({ type: 'REWARD_CONTINUE' })}
             onApproachChoose={(option) => dispatch({ type: 'APPROACH_CHOOSE', option })}
             onApproachContinue={() => dispatch({ type: 'APPROACH_CONTINUE' })}
@@ -1261,95 +599,94 @@ const tacticalLinesCompact = tacticalLines
           />
         </section>
 
-        <section className="system-event-panel">
-          <div className="encounter-stinger">
-            <span>{state.gamePhase.toUpperCase()}</span>
-            <strong>{state.gamePhase === 'garage' ? 'MIDNIGHT BAY' : state.resultType ?? `ENCOUNTER ${state.encounterIndex + 1}/3`}</strong>
-          </div>
-          <UtilityPanels
-            showUtilityPanels={showUtilityPanels}
-            showPlaytestReport={showPlaytestReport}
-            showSaveTools={showSaveTools}
-            showArchive={showArchive}
-            telemetryEvents={telemetryEvents}
-            playtestReport={playtestReport}
-            saveSnapshot={saveSnapshot}
-            latestResult={latestResult}
-            archiveEntries={archiveEntries}
-            contractsAcquiredTotal={contractsAcquiredTotal}
-            routeLogEntriesCount={routeLogEntries.length}
-            moeMemoryEntriesCount={moeMemoryEntries.length}
-            autoSaveSnapshotLabel={autoSaveSnapshot ? new Date(autoSaveSnapshot.savedAt).toLocaleString() : 'none'}
-            autoSaveReason={autoSaveSnapshot?.reason ?? '-'}
-            debugSaveHeaders={debugSaveHeaders}
-            saveMessage={saveMessage}
-            saveImportInputRef={saveImportInputRef}
-            encounterProfileMap={encounterProfileMap}
-            demonArchiveFlavor={demonArchiveFlavor}
-            onToggleUtilityPanels={() => setShowUtilityPanels((open) => !open)}
-            onTogglePlaytestReport={() => setShowPlaytestReport((open) => !open)}
-            onToggleSaveTools={() => setShowSaveTools((open) => !open)}
-            onToggleArchive={() => setShowArchive((open) => !open)}
-            onCopyMarkdownReport={copyMarkdownReport}
-            onDownloadTelemetryJson={downloadTelemetryJson}
-            onResetTelemetry={resetTelemetry}
-            onDownloadSaveJson={downloadSaveJson}
-            onTriggerSaveImport={triggerSaveImport}
-            onResetMainSave={resetMainSaveNow}
-            onSaveDebugNow={saveDebugNow}
-            onRestoreAutoSaveNow={restoreAutoSaveNow}
-            onRestoreLatestDebugNow={restoreLatestDebugNow}
-            onDownloadAutoSaveJson={downloadAutoSaveJson}
-            onDownloadDebugSavesJson={downloadDebugSavesJson}
-            onDownloadCorruptBackupJson={downloadCorruptBackupJson}
-            onClearAutoSaveNow={clearAutoSaveNow}
-            onClearDebugSavesNow={clearDebugSavesNow}
-            onImportSaveFile={onImportSaveFile}
-            onRestoreDebugById={restoreDebugById}
-          />
-
-          <GaragePanel
-            visible={state.gamePhase === 'garage'}
-            state={state}
-            moeAsset={moeAsset}
-            garageImage={garageImage}
-            selectedStageProfile={selectedStageProfile}
-            selectedStageAdvisory={selectedStageAdvisory}
-            stageProfiles={stageProfiles}
-            nextRunPreview={nextRunPreview}
-            showGarageLaunchConfirm={showGarageLaunchConfirm}
-            showRunHistory={showRunHistory}
-            saveSnapshot={saveSnapshot}
-            latestRunRecord={latestRunRecord}
-            latest3Runs={latest3Runs}
-            routeLogEntries={routeLogEntries}
-            moeMemoryEntries={moeMemoryEntries}
-            canUpdateDriverSkill={canUpdateDriverSkill}
-            canUpdateMoeSkill={canUpdateMoeSkill}
-            canUpdateVehicleTune={canUpdateVehicleTune}
-            autoplayRuns={autoplayRuns}
-            autoplayStrategy={autoplayStrategy}
-            autoplayReport={autoplayReport}
-            autoplayMinRuns={balanceConfig.autoplay.minRuns}
-            autoplayMaxRuns={balanceConfig.autoplay.maxRuns}
-            onSetShowRunHistory={setShowRunHistory}
-            onGarageEnterNightLoop={onGarageEnterNightLoop}
-            onGarageLaunchConfirm={onGarageLaunchConfirm}
-            onGarageLaunchCancel={onGarageLaunchCancel}
-            onSetStage={(stage) => dispatch({ type: 'GARAGE_SET_STAGE', stage })}
-            onSetMainGun={(id) => dispatch({ type: 'GARAGE_SET_MAIN_GUN', id })}
-            onSetSubGun={(id) => dispatch({ type: 'GARAGE_SET_SUB_GUN', id })}
-            onSetSpecial={(id) => dispatch({ type: 'GARAGE_SET_SPECIAL', id })}
-            onSetSupport={(id) => dispatch({ type: 'GARAGE_SET_SUPPORT', id })}
-            onPurchaseSkill={(upgrade) => dispatch({ type: 'PURCHASE_SKILL', upgrade })}
-            onPurchaseVehicleUpgrade={(id) => dispatch({ type: 'PURCHASE_VEHICLE_UPGRADE', id })}
-            onSetAutoplayRuns={setAutoplayRuns}
-            onSetAutoplayStrategy={setAutoplayStrategy}
-            onRunAutoplay={runAutoplay}
-          />
-
-          <EventPanels state={state} runGrowth={runGrowth} />
-        </section>
+        <SystemEventPanel
+          phaseLabel={state.gamePhase.toUpperCase()}
+          stingerLabel={state.gamePhase === 'garage' ? 'MIDNIGHT BAY' : state.resultType ?? `ENCOUNTER ${state.encounterIndex + 1}/3`}
+          utilityPanelsProps={{
+            showUtilityPanels,
+            showPlaytestReport,
+            showSaveTools,
+            showArchive,
+            telemetryEvents,
+            playtestReport,
+            saveSnapshot,
+            latestResult,
+            archiveEntries,
+            contractsAcquiredTotal,
+            routeLogEntriesCount: routeLogEntries.length,
+            moeMemoryEntriesCount: moeMemoryEntries.length,
+            autoSaveSnapshotLabel: autoSaveSnapshot ? new Date(autoSaveSnapshot.savedAt).toLocaleString() : 'none',
+            autoSaveReason: autoSaveSnapshot?.reason ?? '-',
+            debugSaveHeaders,
+            saveMessage,
+            saveImportInputRef,
+            encounterProfileMap,
+            demonArchiveFlavor,
+            onToggleUtilityPanels: () => setShowUtilityPanels((open) => !open),
+            onTogglePlaytestReport: () => setShowPlaytestReport((open) => !open),
+            onToggleSaveTools: () => setShowSaveTools((open) => !open),
+            onToggleArchive: () => setShowArchive((open) => !open),
+            onCopyMarkdownReport: copyMarkdownReport,
+            onDownloadTelemetryJson: downloadTelemetryJson,
+            onResetTelemetry: resetTelemetry,
+            onDownloadSaveJson: downloadSaveJson,
+            onTriggerSaveImport: triggerSaveImport,
+            onResetMainSave: resetMainSaveNow,
+            onSaveDebugNow: saveDebugNow,
+            onRestoreAutoSaveNow: restoreAutoSaveNow,
+            onRestoreLatestDebugNow: restoreLatestDebugNow,
+            onDownloadAutoSaveJson: downloadAutoSaveJson,
+            onDownloadDebugSavesJson: downloadDebugSavesJson,
+            onDownloadCorruptBackupJson: downloadCorruptBackupJson,
+            onClearAutoSaveNow: clearAutoSaveNow,
+            onClearDebugSavesNow: clearDebugSavesNow,
+            onImportSaveFile,
+            onRestoreDebugById: restoreDebugById,
+          }}
+          garagePanelProps={{
+            visible: state.gamePhase === 'garage',
+            state,
+            moeAsset,
+            garageImage,
+            selectedStageProfile,
+            selectedStageAdvisory,
+            stageProfiles,
+            nextRunPreview,
+            showGarageLaunchConfirm,
+            showRunHistory,
+            saveSnapshot,
+            latestRunRecord,
+            latest3Runs,
+            routeLogEntries,
+            moeMemoryEntries,
+            canUpdateDriverSkill,
+            canUpdateMoeSkill,
+            canUpdateVehicleTune,
+            autoplayRuns,
+            autoplayStrategy,
+            autoplayReport,
+            autoplayMinRuns: balanceConfig.autoplay.minRuns,
+            autoplayMaxRuns: balanceConfig.autoplay.maxRuns,
+            onSetShowRunHistory: setShowRunHistory,
+            onGarageEnterNightLoop,
+            onGarageLaunchConfirm,
+            onGarageLaunchCancel,
+            onSetStage: (stage) => dispatch({ type: 'GARAGE_SET_STAGE', stage }),
+            onSetMainGun: (id) => dispatch({ type: 'GARAGE_SET_MAIN_GUN', id }),
+            onSetSubGun: (id) => dispatch({ type: 'GARAGE_SET_SUB_GUN', id }),
+            onSetSpecial: (id) => dispatch({ type: 'GARAGE_SET_SPECIAL', id }),
+            onSetSupport: (id) => dispatch({ type: 'GARAGE_SET_SUPPORT', id }),
+            onPurchaseSkill: (upgrade) => dispatch({ type: 'PURCHASE_SKILL', upgrade }),
+            onPurchaseVehicleUpgrade: (id) => dispatch({ type: 'PURCHASE_VEHICLE_UPGRADE', id }),
+            onSetAutoplayRuns: setAutoplayRuns,
+            onSetAutoplayStrategy: setAutoplayStrategy,
+            onRunAutoplay: runAutoplay,
+          }}
+          eventPanelsProps={{
+            state,
+            runGrowth,
+          }}
+        />
       </main>
     </div>
   </div>;

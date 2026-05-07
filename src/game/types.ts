@@ -81,6 +81,7 @@ export type Devil = {
   affinityRevealed?: boolean;
   intelProgress: number;
   intelThreshold: number;
+  analyzeVulnerableTurns?: number;
   profile: EncounterId;
   empDisabledTurns: number;
   exit?: 'defeated' | 'contracted' | 'fled';

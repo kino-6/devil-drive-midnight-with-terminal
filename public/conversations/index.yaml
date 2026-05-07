@@ -1,0 +1,3 @@
+# Conversation config split entrypoint
+version: "conversation-v1"
+includes: "/conversations/talk.yaml, /conversations/contract.yaml, /conversations/hints.yaml, /conversations/battle.yaml"

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Devil, EncounterId, HitFxTone } from '../game/types';
+import type { EnemyRevealState } from '../game/runtimeHelpers';
 
 const transparencyCache = new Map<string, string>();
 
@@ -185,7 +186,7 @@ export function BattleDevilSprite({
   devil,
   focused,
   lane,
-  analyzed,
+  revealState,
   onSelect,
   onHoverEnemy,
   imageSrc,
@@ -195,7 +196,7 @@ export function BattleDevilSprite({
   devil: Devil;
   focused: boolean;
   lane: 'left' | 'center' | 'right';
-  analyzed: boolean;
+  revealState: EnemyRevealState;
   onSelect: () => void;
   onHoverEnemy?: (enemyId: string | null) => void;
   imageSrc?: string;
@@ -222,7 +223,7 @@ export function BattleDevilSprite({
   >
     <div className="battle-devil__body">
       <div className="battle-devil__art">
-        {analyzed
+        {revealState.showName
           ? <AssetFigure
             src={imageSrc}
             alt={`${profile.label} visual`}
@@ -233,21 +234,21 @@ export function BattleDevilSprite({
           : <AssetFigure
             src={imageSrc}
             alt="Unknown signal visual"
-            className="battle-devil__asset"
+            className={`battle-devil__asset ${revealState.showSilhouette ? 'is-silhouette' : ''}`.trim()}
             fallback={<span className="battle-devil__unknown">?</span>}
             transparencyMode="auto-corner"
           />}
       </div>
       <div className="battle-devil__label">
-        <strong>{analyzed ? devil.name.toUpperCase() : 'UNKNOWN SIGN'}</strong>
+        <strong>{revealState.label}</strong>
       </div>
-      {analyzed && <div className="battle-devil__hp">
+      {revealState.showHp && <div className="battle-devil__hp">
         <span>HP {devil.hp}/{devil.maxHp}</span>
         <div><i style={{ width: `${hpPct}%` }} /></div>
       </div>}
       <div className="battle-devil__intent">
         <span className={`battle-devil__intent-icon intent--${devil.intent}`}>{intentIconMap[devil.intent]}</span>
-        <small>{analyzed ? devil.intent.toUpperCase() : 'UNKNOWN'}</small>
+        <small>{revealState.showIntent ? devil.intent.toUpperCase() : 'UNKNOWN'}</small>
       </div>
     </div>
     {focused && <span className="battle-devil__target">TARGET LOCK</span>}

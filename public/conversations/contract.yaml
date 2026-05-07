@@ -1,0 +1,10 @@
+version: "conversation-contract-v1"
+
+lines:
+  contract.success.default: "契約成立。短期恩恵を受領した。"
+  contract.boon.signal: "CONTRACT BOON: SIGNAL +1"
+  contract.boon.armor: "CONTRACT BOON: ARMOR +1"
+  contract.boon.fuel: "CONTRACT BOON: FUEL +1"
+  contract.boon.forecast: "CONTRACT BOON: FORECAST +1"
+  contract.boon.guard: "CONTRACT BOON: NEXT IMPACT -1"
+

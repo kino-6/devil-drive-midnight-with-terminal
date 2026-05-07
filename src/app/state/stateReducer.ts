@@ -214,7 +214,7 @@ const buildDevil = (kind: EncounterId, index: number, stage = 1): Devil => {
   const scaledMaxHp = t.maxHp + stageHpBonus;
   const intelThreshold = getIntelThreshold(t.profile);
   const persistedIntel = Math.min(intelThreshold, getPersistedIntelProgress(t.profile));
-  const revealed = isBossProfile(t.profile) || persistedIntel >= getIntelRevealThreshold(intelThreshold);
+  const revealed = persistedIntel >= getIntelRevealThreshold(intelThreshold);
   const affinityRevealed = persistedIntel >= getIntelAffinityThreshold(intelThreshold);
   return {
     id: `${kind}-${index}`,
@@ -1520,7 +1520,6 @@ function reducerCore(state: State, action: Action): State {
     damageVarianceByCommand,
     resolveDamageRoll,
     getAffinityTag,
-    isBossProfile,
     getIntelRevealThreshold,
     getIntelAffinityThreshold,
     canOpenContractWindow,
@@ -1539,7 +1538,18 @@ function reducerCore(state: State, action: Action): State {
 }
 
 export function reducer(state: State, action: Action): State {
-  const next = reducerCore(state, action);
+  const healedState: State =
+    (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter')
+    && state.encounter.phase === 'conversation'
+    && !state.activeConversation
+      ? {
+        ...state,
+        encounter: { ...state.encounter, phase: 'command' as const },
+        logs: [...state.logs, '> TALK CHANNEL DESYNC: RETURN TO COMMAND'],
+      }
+      : state;
+
+  const next = reducerCore(healedState, action);
   if (next.logs === state.logs) return next;
   const trimmed = limitStateLogs(next.logs);
   if (trimmed.length === next.logs.length) return next;

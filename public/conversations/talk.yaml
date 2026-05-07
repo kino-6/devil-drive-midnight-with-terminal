@@ -1,0 +1,16 @@
+version: "conversation-talk-v1"
+
+lines:
+  analyze.boon.damage_reduction.applied: "解析ロック成立。次の攻勢を1段鈍化できる。"
+  analyze.boon.damage_reduction.attack: "ANALYZE LOCK: IMPACT -1"
+  analyze.boon.damage_reduction.curse: "ANALYZE LOCK: CURSE -1"
+
+  talk.success.hungry: "交渉成立。飢えた反応が落ち着き、攻勢が鈍る。"
+  talk.success.lonely: "交渉成立。孤独反応が減衰、次行動が弱まる。"
+  talk.success.machine: "交渉成立。機械霊プロセスが低脅威モードへ遷移。"
+  talk.success.proud: "交渉成立。威圧は残るが、次の一手は緩む。"
+  talk.success.curious: "交渉成立。興味が勝って攻勢が鈍る。"
+  talk.success.hostile: "交渉成立。敵意は残るが、初動を崩せた。"
+  talk.success.default: "会話が通った。次の行動が一段弱くなる。"
+  talk.effect.intent_softened: "TALK DISRUPTION: INTENT SOFTENED"
+

@@ -1,5 +1,6 @@
 import { getBalanceConfig } from '../../balanceConfig';
-import { getDialogueLine, getDialogueLineWithVars } from '../../dialogueConfig';
+import { getConversationLine, getConversationLineWithVars } from '../../conversationConfig';
+import { getDialogueLine } from '../../dialogueConfig';
 import { getEncounterScenario, getScenarioLine } from '../../scenario/scenarioLoader';
 import { affinityLabel, affinityOrder, contractModules } from '../../game/catalogs';
 import { getConversationProfile } from '../../game/conversationCatalog';
@@ -7,6 +8,7 @@ import {
   appendSupportDaemonDisconnectLogs,
   clamp,
   getMainGunSpec,
+  isEnemyIdentityKnown,
   getSpecialEquipmentSpec,
   getSubGunSpec,
   isAlive,
@@ -22,7 +24,6 @@ export const resolveExecuteCommand = (state: State, action: Action, deps: any): 
     damageVarianceByCommand,
     resolveDamageRoll,
     getAffinityTag,
-    isBossProfile,
     getIntelRevealThreshold,
     getIntelAffinityThreshold,
     canOpenContractWindow,
@@ -62,7 +63,11 @@ let moeSyncBank = state.moeSyncBank;
 let story = { ...state.story, recoveredLogs: [...state.story.recoveredLogs], recentRecoveredLogs: [...state.story.recentRecoveredLogs] };
 let salvageCredits = state.salvageCredits;
 let analyzeSuccessCount = state.analyzeSuccessCount;
+let tempForecastBoost = state.tempForecastBoost;
 const encounterPrep = { ...state.encounterPrep };
+const maxFuelCap = getBalanceConfig().resources.baseFuel + state.vehicleUpgrades.fuel_tank;
+const maxArmorCap = getBalanceConfig().resources.baseArmor + state.vehicleUpgrades.armor_plating;
+const maxSignalCap = getBalanceConfig().resources.baseSignal;
 let moeLine = getDialogueLine('moe.dynamic.battle.idle', '次の手を選んで。');
 let skipEnemyResolution = false;
 let escaped = false;
@@ -70,7 +75,7 @@ const selectedMainGun = getMainGunSpec(state.selectedLoadout.mainGunId);
 const selectedSubGun = getSubGunSpec(state.selectedLoadout.subGunId);
 const selectedSE = getSpecialEquipmentSpec(state.selectedLoadout.specialEquipmentId);
 const getMoeTargetName = (enemy: Devil) =>
-  (encounter.analyzedEnemyIds.includes(enemy.id) || enemy.revealed || enemy.affinityRevealed)
+  isEnemyIdentityKnown(enemy, encounter.analyzedEnemyIds)
     ? enemy.name
     : 'Unknown Sign';
 const logAffinityReaction = (enemy: Devil, affinityType: AffinityType) => {
@@ -81,6 +86,47 @@ const logAffinityReaction = (enemy: Devil, affinityType: AffinityType) => {
     logs.push(`> RESISTED: ${affinityType.toUpperCase()}`);
   }
   return rating;
+};
+const applyContractBoon = (enemy: Devil) => {
+  const hasRadioVoiceModule = contracts.some((module) => module.id === 'radio_voice');
+  const hasSilentShapeModule = contracts.some((module) => module.id === 'silent_shape');
+  const hasAiNaviModule = contracts.some((module) => module.id === 'abandoned_ai_navi');
+  const aiNaviSupportActive =
+    activeSupportDaemon?.profile === 'abandoned_ai_navi'
+    || state.selectedLoadout.contractSupportId === 'abandoned_ai_navi';
+
+  if (aiNaviSupportActive || hasAiNaviModule || enemy.temperament === 'machine') {
+    tempForecastBoost += 1;
+    logs.push(`> ${getConversationLine('contract.boon.forecast', 'CONTRACT BOON: FORECAST +1')}`);
+    return;
+  }
+  if ((hasRadioVoiceModule || enemy.temperament === 'curious') && signal < maxSignalCap) {
+    signal = Math.max(0, signal + 1);
+    logs.push(`> ${getConversationLine('contract.boon.signal', 'CONTRACT BOON: SIGNAL +1')}`);
+    return;
+  }
+  if ((hasSilentShapeModule || enemy.targetModuleId === 'silent_shape') && armor < maxArmorCap) {
+    armor = Math.max(0, armor + 1);
+    logs.push(`> ${getConversationLine('contract.boon.armor', 'CONTRACT BOON: ARMOR +1')}`);
+    return;
+  }
+  if (enemy.targetModuleId === 'silent_shape') {
+    encounter.supportArmorGuardReady = true;
+    logs.push(`> ${getConversationLine('contract.boon.guard', 'CONTRACT BOON: NEXT IMPACT -1')}`);
+    return;
+  }
+  if (enemy.temperament === 'hungry') {
+    fuel = Math.min(maxFuelCap, Math.max(0, fuel + 1));
+    logs.push(`> ${getConversationLine('contract.boon.fuel', 'CONTRACT BOON: FUEL +1')}`);
+    return;
+  }
+  if (enemy.temperament === 'proud' || enemy.temperament === 'hostile') {
+    armor = Math.min(maxArmorCap, Math.max(0, armor + 1));
+    logs.push(`> ${getConversationLine('contract.boon.armor', 'CONTRACT BOON: ARMOR +1')}`);
+    return;
+  }
+  signal = Math.min(maxSignalCap, Math.max(0, signal + 1));
+  logs.push(`> ${getConversationLine('contract.boon.signal', 'CONTRACT BOON: SIGNAL +1')}`);
 };
 const applyIntelGain = (enemyIndex: number, gain: number, source: 'analyze' | 'combat' | 'defeat' | 'talk') => {
   const enemy = encounter.enemies[enemyIndex];
@@ -94,7 +140,7 @@ const applyIntelGain = (enemyIndex: number, gain: number, source: 'analyze' | 'c
   if (source === 'analyze') {
     logs.push(`> INTEL PROGRESS: ${enemy.name.toUpperCase()} ${after}/${enemy.intelThreshold}`);
   }
-  if (!enemy.revealed && (isBossProfile(enemy.profile) || after >= revealThreshold)) {
+  if (!enemy.revealed && after >= revealThreshold) {
     enemy.revealed = true;
     logs.push('> IDENTITY LOCK PARTIAL RELEASED');
   }
@@ -136,10 +182,10 @@ if (command === 'main_gun' && selectedEnemy && mainAmmo > 0) {
     logs.push(`> IMPACT CONFIRMED: ${damage} DAMAGE (PRED ${gunRoll.min}-${gunRoll.max})`);
     const targetName = getMoeTargetName(encounter.enemies[idx]);
     moeLine = affinity === 'weak'
-      ? getDialogueLineWithVars('moe.dynamic.battle.main_gun.weak', '{target}へ主砲射撃。刺さった。押し切れる。', { target: targetName })
+      ? getConversationLineWithVars('moe.dynamic.battle.main_gun.weak', { target: targetName })
       : affinity === 'resist'
-        ? getDialogueLineWithVars('moe.dynamic.battle.main_gun.resist', '{target}へ主砲射撃。効きが薄い。別の手に切り替えよう。', { target: targetName })
-        : getDialogueLineWithVars('moe.dynamic.battle.main_gun.normal', '{target}へ主砲射撃。命中。警戒は上がってる。', { target: targetName });
+        ? getConversationLineWithVars('moe.dynamic.battle.main_gun.resist', { target: targetName })
+        : getConversationLineWithVars('moe.dynamic.battle.main_gun.normal', { target: targetName });
     if (encounter.enemies[idx].hp <= 0 && !encounter.enemies[idx].exit) {
       applyIntelGain(idx, 28, 'defeat');
       encounter.enemies[idx].exit = 'defeated';
@@ -273,10 +319,10 @@ if (command === 'se_harpoon' && selectedEnemy && seAmmo >= selectedSE.seAmmoCost
         if (encounter.enemies[idx].contractWindow) logs.push('> CONTRACT WINDOW: PARTIAL OPEN');
         const targetName = getMoeTargetName(encounter.enemies[idx]);
         moeLine = affinity === 'weak'
-          ? getDialogueLineWithVars('moe.dynamic.battle.se.interest.weak', '{target}へS-E発射。署名が浮いた。契約窓が開きやすい。', { target: targetName })
+          ? getConversationLineWithVars('moe.dynamic.battle.se.interest.weak', { target: targetName })
           : affinity === 'resist'
-            ? getDialogueLineWithVars('moe.dynamic.battle.se.interest.resist', '{target}へS-E発射。信号が弾かれた。窓が閉じる。', { target: targetName })
-            : getDialogueLineWithVars('moe.dynamic.battle.se.interest.normal', '{target}へS-E発射。署名を掴んだ。会話が通じやすい。', { target: targetName });
+            ? getConversationLineWithVars('moe.dynamic.battle.se.interest.resist', { target: targetName })
+            : getConversationLineWithVars('moe.dynamic.battle.se.interest.normal', { target: targetName });
       } else if (selectedSE.effect === 'emp') {
         if (encounter.enemies[idx].temperament === 'machine' || encounter.enemies[idx].profile === 'abandoned_ai_navi') {
           encounter.enemies[idx].empDisabledTurns = 1;
@@ -284,7 +330,7 @@ if (command === 'se_harpoon' && selectedEnemy && seAmmo >= selectedSE.seAmmoCost
         } else {
           logs.push('> EMP BURST: NO MACHINE RESPONSE');
         }
-        moeLine = getDialogueLineWithVars('moe.dynamic.battle.se.emp', '{target}へEMPフレア。機械霊の挙動が鈍る。', {
+        moeLine = getConversationLineWithVars('moe.dynamic.battle.se.emp', {
           target: getMoeTargetName(encounter.enemies[idx]),
         });
       }
@@ -311,6 +357,8 @@ if (command === 'analyze' && selectedEnemy) {
     if (idx >= 0) {
       applyIntelGain(idx, 55, 'analyze');
       analyzedTarget = encounter.enemies[idx];
+      analyzedTarget.analyzeVulnerableTurns = Math.max(1, analyzedTarget.analyzeVulnerableTurns ?? 0);
+      logs.push(`> ${getConversationLine('analyze.boon.damage_reduction.applied', '解析ロック成立。次の攻勢を1段鈍化できる。')}`);
       if (analyzedTarget.affinityRevealed) {
         for (const affinity of affinityOrder) {
           logs.push(`> AFFINITY ${affinityLabel[affinity].toUpperCase()}: ${analyzedTarget.affinities[affinity].toUpperCase()}`);
@@ -325,11 +373,9 @@ if (command === 'analyze' && selectedEnemy) {
       logs.push(`> CONTRACT HINT: ${getContractHint(analyzedTarget).toUpperCase()}`);
     }
     analyzeSuccessCount += 1;
-    moeLine = getDialogueLineWithVars(
-      'moe.dynamic.battle.analyze.success',
-      '{target}の解析実行。断片が揃ってきた。もう一段で全体像が出る。',
-      { target: getMoeTargetName(selectedEnemy) },
-    );
+    moeLine = getConversationLineWithVars('moe.dynamic.battle.analyze.success', {
+      target: getMoeTargetName(selectedEnemy),
+    });
   }
 }
 
@@ -359,6 +405,7 @@ if (command === 'talk' && selectedEnemy) {
       activeSupportDaemon,
       activeConversation,
       negotiationRewards,
+      tempForecastBoost,
       moeSyncBank,
       story,
       salvageCredits,
@@ -377,11 +424,9 @@ if (command === 'contract' && selectedEnemy) {
     const target = encounter.enemies[idx];
     if (!target.contractable || !target.contractWindow) {
       logs.push('> CONTRACT REJECTED: NO CONTRACT WINDOW');
-      moeLine = getDialogueLineWithVars(
-        'moe.dynamic.battle.contract.no_window',
-        '{target}へ契約試行。契約窓が未開放。TalkかS-Eを先に。',
-        { target: getMoeTargetName(target) },
-      );
+      moeLine = getConversationLineWithVars('moe.dynamic.battle.contract.no_window', {
+        target: getMoeTargetName(target),
+      });
     } else if (!meetsContractCondition(target)) {
       logs.push('> CONTRACT REJECTED: CONDITION NOT MET');
       target.contractWindow = false;
@@ -392,14 +437,12 @@ if (command === 'contract' && selectedEnemy) {
         armor = Math.max(0, armor - 1);
         logs.push('> ARMOR -1');
       }
-      moeLine = getDialogueLineWithVars(
-        'moe.dynamic.battle.contract.condition_fail',
-        '{target}へ契約失敗。条件不足。反動が来る。',
-        { target: getMoeTargetName(target) },
-      );
+      moeLine = getConversationLineWithVars('moe.dynamic.battle.contract.condition_fail', {
+        target: getMoeTargetName(target),
+      });
     } else {
       const contractCfg = getBalanceConfig().contract;
-      const analyzedBonus = encounter.analyzedEnemyIds.includes(target.id) || target.revealed ? contractCfg.analyzeBonus : 0;
+      const analyzedBonus = isEnemyIdentityKnown(target, encounter.analyzedEnemyIds) ? contractCfg.analyzeBonus : 0;
       const baseSuccess = target.profile === 'toll_gate_saint' ? contractCfg.bossBaseSuccess : contractCfg.normalBaseSuccess;
       const successRate = clamp(
         baseSuccess + analyzedBonus - target.pressure * contractCfg.pressurePenaltyPerStack,
@@ -416,6 +459,8 @@ if (command === 'contract' && selectedEnemy) {
         logs.push(`> CONTRACT REGISTERED: ${target.name.toUpperCase()}`);
         const contractSuccessLine = getScenarioLine(getEncounterScenario(target.profile)?.contract?.success);
         if (contractSuccessLine) logs.push(`> ${contractSuccessLine}`);
+        applyContractBoon(target);
+        logs.push(`> ${getConversationLine('contract.success.default', '契約成立。短期恩恵を受領した。')}`);
         activeSupportDaemon = makeActiveSupportDaemon(target);
         logs.push(`> SUPPORT DAEMON LINKED: ${target.name.toUpperCase()} // ${activeSupportDaemon.effectLabel.toUpperCase()}`);
         logs.push(`> ${supportDaemonLinkFlavorLogs()[activeSupportDaemon.profile]}`);
@@ -436,11 +481,9 @@ if (command === 'contract' && selectedEnemy) {
           armor = Math.max(0, armor - 1);
           logs.push('> ARMOR -1');
         }
-        moeLine = getDialogueLineWithVars(
-          'moe.dynamic.battle.contract.reject',
-          '{target}へ契約失敗。拒否された。まだ早い。',
-          { target: getMoeTargetName(target) },
-        );
+        moeLine = getConversationLineWithVars('moe.dynamic.battle.contract.reject', {
+          target: getMoeTargetName(target),
+        });
       }
     }
   }
@@ -473,10 +516,10 @@ if (command === 'ram' && selectedEnemy && armor > 0) {
     logs.push('> ARMOR -1');
     const targetName = getMoeTargetName(encounter.enemies[idx]);
     moeLine = affinity === 'weak'
-      ? getDialogueLineWithVars('moe.dynamic.battle.ram.weak', '{target}へラムアタック。効いてる。押し切れる。', { target: targetName })
+      ? getConversationLineWithVars('moe.dynamic.battle.ram.weak', { target: targetName })
       : affinity === 'resist'
-        ? getDialogueLineWithVars('moe.dynamic.battle.ram.resist', '{target}へラムアタック。固い。正面突破は不利。', { target: targetName })
-        : getDialogueLineWithVars('moe.dynamic.battle.ram.normal', '{target}へラムアタック。衝突確認。こちらの装甲も削れてる。', { target: targetName });
+        ? getConversationLineWithVars('moe.dynamic.battle.ram.resist', { target: targetName })
+        : getConversationLineWithVars('moe.dynamic.battle.ram.normal', { target: targetName });
     if (encounter.enemies[idx].hp <= 0 && !encounter.enemies[idx].exit) {
       applyIntelGain(idx, 28, 'defeat');
       encounter.enemies[idx].exit = 'defeated';
@@ -512,11 +555,18 @@ if (command === 'escape' && fuel > 0) {
 if (!skipEnemyResolution) {
   let guardBudget = encounter.guardActive ? 2 : 0;
   for (const enemy of encounter.enemies.filter(isAlive)) {
+    const enemyIdx = encounter.enemies.findIndex((d) => d.id === enemy.id);
+    const enemyState = enemyIdx >= 0 ? encounter.enemies[enemyIdx] : enemy;
     const enemyIntent = enemy.empDisabledTurns > 0 ? 'guard' : enemy.intent;
     logs.push(`> ENEMY INTENT: ${enemy.name.toUpperCase()} -> ${enemyIntent.toUpperCase()}`);
     if (enemy.empDisabledTurns > 0) logs.push('> EMP DISRUPTION: INTENT JAMMED');
     if (enemyIntent === 'attack') {
       let damage = 2;
+      if ((enemyState.analyzeVulnerableTurns ?? 0) > 0) {
+        damage = Math.max(0, damage - 1);
+        enemyState.analyzeVulnerableTurns = Math.max(0, (enemyState.analyzeVulnerableTurns ?? 0) - 1);
+        logs.push(`> ${getConversationLine('analyze.boon.damage_reduction.attack', 'ANALYZE LOCK: IMPACT -1')}`);
+      }
       if (guardBudget > 0) {
         const reduced = Math.min(guardBudget, damage);
         damage -= reduced;
@@ -533,6 +583,11 @@ if (!skipEnemyResolution) {
       } else logs.push('> GUARD ABSORBED IMPACT');
     } else if (enemyIntent === 'curse') {
       let sigDamage = 1;
+      if ((enemyState.analyzeVulnerableTurns ?? 0) > 0) {
+        sigDamage = Math.max(0, sigDamage - 1);
+        enemyState.analyzeVulnerableTurns = Math.max(0, (enemyState.analyzeVulnerableTurns ?? 0) - 1);
+        logs.push(`> ${getConversationLine('analyze.boon.damage_reduction.curse', 'ANALYZE LOCK: CURSE -1')}`);
+      }
       if (encounter.guardActive) sigDamage = Math.max(0, sigDamage - 1);
       if (sigDamage > 0) {
         signal = Math.max(0, signal - sigDamage);
@@ -591,6 +646,7 @@ if (armor <= 0 || fuel <= 0) {
     mainAmmo,
     seAmmo,
     contracts,
+    tempForecastBoost,
     salvageCredits,
     logs: appendRecoveredStoryLogLines([...disconnectLogs, '> SIGNAL LOST', '> VEHICLE DISABLED'], story),
     encounter: { ...encounter, phase: 'finished' },
@@ -621,6 +677,7 @@ if (cleared) {
       seAmmo,
       contracts,
       activeSupportDaemon,
+      tempForecastBoost,
       salvageCredits,
       logs: [...logsWithClear, '> RETURN GATE ROUTE OPEN'],
       encounter: { ...encounter, phase: 'finished' },
@@ -643,6 +700,7 @@ if (cleared) {
     seAmmo,
     contracts,
     activeSupportDaemon,
+    tempForecastBoost,
     salvageCredits,
     logs: [...logsWithClear, '> SALVAGE RESULT READY'],
     encounter: { ...encounter, phase: 'finished' },
@@ -662,7 +720,7 @@ const { forecast, unstable } = buildForecast(
   hasAiNaviContract(contracts),
   state.selectedLoadout.contractSupportId,
   activeSupportDaemon?.profile,
-  state.tempForecastBoost,
+  tempForecastBoost,
 );
 encounter.forecast = forecast;
 encounter.forecastUnstable = unstable;
@@ -681,6 +739,7 @@ return {
   activeSupportDaemon,
   activeConversation,
   negotiationRewards,
+  tempForecastBoost,
   moeSyncBank,
   story,
   salvageCredits,
@@ -701,7 +760,6 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
     canOpenContractWindow,
     buildForecast,
     hasAiNaviContract,
-    nextIntent,
   } = deps;
 
   const encounter: EncounterState = {
@@ -743,7 +801,7 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
   let moeLine = state.moeLine;
 
   const translationBonus = state.skillLevels.translation_assist > 0 ? 0.05 : 0;
-  const analyzed = encounter.analyzedEnemyIds.includes(target.id) || target.revealed || target.affinityRevealed;
+  const analyzed = isEnemyIdentityKnown(target, encounter.analyzedEnemyIds);
   const preferredMatch = choice.preferredTemperaments?.includes(target.temperament) ? 0.15 : 0;
   const affinityType = choice.affinityType ?? 'talk';
   const affinityRating = target.affinities[affinityType];
@@ -763,6 +821,15 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
     } else if (resource === 'mainAmmo') {
       mainAmmo = Math.max(0, mainAmmo + amount);
     }
+  };
+  const softenIntentByTemperament = (enemy: Devil): Devil['intent'] => {
+    if (enemy.intent === 'guard' || enemy.intent === 'flee') return enemy.intent;
+    if (enemy.temperament === 'hostile' || enemy.temperament === 'proud') return 'guard';
+    if (enemy.temperament === 'machine') return enemy.intent === 'bargain' ? 'flee' : 'guard';
+    if (enemy.temperament === 'hungry' || enemy.temperament === 'lonely' || enemy.temperament === 'curious') {
+      return enemy.intent === 'attack' ? 'guard' : 'flee';
+    }
+    return enemy.intent === 'attack' ? 'guard' : 'flee';
   };
 
   const hasCost = () => {
@@ -863,8 +930,10 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
       logs.push('> NEGOTIATION RESPONSE: ACCEPTED');
       logs.push(`> ${choice.successText}`);
       applyEffects(choice.effectsOnSuccess, true);
-      moeLine = choice.successText;
-      target.intent = nextIntent(target.profile);
+      logs.push(`> ${getConversationLine('talk.effect.intent_softened', 'TALK DISRUPTION: INTENT SOFTENED')}`);
+      target.intent = softenIntentByTemperament(target);
+      const talkKey = `talk.success.${target.temperament}`;
+      moeLine = getConversationLine(talkKey, getConversationLine('talk.success.default', choice.successText));
     } else {
       logs.push('> NEGOTIATION RESPONSE: REJECTED');
       logs.push(`> ${choice.failText}`);

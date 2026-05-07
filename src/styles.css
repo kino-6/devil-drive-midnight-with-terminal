@@ -1074,6 +1074,11 @@ body {
   object-fit: contain;
 }
 
+.battle-devil__asset.is-silhouette {
+  filter: grayscale(1) contrast(1.35) brightness(0.42);
+  opacity: 0.92;
+}
+
 .battle-devil__unknown {
   width: 100%;
   height: 100%;

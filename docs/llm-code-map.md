@@ -1,68 +1,154 @@
 # LLM Code Map (Agent Guide)
 
-このファイルは、LLM/Agent がこのリポジトリを編集するときに迷わないための導線です。
-まずここを読んでから編集してください。
+このファイルは、Codex/Agent が **「今どこを読めばよいか」** を最短で判断するための導線です。  
+実装前に必ず確認してください。
 
-## 1) どこに何があるか
+---
 
+## 1) 現在の主要構成（2026-05, 現状準拠）
+
+### エントリ
 - `src/App.tsx`
-  - ゲーム本体の reducer / phase 遷移 / 画面合成
-  - まず壊しやすい領域。**UI見た目変更だけ**なら reducer に触らない。
+  - `export { App } from './app/AppRoot';` のみ
+
+### 画面結線（オーケストレーション）
+- `src/app/AppRoot.tsx`
+  - `useReducer` の起点
+  - 各コンポーネントへの props 結線
+  - save/telemetry/debug handler 群
+  - まだ派生計算と一部副作用が残る
+
+### UI コンポーネント（`src/app/components/`）
+- `PrologueOverlay.tsx`
+- `CockpitHeader.tsx`
+- `BattleView.tsx`
+- `TerminalPanel.tsx`
+- `CommandPanel.tsx`
+- `VehiclePanel.tsx`
+- `GaragePanel.tsx`
+- `UtilityPanels.tsx`
+- `EventPanels.tsx`
+
+### hooks（`src/app/hooks/`）
+- `useAudioEffects.ts`
+- `useRuntimeConfigEffects.ts`
+  - runtime config のロード起点（assets / balance / devils / dialogue / scenario / conversation）
+
+### 戦闘・進行ロジック（`src/app/state/`）
+- `stateReducer.ts`
+  - reducer本体、phase遷移、初期化、主要 helper
+- `combatReducer.ts`
+  - `EXECUTE_COMMAND` / `TALK_CHOOSE` を含む戦闘行動解決
+- `stateRestore.ts`
+  - save復元時の sanitize
+- `stateAutoplay.ts`
+  - autoplay バッチ
+
+### 型
 - `src/game/types.ts`
-  - ゲーム内で使う主要型の集約
-  - 新規フェーズ/コマンド/状態を追加するときはここを先に更新
-- `src/components/DashboardWidgets.tsx`
-  - ダッシュボード系の小UI（メーター・ランプ）
-  - 表示コンポーネントの切り出し先
+  - 状態/Action/データ型の単一ソース
+
+### 永続化・分析
 - `src/saveSystem.ts`
-  - localStorage セーブ、Route Log / Memory / Archive 永続化
-  - 永続データ仕様変更時は `version` と normalizer に注意
 - `src/telemetry.ts`
-  - ローカルプレイテスト計測とレポート生成
-- `src/balanceConfig.ts` + `public/balance.yaml`
-  - バランス値の既定値と外部YAML上書き
-- `src/devilConfig.ts` + `public/devils/index.yaml` + `public/devils/*.yaml`
-  - Devilプロファイル/相性/出現ラインナップ/Support演出ログの外部YAML上書き
-- `src/assetManifest.ts` + `public/assets/manifest.yaml`
-  - 差し替えアセット定義とフォールバック解決
-- `src/dialogueConfig.ts` + `public/dialogue.yaml`
-  - M.O.E.台詞・hoverヒントなど作中文言の外部YAML管理
-  - `dialogue.yaml` は「利用場面コメント」を併記して運用
 
-## 2) 変更タスク別の推奨編集先
+---
 
-- 戦闘ロジック調整:
-  - `src/App.tsx` reducer と関連 helper
-  - 数値は可能なら `balance.yaml` に寄せる
-- 新UIコンポーネント:
-  - 先に `src/components/*` を作る
-  - `App.tsx` には composition だけ残す
-- 永続化（収集/履歴/進行）:
-  - `src/saveSystem.ts` に API を追加
-  - `App.tsx` は呼び出しのみ
-- 分析/プレイテスト:
-  - `src/telemetry.ts` に集約
+## 2) 目的別: まず読むファイル
 
-## 3) App.tsx を安全に触るルール
+### UI変更（見た目・レイアウト）
+1. `src/app/components/*` の該当パネル
+2. `src/styles.css`
+3. 必要なら `src/app/AppRoot.tsx`（props結線のみ）
 
-1. reducer の `Action` と `State` を同時に確認する。  
-2. `gamePhase` 遷移を変更したら、以下を必ず確認する。  
-   - telemetry emit (`useEffect` phase watcher)
-   - save record finalize
-   - Garage / Result の導線
-3. ログ文字列依存の処理があるので、既存ログ文言の変更は慎重に行う。  
+### 戦闘ロジック変更（Analyze/Talk/Contract/ダメージ/Intent）
+1. `src/app/state/combatReducer.ts`
+2. `src/app/state/stateReducer.ts`
+3. `src/game/types.ts`
+4. 必要に応じて `src/balanceConfig.ts` / `public/balance.yaml`
 
-## 4) 段階的リファクタ方針
+### save変更
+1. `src/saveSystem.ts`
+2. `src/app/state/stateRestore.ts`
+3. `src/game/types.ts`（保存対象型の更新が必要な場合）
 
-- Phase 1 (完了): 型と小UI部品の分離
-- Phase 2 (次): `App.tsx` 内 helper を `src/game/*` へ移動
-  - 候補: encounter生成、affinity計算、approach判定、autoplay判定
-- Phase 3: reducer を `src/game/reducer.ts` に分離し、UI層から独立
+### telemetry変更
+1. `src/telemetry.ts`
+2. `src/app/AppRoot.tsx`（emit 呼び出し点）
 
-## 5) 作業チェックリスト
+### runtime config / loader変更
+1. `src/app/hooks/useRuntimeConfigEffects.ts`
+2. `src/*Config.ts`（`balanceConfig.ts`, `devilConfig.ts`, `dialogueConfig.ts`, `conversationConfig.ts`）
 
-- `npm run build` が通る
-- 主要ループが崩れていない
-  - Prologue -> Approach -> Encounter -> Reward/Route -> Boss/Return -> Result -> Garage
-- セーブ読込失敗時にクラッシュしない
-- telemetry/save の localStorage キーを壊していない
+---
+
+## 3) データ変更時に読むべき YAML/JSON（直書き禁止）
+
+### Devil定義
+- エントリ: `public/devils/index.yaml`
+- include先:
+  - `public/devils/profiles.yaml`
+  - `public/devils/templates.yaml`
+  - `public/devils/lineups.yaml`
+  - `public/devils/support.yaml`
+- loader: `src/devilConfig.ts`
+
+### バランス値
+- `public/balance.yaml`
+- loader: `src/balanceConfig.ts`
+
+### 文言
+- 汎用: `public/dialogue.yaml`（loader: `src/dialogueConfig.ts`）
+- 会話強化: `public/conversations/index.yaml` + `public/conversations/*.yaml`（loader: `src/conversationConfig.ts`）
+- シナリオ断片: `public/scenarios/**/*.json`（loader: `src/scenario/scenarioLoader.ts`）
+
+### アセット
+- `public/assets/manifest.yaml`
+- resolver: `src/assetManifest.ts`
+
+---
+
+## 4) 重要方針（必須）
+
+- **AppRoot.tsx に新しいゲームデータ・長文文言・数値・敵定義を足さない。**
+- 追加データは必ず YAML/JSON + loader 経由へ寄せる。
+- ロジックは `stateReducer.ts` / `combatReducer.ts`、表示は `components/*` に分離する。
+- UIの固定ラベル以外の大量文言は config 側へ置く。
+
+---
+
+## 5) public/devils/index.yaml の split/include 方針
+
+- `public/devils/index.yaml` は **正規エントリ**。
+- ここで `includes` を定義し、`devilConfig.ts` が順次マージする。
+- 原則:
+  - profile文言/見た目情報: `profiles.yaml`
+  - 戦闘テンプレート（HP/temperament/affinity等）: `templates.yaml`
+  - 出現編成: `lineups.yaml`
+  - support daemon情報: `support.yaml`
+- 互換都合がない限り、新規定義は split 先へ追加する。
+
+---
+
+## 6) 今後の分割候補（次ステップ）
+
+> すでに `CommandPanel / VehiclePanel / GaragePanel / UtilityPanels / EventPanels` は抽出済み。  
+> 今後は「内部責務の再分割」を候補にする。
+
+1. `CommandPanel` 内の phase別表示（encounter/garage/result）を更に小分割
+2. `VehiclePanel` の resource/contract/support セクション分割
+3. `GaragePanel` の stage/loadout/growth/archive の小分割
+4. `UtilityPanels` の playtest/save/archive の小分割
+5. `EventPanels` の phaseカード群の小分割
+6. `AppRoot.tsx` の副作用/派生値を hooks/view-model へ継続移管
+
+---
+
+## 7) Codex作業時の最小チェック
+
+1. 変更対象が UI / ロジック / データ のどれかを先に切り分ける
+2. 変更先が `AppRoot.tsx` で本当に妥当か確認する（多くは別ファイル）
+3. `npm run build` を実行
+4. 主要ループ確認  
+   `Prologue -> Approach -> Encounter -> Reward/Route -> Boss/Return -> Result -> Garage`
+5. save/telemetry の localStorage キー互換を壊していないか確認

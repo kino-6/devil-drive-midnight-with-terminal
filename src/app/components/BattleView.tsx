@@ -1,4 +1,5 @@
 import { ApproachContactMarker, BattleDevilSprite } from '../../components/EncounterVisuals';
+import { getEnemyRevealState } from '../../game/runtimeHelpers';
 import type { EncounterProfile } from '../../devilConfig';
 import type { Devil, EncounterId, GamePhase, HitFxTone, Intent } from '../../game/types';
 
@@ -27,7 +28,6 @@ type BattleViewProps = {
   ingressSteps: IngressStep[];
   windshieldThreatLabel: string;
   detailEnemy?: Devil;
-  detailEnemyAnalyzed: boolean;
   detailIntentIconMap: Record<Intent, string>;
   profiles: Record<EncounterId, EncounterProfile>;
   getContractHint: (enemy: Devil) => string;
@@ -60,7 +60,6 @@ export const BattleView = ({
   ingressSteps,
   windshieldThreatLabel,
   detailEnemy,
-  detailEnemyAnalyzed,
   detailIntentIconMap,
   profiles,
   getContractHint,
@@ -71,10 +70,21 @@ export const BattleView = ({
   getLikelyWeaknessSummary,
   onSelectEnemy,
   onHoverEnemy,
-}: BattleViewProps) => (
-  <section
+}: BattleViewProps) => {
+  const detailReveal = detailEnemy ? getEnemyRevealState(detailEnemy, analyzedEnemyIds) : undefined;
+  const detailIntelCurrent = detailEnemy ? Math.max(0, Math.floor(detailEnemy.intelProgress)) : 0;
+  const detailIntelMax = detailEnemy ? Math.max(1, detailEnemy.intelThreshold) : 1;
+  const detailAffinityUnlockAt = Math.floor(detailIntelMax * 0.7);
+  const detailAffinityRemaining = Math.max(0, detailAffinityUnlockAt - detailIntelCurrent);
+  const analyzeIntelGain = 55;
+  const analyzesToAffinityReveal = detailEnemy?.affinityRevealed
+    ? 0
+    : Math.ceil(detailAffinityRemaining / analyzeIntelGain);
+
+  return (
+    <section
     className={`battle-view ${isEncounterActive ? 'is-hot' : ''} ${isRoadMoving ? 'is-cruising' : ''} ${isRoadStopped ? 'is-stopped' : ''} ${isBossPhase ? 'is-boss' : ''} ${hitFxTone ? `is-hitfx-${hitFxTone}` : ''} ${isArmorCritical ? 'is-armor-critical' : ''} ${isWindshieldFolded ? 'is-folded' : ''}`}
-  >
+    >
     <div className="battle-view__frame" aria-hidden="true">
       <span className="battle-view__pillar battle-view__pillar--left" />
       <span className="battle-view__pillar battle-view__pillar--right" />
@@ -115,15 +125,20 @@ export const BattleView = ({
     <div className="battle-view__devils">
       {(gamePhase === 'encounter' || gamePhase === 'boss_encounter' || gamePhase === 'reward') &&
         enemies.map((enemy, index) => {
-          const analyzed = isBossProfile(enemy.profile) || analyzedEnemyIds.includes(enemy.id) || enemy.revealed;
-          const imageSrc = analyzed ? resolveEnemyAsset(enemy.profile) : resolveUnknownEnemyAsset(index);
+          const reveal = getEnemyRevealState(enemy, analyzedEnemyIds);
+          const showBossSilhouette = reveal.showSilhouette && isBossProfile(enemy.profile);
+          const imageSrc = reveal.showName
+            ? resolveEnemyAsset(enemy.profile)
+            : showBossSilhouette
+              ? resolveEnemyAsset(enemy.profile)
+              : resolveUnknownEnemyAsset(index);
           return (
             <BattleDevilSprite
               key={enemy.id}
               devil={enemy}
               lane={resolveEnemyLane(index, enemies.length, gamePhase === 'boss_encounter')}
               focused={enemy.id === selectedEnemyId}
-              analyzed={analyzed}
+              revealState={reveal}
               imageSrc={imageSrc}
               hitFx={enemy.id === selectedEnemyId ? hitFxTone ?? undefined : undefined}
               onSelect={() => onSelectEnemy(enemy.id)}
@@ -150,21 +165,32 @@ export const BattleView = ({
       <section className="target-detail-panel target-detail-panel--overlay">
         <div className="target-detail-panel__head">
           <strong>TARGET DETAIL</strong>
-          <small>{detailEnemyAnalyzed ? detailEnemy.name.toUpperCase() : 'UNKNOWN SIGN'}</small>
+          <small>{detailReveal?.showName ? detailEnemy.name.toUpperCase() : 'UNKNOWN SIGN'}</small>
         </div>
         <div className="target-detail-panel__core">
           <span className={`target-detail-panel__intent intent--${detailEnemy.intent}`}>
-            {detailIntentIconMap[detailEnemy.intent]} {detailEnemyAnalyzed ? detailEnemy.intent.toUpperCase() : 'UNKNOWN'}
+            {detailIntentIconMap[detailEnemy.intent]} {detailReveal?.showIntent ? detailEnemy.intent.toUpperCase() : 'UNKNOWN'}
           </span>
-          {detailEnemyAnalyzed && <span>HP {detailEnemy.hp}/{detailEnemy.maxHp}</span>}
-          <span>{detailEnemyAnalyzed ? `${profiles[detailEnemy.profile].contractable ? 'CONTRACTABLE' : 'HOSTILE'} / ${profiles[detailEnemy.profile].threat}` : 'UNKNOWN / ---'}</span>
+          {detailReveal?.showHp && <span>HP {detailEnemy.hp}/{detailEnemy.maxHp}</span>}
+          <span>{detailReveal?.showName ? `${profiles[detailEnemy.profile].contractable ? 'CONTRACTABLE' : 'HOSTILE'} / ${profiles[detailEnemy.profile].threat}` : 'UNKNOWN / ---'}</span>
+          {detailReveal?.showHint && <span>INTEL {detailIntelCurrent}/{detailIntelMax}</span>}
         </div>
         <div className="target-detail-panel__intel">
-          {detailEnemyAnalyzed ? <small>{getContractHint(detailEnemy)}</small> : <small>INTEL LOCKED / HOVER + ANALYZE TO REVEAL</small>}
+          {detailReveal?.showHint
+            ? <small>{getContractHint(detailEnemy)}</small>
+            : <small>INTEL LOCKED / HOVER + ANALYZE TO REVEAL</small>}
+          {detailReveal?.showHint && !detailEnemy.affinityRevealed && (
+            <small>
+              {analyzesToAffinityReveal <= 1
+                ? 'NEXT ANALYZE: WEAK/RESIST DECODE'
+                : `AFFINITY LOCKED / ~${analyzesToAffinityReveal} ANALYZE TO DECODE`}
+            </small>
+          )}
           {detailEnemy.contractWindow && <small className="battle-devil__window">CONTRACT WINDOW OPEN</small>}
         </div>
       </section>
     )}
     <div className="battle-view__folded-note">WINDSHIELD VIEW FOLDED IN GARAGE MODE</div>
-  </section>
-);
+    </section>
+  );
+};

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { type AssetManifest, loadAssetManifest } from '../../assetManifest';
 import { defaultBalanceConfig, type BalanceConfig, loadBalanceConfig } from '../../balanceConfig';
+import { loadConversationConfig } from '../../conversationConfig';
 import { loadDevilConfig } from '../../devilConfig';
 import { getDialogueConfig, loadDialogueConfig } from '../../dialogueConfig';
 import { loadScenarioPack } from '../../scenario/scenarioLoader';
@@ -83,6 +84,10 @@ export const useRuntimeConfigEffects = ({
   }, [setDialogueConfigVersion]);
 
   useEffect(() => {
+    void loadConversationConfig();
+  }, []);
+
+  useEffect(() => {
     const runtimeCssVars = cssVars ?? {};
     const root = document.documentElement;
     const touched: string[] = [];
@@ -100,4 +105,3 @@ export const useRuntimeConfigEffects = ({
     setDialogueConfigVersion(getDialogueConfig().version);
   }, [setDialogueConfigVersion]);
 };
-

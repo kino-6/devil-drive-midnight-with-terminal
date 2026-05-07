@@ -1,0 +1,22 @@
+version: "conversation-battle-v1"
+
+lines:
+  # command reaction lines with dynamic target placeholders
+  moe.dynamic.battle.main_gun.weak: "{target}へ主砲射撃。刺さった。押し切れる。"
+  moe.dynamic.battle.main_gun.resist: "{target}へ主砲射撃。効きが薄い。別の手に切り替えよう。"
+  moe.dynamic.battle.main_gun.normal: "{target}へ主砲射撃。命中。警戒は上がってる。"
+
+  moe.dynamic.battle.se.interest.weak: "{target}へS-E発射。署名が浮いた。契約窓が開きやすい。"
+  moe.dynamic.battle.se.interest.resist: "{target}へS-E発射。信号が弾かれた。窓が閉じる。"
+  moe.dynamic.battle.se.interest.normal: "{target}へS-E発射。署名を掴んだ。会話が通じやすい。"
+  moe.dynamic.battle.se.emp: "{target}へEMPフレア。機械霊の挙動が鈍る。"
+
+  moe.dynamic.battle.analyze.success: "{target}の解析実行。断片が揃ってきた。もう一段で全体像が出る。"
+
+  moe.dynamic.battle.contract.no_window: "{target}へ契約試行。契約窓が未開放。TalkかS-Eを先に。"
+  moe.dynamic.battle.contract.condition_fail: "{target}へ契約失敗。条件不足。反動が来る。"
+  moe.dynamic.battle.contract.reject: "{target}へ契約失敗。拒否された。まだ早い。"
+
+  moe.dynamic.battle.ram.weak: "{target}へラムアタック。効いてる。押し切れる。"
+  moe.dynamic.battle.ram.resist: "{target}へラムアタック。固い。正面突破は不利。"
+  moe.dynamic.battle.ram.normal: "{target}へラムアタック。衝突確認。こちらの装甲も削れてる。"
