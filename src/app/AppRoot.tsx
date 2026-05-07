@@ -1,4 +1,4 @@
-import { useMemo, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { defaultAssetManifest, resolveAssetUrl, type AssetManifest } from '../assetManifest';
 import { defaultBalanceConfig, getBalanceConfig, type BalanceConfig } from '../balanceConfig';
 import { getDialogueConfig, getDialogueLine } from '../dialogueConfig';
@@ -9,12 +9,14 @@ import {
   getTelemetryEvents,
   type PersistentProgressionSnapshot,
 } from '../telemetry';
+import { dispatchWithReproLog } from '../reproLog';
 import {
   getRouteEventScenario,
 } from '../scenario/scenarioLoader';
 import { buildMoeRunComment, resultLabel } from '../game/runInsights';
 import { getDevilConfig } from '../devilConfig';
 import {
+  type Action,
   type AutoPlayReport,
   type AutoPlayStrategy,
   type Intent,
@@ -68,6 +70,7 @@ import { useUiEffects } from './hooks/useUiEffects';
 import { useSaveRuntime } from './hooks/useSaveRuntime';
 import { useSaveTools } from './hooks/useSaveTools';
 import { useTelemetryEffects } from './hooks/useTelemetryEffects';
+import { useRunBeatQueue } from './hooks/useRunBeatQueue';
 import { CockpitHeader } from './components/CockpitHeader';
 import { PrologueOverlay } from './components/PrologueOverlay';
 import { BattleView } from './components/BattleView';
@@ -75,9 +78,17 @@ import { TerminalPanel } from './components/TerminalPanel';
 import { CommandPanel, type SignalChoice } from './components/CommandPanel';
 import { VehiclePanel } from './components/VehiclePanel';
 import { SystemEventPanel } from './components/SystemEventPanel';
+import { RunBeatOverlay } from './components/RunBeatOverlay';
 
 export function App() {
-  const [state, dispatch] = useReducer(reducer, undefined, initState);
+  const [state, rawDispatch] = useReducer(reducer, undefined, initState);
+  const stateBeforeDispatchRef = useRef(state);
+  useEffect(() => {
+    stateBeforeDispatchRef.current = state;
+  }, [state]);
+  const dispatch = useCallback((action: Action) => {
+    dispatchWithReproLog(stateBeforeDispatchRef.current, action, () => rawDispatch(action));
+  }, [rawDispatch]);
   const [balanceConfig, setBalanceConfig] = useState<BalanceConfig>(defaultBalanceConfig);
   const [devilConfigVersion, setDevilConfigVersion] = useState(getDevilConfig().version);
   const [dialogueConfigVersion, setDialogueConfigVersion] = useState(getDialogueConfig().version);
@@ -140,6 +151,7 @@ export function App() {
   const runStatus = state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter'
     ? `STG ${String(state.stage).padStart(2, '0')} / WAVE ${String(state.encounterIndex + 1).padStart(2, '0')}`
     : state.gamePhase.toUpperCase();
+  const devBuildLabel = import.meta.env.DEV ? __APP_COMMIT_HASH__ : undefined;
   const depth = (state.stage - 1) * 3 + state.encounterIndex + 1;
   const isBattlePhase = state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter';
   const isBossPhase = state.gamePhase === 'boss_preview' || state.gamePhase === 'boss_encounter';
@@ -373,6 +385,14 @@ const tacticalLinesCompact = tacticalLines
     resetAutoplayReport: () => setAutoplayReport(null),
     clearHoveredHint: () => setHoveredMoeHint(''),
   });
+  const { activeBeat, dismissBeat } = useRunBeatQueue({
+    gamePhase: state.gamePhase,
+    encounterIndex: state.encounterIndex,
+    stage: state.stage,
+    encounterPrep: state.encounterPrep,
+    approachScanSuccess: state.approach?.scanSuccess,
+    approachKind: state.approach?.pendingKind,
+  });
 
   useTelemetryEffects({
     state,
@@ -478,6 +498,8 @@ const tacticalLinesCompact = tacticalLines
     />
 
     <div className="cockpit-frame">
+      <RunBeatOverlay beat={activeBeat} onDismiss={dismissBeat} />
+
       <CockpitHeader
         logoAsset={logoAsset}
         runStatus={runStatus}
@@ -486,6 +508,7 @@ const tacticalLinesCompact = tacticalLines
         isNaviActive={state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter'}
         isWarnActive={state.fuel <= 3 || state.armor <= 3 || state.signal <= 1}
         isGameOver={state.gamePhase === 'game_over'}
+        devBuildLabel={devBuildLabel}
       />
 
       <main className={`action-panel panel ${state.gamePhase === 'garage' ? 'action-panel--garage-focus' : ''} ${isRunFitPhase ? 'action-panel--run-fit' : ''}`}>

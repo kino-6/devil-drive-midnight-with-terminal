@@ -1,3 +1,11 @@
+import type {
+  ConversationDemand,
+  ResourceCost,
+  TalkAttitude,
+  TalkMood,
+  TalkPersona,
+} from './talkTypes';
+
 export type ContractId = 'radio_voice' | 'silent_shape' | 'abandoned_ai_navi';
 export type TerminalLogKind = 'warning' | 'contract' | 'damage' | 'system' | 'route';
 export type EncounterId =
@@ -85,6 +93,7 @@ export type Devil = {
   profile: EncounterId;
   empDisabledTurns: number;
   exit?: 'defeated' | 'contracted' | 'fled';
+  talkPersona?: TalkPersona;
 };
 
 export type ConversationEffect =
@@ -110,12 +119,11 @@ export type ConversationChoice = {
   failText: string;
   preferredTemperaments?: Temperament[];
   affinityType?: AffinityType;
-  cost?: {
-    fuel?: number;
-    signal?: number;
-    armor?: number;
-    mainAmmo?: number;
-  };
+  attitude?: TalkAttitude;
+  demand?: ConversationDemand;
+  hintKey?: string;
+  successBias?: number;
+  cost?: ResourceCost;
   effectsOnSuccess?: ConversationEffect[];
   effectsOnFail?: ConversationEffect[];
 };
@@ -147,6 +155,10 @@ export type ActiveConversation = {
   enemyProfile: EncounterId;
   introLine: string;
   choices: ConversationChoice[];
+  mood?: TalkMood;
+  persona?: TalkPersona;
+  demand?: ConversationDemand;
+  seed?: string;
 };
 
 export type EncounterReport = {
@@ -234,6 +246,7 @@ export type ApproachState = {
 export type EncounterPrep = {
   approachLabel?: string;
   firstStrike: boolean;
+  firstStrikeDamage?: number;
   ambushed: boolean;
   talkPrepared: boolean;
   intentDisrupted: boolean;

@@ -1,6 +1,8 @@
 export const MAX_STATE_LOGS = 200;
 export const MAX_TELEMETRY_EVENTS = 2000;
 export const MAX_DEBUG_SAVE_ENTRIES = 20;
+export const MAX_REPRO_SESSIONS = 16;
+export const MAX_REPRO_ACTIONS = 180;
 
 export const limitTail = <T>(items: T[], max: number): T[] => {
   if (max <= 0) return [];

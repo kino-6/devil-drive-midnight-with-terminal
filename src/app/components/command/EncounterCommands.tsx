@@ -1,4 +1,6 @@
 import { commandDescriptions, commandOptions } from '../../../game/catalogs';
+import { getConversationLine } from '../../../conversationConfig';
+import { canPayConversationChoiceCost } from '../../../game/talkRules';
 import type { CommandId, State } from '../../../game/types';
 
 type Group = 'WEAPON' | 'TERMINAL' | 'DRIVE';
@@ -51,26 +53,39 @@ export const EncounterCommands = ({
       <div className="command-window command-list">
         <div className="event-kicker">TALK CHANNEL</div>
         <strong>{state.activeConversation.introLine}</strong>
-        {state.activeConversation.choices.map((choice) => (
-          <button
-            key={choice.id}
-            className="command-button command-button--contract"
-            onMouseEnter={() => {
-              const costParts: string[] = [];
-              if (choice.cost?.fuel) costParts.push(`Fuel -${choice.cost.fuel}`);
-              if (choice.cost?.armor) costParts.push(`Armor -${choice.cost.armor}`);
-              if (choice.cost?.signal) costParts.push(`Signal -${choice.cost.signal}`);
-              if (choice.cost?.mainAmmo) costParts.push(`Main Ammo -${choice.cost.mainAmmo}`);
-              const costText = costParts.length > 0 ? ` / COST: ${costParts.join(', ')}` : '';
-              setHoveredHint(`${choice.playerLine}${costText}`);
-            }}
-            onMouseLeave={clearHoveredHint}
-            onClick={() => onTalkChoose(choice.id)}
-            type="button"
-          >
-            {choice.label}
-          </button>
-        ))}
+        {state.activeConversation.choices.map((choice) => {
+          const disabled = !canPayConversationChoiceCost(choice, state);
+          const costParts: string[] = [];
+          if (choice.cost?.fuel) costParts.push(`Fuel -${choice.cost.fuel}`);
+          if (choice.cost?.armor) costParts.push(`Armor -${choice.cost.armor}`);
+          if (choice.cost?.signal) costParts.push(`Signal -${choice.cost.signal}`);
+          if (choice.cost?.mainAmmo) costParts.push(`Main Ammo -${choice.cost.mainAmmo}`);
+          if (choice.cost?.seAmmo) costParts.push(`S-E Ammo -${choice.cost.seAmmo}`);
+          if (choice.cost?.salvageCredits) costParts.push(`Credits -${choice.cost.salvageCredits}`);
+          const costText = costParts.length > 0 ? `Cost: ${costParts.join(', ')}` : '';
+          const hintText = choice.hintKey ? getConversationLine(choice.hintKey, '') : '';
+          const moodText = state.activeConversation?.mood ? `Mood: ${state.activeConversation.mood}` : '';
+          const personaText = state.activeConversation?.persona ? `Persona: ${state.activeConversation.persona}` : '';
+          const descText = [choice.playerLine, hintText, moodText, personaText, costText].filter(Boolean).join(' / ');
+
+          return (
+            <button
+              key={choice.id}
+              className="command-button command-button--contract"
+              onMouseEnter={() => {
+                setHoveredHint(descText);
+              }}
+              onMouseLeave={clearHoveredHint}
+              data-desc={descText}
+              onClick={() => onTalkChoose(choice.id)}
+              type="button"
+              disabled={disabled}
+            >
+              {choice.label}
+              {disabled && <span className="command-button__affinity command-button__affinity--resist">NO COST</span>}
+            </button>
+          );
+        })}
         <button className="command-button command-button--system" onClick={onTalkCancel} type="button">
           Cancel Talk
         </button>

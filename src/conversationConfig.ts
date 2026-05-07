@@ -1,6 +1,7 @@
 export type ConversationConfig = {
   version: string;
   lines: Record<string, string>;
+  pools: Record<string, string[]>;
 };
 
 const defaultConversationConfig: ConversationConfig = {
@@ -41,6 +42,7 @@ const defaultConversationConfig: ConversationConfig = {
     'moe.dynamic.battle.ram.resist': '{target}へラムアタック。固い。正面突破は不利。',
     'moe.dynamic.battle.ram.normal': '{target}へラムアタック。衝突確認。こちらの装甲も削れてる。',
   },
+  pools: {},
 };
 
 let runtimeConversationConfig: ConversationConfig = defaultConversationConfig;
@@ -99,6 +101,70 @@ const pickStringMap = (value: unknown): Record<string, string> => {
   return out;
 };
 
+const collectPools = (value: unknown, prefix = ''): Record<string, string[]> => {
+  const out: Record<string, string[]> = {};
+  if (Array.isArray(value)) {
+    const lines = value
+      .map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
+      .filter(Boolean);
+    if (prefix && lines.length > 0) out[prefix] = lines;
+    return out;
+  }
+  if (typeof value === 'string') {
+    const line = value.trim();
+    if (prefix && line.length > 0) out[prefix] = [line];
+    return out;
+  }
+  const obj = asRecord(value);
+  for (const [key, raw] of Object.entries(obj)) {
+    const nextPrefix = prefix ? `${prefix}.${key}` : key;
+    Object.assign(out, collectPools(raw, nextPrefix));
+  }
+  return out;
+};
+
+const parseInlinePool = (value: string): string[] => {
+  if (!value.includes('||')) return [];
+  return value
+    .split('||')
+    .map((part) => part.trim())
+    .filter(Boolean);
+};
+
+const interpolateVars = (text: string, vars: Record<string, string | number>): string =>
+  text.replace(/\{([^}]+)\}/g, (match, token) => {
+    const value = vars[token.trim()];
+    return value === undefined ? match : String(value);
+  });
+
+const hashSeed = (seed: string): number => {
+  let hash = 2166136261;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash ^= seed.charCodeAt(i);
+    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+  }
+  return Math.abs(hash >>> 0);
+};
+
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const getPoolCandidates = (key: string): string[] => {
+  const fromPool = runtimeConversationConfig.pools[key] ?? [];
+  const fromInline = runtimeConversationConfig.lines[key]
+    ? parseInlinePool(runtimeConversationConfig.lines[key])
+    : [];
+  const numberedPattern = new RegExp(`^${escapeRegExp(key)}\\.(\\d+)$`);
+  const numbered = Object.entries(runtimeConversationConfig.lines)
+    .map(([lineKey, lineValue]) => ({ lineKey, lineValue, match: lineKey.match(numberedPattern) }))
+    .filter((entry): entry is { lineKey: string; lineValue: string; match: RegExpMatchArray } => !!entry.match)
+    .sort((a, b) => Number(a.match[1]) - Number(b.match[1]))
+    .map((entry) => entry.lineValue.trim())
+    .filter(Boolean);
+  const merged = [...fromPool, ...fromInline, ...numbered];
+  return merged.filter((line, index) => line.length > 0 && merged.indexOf(line) === index);
+};
+
 const parseYamlFromPath = async (path: string): Promise<Record<string, unknown> | undefined> => {
   try {
     const res = await fetch(path, { cache: 'no-cache' });
@@ -123,11 +189,26 @@ export const getConversationLineWithVars = (
   fallback?: string,
 ): string => {
   const base = runtimeConversationConfig.lines[key] ?? fallback ?? key;
-  return base.replace(/\{([^}]+)\}/g, (match, token) => {
-    const value = vars[token.trim()];
-    return value === undefined ? match : String(value);
-  });
+  return interpolateVars(base, vars);
 };
+
+export const getConversationLineFromPool = (
+  key: string,
+  fallback: string,
+  seed?: string,
+): string => {
+  const pool = getPoolCandidates(key);
+  if (pool.length === 0) return runtimeConversationConfig.lines[key] ?? fallback;
+  const index = seed ? hashSeed(`${key}:${seed}`) % pool.length : Math.floor(Math.random() * pool.length);
+  return pool[index] ?? fallback;
+};
+
+export const getConversationLineWithVarsFromPool = (
+  key: string,
+  vars: Record<string, string | number>,
+  fallback: string,
+  seed?: string,
+): string => interpolateVars(getConversationLineFromPool(key, fallback, seed), vars);
 
 export const loadConversationConfig = async (): Promise<ConversationConfig> => {
   const indexPaths = ['/conversations/index.yaml', '/conversations/index.yml'];
@@ -136,17 +217,21 @@ export const loadConversationConfig = async (): Promise<ConversationConfig> => {
     if (!indexRaw) continue;
 
     const mergedLines: Record<string, string> = {};
+    const mergedPools: Record<string, string[]> = {};
     const includePaths = parseCsvPaths(indexRaw.includes);
     for (const includePath of includePaths) {
       const includeRaw = await parseYamlFromPath(includePath);
       if (!includeRaw) continue;
       Object.assign(mergedLines, pickStringMap(includeRaw.lines));
+      Object.assign(mergedPools, collectPools(includeRaw.pools));
     }
     Object.assign(mergedLines, pickStringMap(indexRaw.lines));
+    Object.assign(mergedPools, collectPools(indexRaw.pools));
 
     runtimeConversationConfig = {
       version: typeof indexRaw.version === 'string' ? indexRaw.version : defaultConversationConfig.version,
       lines: { ...defaultConversationConfig.lines, ...mergedLines },
+      pools: { ...defaultConversationConfig.pools, ...mergedPools },
     };
     return runtimeConversationConfig;
   }

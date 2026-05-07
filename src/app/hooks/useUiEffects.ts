@@ -1,6 +1,7 @@
 import { useEffect, useState, type Dispatch, type RefObject, type SetStateAction } from 'react';
 import { commandOptions } from '../../game/catalogs';
 import type { Action, GamePhase, HitFxTone, State } from '../../game/types';
+import { isAlive } from '../../game/runtimeHelpers';
 
 type UseUiEffectsParams = {
   state: State;
@@ -70,7 +71,7 @@ export const useUiEffects = ({
         dispatch({ type: 'SELECT_COMMAND', command: commandIds[(currentIndex + 1) % commandIds.length] });
       } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
         event.preventDefault();
-        const live = state.encounter.enemies.filter((enemy) => enemy.hp > 0);
+        const live = state.encounter.enemies.filter(isAlive);
         if (live.length <= 1) return;
         const idx = live.findIndex((enemy) => enemy.id === state.encounter.selectedEnemyId);
         const next = event.key === 'ArrowLeft' ? (idx - 1 + live.length) % live.length : (idx + 1) % live.length;

@@ -59,6 +59,7 @@ import {
 import { resolveExecuteCommand, resolveTalkChoice } from './combatReducer';
 import { runAutoplayBatchWithDeps } from './stateAutoplay';
 import { sanitizeRestoredStateWithDeps } from './stateRestore';
+import { assignTalkPersona } from '../../game/talkRules';
 
 const pickRewardChoices = (pool: RewardOption[], count = 3): RewardOption[] => {
   const shuffled = [...pool];
@@ -238,6 +239,7 @@ const buildDevil = (kind: EncounterId, index: number, stage = 1): Devil => {
     intelThreshold,
     analyzeVulnerableTurns: 0,
     profile: t.profile,
+    talkPersona: assignTalkPersona(t.profile, `${kind}-${index}`, stage),
     empDisabledTurns: 0,
   };
 };
@@ -303,7 +305,7 @@ const buildEncounter = (
 };
 
 export const getSelectedEnemy = (encounter: EncounterState): Devil | undefined =>
-  encounter.enemies.find((enemy) => enemy.id === encounter.selectedEnemyId && enemy.hp > 0) ?? encounter.enemies.find(isAlive);
+  encounter.enemies.find((enemy) => enemy.id === encounter.selectedEnemyId && isAlive(enemy)) ?? encounter.enemies.find(isAlive);
 
 const canOpenContractWindow = (enemy: Devil) =>
   enemy.interest >= 2 || enemy.trust >= 2 || (enemy.trust >= 1 && enemy.interest >= 1) || (enemy.hp <= enemy.maxHp / 2 && enemy.pressure >= 1);
@@ -905,7 +907,7 @@ function reducerCore(state: State, action: Action): State {
     const introTarget = encounter.enemies.find(isAlive);
     const introLine = introTarget ? getEncounterIntroLine(introTarget.profile) : undefined;
     if (introLine) logs.push(`> ${introLine}`);
-    const prep = { ...baseState.encounterPrep };
+    const prep = { ...baseState.encounterPrep, firstStrikeDamage: undefined };
 
     if (!baseState.approach.scanSuccess) {
       const enemyIdx = encounter.enemies.findIndex(isAlive);
@@ -1019,6 +1021,7 @@ function reducerCore(state: State, action: Action): State {
           moeLine: getDialogueLine('moe.run.approach.no_main_ammo', '主砲弾がない。別の入り方にして。'),
         };
       }
+      let firstStrikeDamage: number | undefined;
       const target = encounter.enemies.findIndex(isAlive);
       if (target >= 0) {
         mainAmmo -= 1;
@@ -1029,6 +1032,7 @@ function reducerCore(state: State, action: Action): State {
           variance: damageVarianceByCommand.approach_main_gun,
         });
         encounter.enemies[target].hp = Math.max(0, encounter.enemies[target].hp - gunRoll.damage);
+        firstStrikeDamage = gunRoll.damage;
         encounter.enemies[target].pressure += 1;
         encounter.enemies[target].intent = 'guard';
         logs.push(`> FIRST STRIKE DAMAGE: ${gunRoll.damage} (PRED ${gunRoll.min}-${gunRoll.max})`);
@@ -1039,6 +1043,7 @@ function reducerCore(state: State, action: Action): State {
       }
       logs.push('> APPROACH: PREEMPTIVE MAIN GUN', '> FIRST STRIKE CONFIRMED');
       prep.firstStrike = true;
+      prep.firstStrikeDamage = firstStrikeDamage;
       prep.intentDisrupted = true;
       prep.approachLabel = 'FIRST STRIKE';
     }
@@ -1486,7 +1491,7 @@ function reducerCore(state: State, action: Action): State {
 
   if (action.type === 'SELECT_ENEMY') {
     if (!(state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') || state.encounter.phase !== 'command') return state;
-    const target = state.encounter.enemies.find((enemy) => enemy.id === action.enemyId && enemy.hp > 0);
+    const target = state.encounter.enemies.find((enemy) => enemy.id === action.enemyId && isAlive(enemy));
     if (!target) return state;
     return { ...state, encounter: { ...state.encounter, selectedEnemyId: action.enemyId } };
   }
@@ -1512,6 +1517,8 @@ function reducerCore(state: State, action: Action): State {
       buildForecast,
       hasAiNaviContract,
       nextIntent,
+      makeEncounterReport,
+      accumulateSummary,
     });
   }
 
@@ -1538,16 +1545,52 @@ function reducerCore(state: State, action: Action): State {
 }
 
 export function reducer(state: State, action: Action): State {
-  const healedState: State =
-    (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter')
-    && state.encounter.phase === 'conversation'
-    && !state.activeConversation
-      ? {
+  const isBattlePhase = state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter';
+  const aliveEnemyCount = isBattlePhase ? state.encounter.enemies.filter(isAlive).length : 0;
+
+  const healedState: State = (() => {
+    if (isBattlePhase && state.encounter.phase === 'conversation' && !state.activeConversation) {
+      return {
         ...state,
         encounter: { ...state.encounter, phase: 'command' as const },
         logs: [...state.logs, '> TALK CHANNEL DESYNC: RETURN TO COMMAND'],
-      }
-      : state;
+      };
+    }
+
+    if (isBattlePhase && state.encounter.phase === 'resolving') {
+      return {
+        ...state,
+        encounter: { ...state.encounter, phase: 'command' as const },
+        logs: [...state.logs, '> ENCOUNTER SYNC: RESOLVING->COMMAND'],
+      };
+    }
+
+    if (
+      isBattlePhase
+      && state.encounter.phase !== 'conversation'
+      && aliveEnemyCount <= 0
+    ) {
+      const toReturnGate = state.gamePhase === 'boss_encounter';
+      return {
+        ...state,
+        gamePhase: toReturnGate ? 'return_gate' : 'reward',
+        encounter: { ...state.encounter, phase: 'finished' as const },
+        rewardScope: toReturnGate
+          ? state.rewardScope
+          : (state.encounter.kind === 'enc1' ? 'post_enc1' : 'post_enc2'),
+        logs: [
+          ...state.logs,
+          '> ENCOUNTER SYNC: NO ACTIVE HOSTILES',
+          toReturnGate ? '> RETURN GATE ROUTE OPEN' : '> SALVAGE RESULT READY',
+        ],
+        moeLine: toReturnGate
+          ? getDialogueLine('moe.run.return_gate_seen', '帰還ゲート、見えた。まだ車は動くね。')
+          : getDialogueLine('moe.run.encounter_clear', '遭遇クリア。次の判断に備えよう。'),
+      };
+    }
+
+    return state;
+  })();
 
   const next = reducerCore(healedState, action);
   if (next.logs === state.logs) return next;

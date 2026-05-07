@@ -73,6 +73,27 @@ lines:
   # 利用場面: 遭遇クリア時
   moe.run.encounter_clear: "遭遇クリア。次の判断に備えよう。"
 
+  # 利用場面: 短い演出beat（フェーズ遷移スタンプ）
+  run.beat.entry: "NIGHT LOOP ENTRY"
+  run.beat.stage: "STAGE {stage}"
+  run.beat.loop: "LOOP {loop}"
+  run.beat.approach_window: "APPROACH WINDOW OPEN"
+  run.beat.brace_contact: "BRACE FOR CONTACT"
+  run.beat.contact_detected: "CONTACT DETECTED"
+  run.beat.first_strike: "FIRST STRIKE"
+  run.beat.first_strike_damage: "DAMAGE {damage}"
+  run.beat.silent_coast: "SILENT APPROACH"
+  run.beat.open_channel: "CHANNEL OPEN"
+  run.beat.ambush: "AMBUSH WARNING"
+  run.beat.encounter_start: "ENCOUNTER START"
+  run.beat.boss_signal: "BOSS SIGNAL"
+  run.beat.boss_unreadable: "SILHOUETTE LOCK / INTEL REQUIRED"
+  run.beat.deep_signal: "DEEP SIGNAL DETECTED"
+  moe.beat.entry: "進路同期完了。侵入開始。"
+  moe.beat.contact_detected: "接触反応。手順を選んで。"
+  moe.beat.ambush: "遅れた。初撃が来る。"
+  moe.beat.boss_signal: "深層反応。輪郭だけ見える。"
+
   # 利用場面: Garage遷移時
   moe.garage.enter: "戻れたね。次は出る前に少し積み替えよっか。"
   # 利用場面: GarageでMain Gun変更

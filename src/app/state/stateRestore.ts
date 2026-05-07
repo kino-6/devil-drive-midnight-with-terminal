@@ -186,6 +186,10 @@ export const sanitizeRestoredStateWithDeps = (raw: unknown, fallback: State, dep
     ...fallback.encounterPrep,
     ...asRec(source.encounterPrep),
     firstStrike: !!asRec(source.encounterPrep).firstStrike,
+    firstStrikeDamage: (() => {
+      const value = asNum(asRec(source.encounterPrep).firstStrikeDamage, Number.NaN);
+      return Number.isFinite(value) && value > 0 ? value : undefined;
+    })(),
     ambushed: !!asRec(source.encounterPrep).ambushed,
     talkPrepared: !!asRec(source.encounterPrep).talkPrepared,
     intentDisrupted: !!asRec(source.encounterPrep).intentDisrupted,

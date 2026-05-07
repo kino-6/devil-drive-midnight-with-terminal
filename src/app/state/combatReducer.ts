@@ -3,7 +3,7 @@ import { getConversationLine, getConversationLineWithVars } from '../../conversa
 import { getDialogueLine } from '../../dialogueConfig';
 import { getEncounterScenario, getScenarioLine } from '../../scenario/scenarioLoader';
 import { affinityLabel, affinityOrder, contractModules } from '../../game/catalogs';
-import { getConversationProfile } from '../../game/conversationCatalog';
+import { buildTalkConversation } from '../../game/talkRules';
 import {
   appendSupportDaemonDisconnectLogs,
   clamp,
@@ -382,18 +382,33 @@ if (command === 'analyze' && selectedEnemy) {
 if (command === 'talk' && selectedEnemy) {
   const idx = encounter.enemies.findIndex((enemy) => enemy.id === selectedEnemy.id);
   if (idx >= 0) {
-    const profile = getConversationProfile(encounter.enemies[idx].profile);
+    const profile = buildTalkConversation({
+      target: encounter.enemies[idx],
+      analyzed: isEnemyIdentityKnown(encounter.enemies[idx], encounter.analyzedEnemyIds),
+      state: {
+        fuel,
+        armor,
+        signal,
+        mainAmmo,
+        seAmmo,
+        salvageCredits,
+      },
+    });
     activeConversation = {
       enemyId: encounter.enemies[idx].id,
       enemyProfile: encounter.enemies[idx].profile,
       introLine: profile.introLine,
       choices: profile.choices.slice(0, 3),
+      mood: profile.mood,
+      persona: profile.persona,
+      demand: profile.demand,
+      seed: profile.seed,
     };
     logs.push(`> TALK CHANNEL OPEN: ${encounter.enemies[idx].name.toUpperCase()}`);
     const scenarioTalkLine = getScenarioLine(getEncounterScenario(encounter.enemies[idx].profile)?.talk?.curious);
     if (scenarioTalkLine) logs.push(`> ${scenarioTalkLine}`);
     encounter.phase = 'conversation';
-    moeLine = profile.moeHint ?? getDialogueLine('moe.dynamic.battle.talk.success.normal', '会話に乗った。反応を見て選んで。');
+    moeLine = getDialogueLine('moe.dynamic.battle.talk.success.normal', '会話に乗った。反応を見て選んで。');
     return {
       ...state,
       fuel,
@@ -760,6 +775,8 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
     canOpenContractWindow,
     buildForecast,
     hasAiNaviContract,
+    makeEncounterReport,
+    accumulateSummary,
   } = deps;
 
   const encounter: EncounterState = {
@@ -769,7 +786,7 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
   };
   const logs = [...state.logs];
   const conversation = state.activeConversation;
-  const targetIndex = encounter.enemies.findIndex((enemy) => enemy.id === conversation.enemyId && enemy.hp > 0);
+  const targetIndex = encounter.enemies.findIndex((enemy) => enemy.id === conversation.enemyId && isAlive(enemy));
   if (targetIndex < 0) {
     encounter.phase = 'command';
     return {
@@ -793,6 +810,8 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
   let armor = state.armor;
   let signal = state.signal;
   let mainAmmo = state.mainAmmo;
+  let seAmmo = state.seAmmo;
+  let salvageCredits = state.salvageCredits;
   const moeSyncBank = state.moeSyncBank;
   let newMoeSyncBank = moeSyncBank;
   let story = { ...state.story, recoveredLogs: [...state.story.recoveredLogs], recentRecoveredLogs: [...state.story.recentRecoveredLogs] };
@@ -808,7 +827,8 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
   const affinityBonus = affinityRating === 'weak' ? 0.15 : affinityRating === 'resist' ? -0.2 : 0;
   const pressurePenalty = target.pressure * 0.05;
   const firstTalkBonus = encounterPrep.firstTalkPending ? encounterPrep.firstTalkBonus : 0;
-  const baseSuccess = 0.65 + (analyzed ? 0.1 : 0) + preferredMatch + affinityBonus + translationBonus + firstTalkBonus - pressurePenalty;
+  const choiceBias = choice.successBias ?? 0;
+  const baseSuccess = 0.65 + (analyzed ? 0.1 : 0) + preferredMatch + affinityBonus + translationBonus + firstTalkBonus + choiceBias - pressurePenalty;
   const successRate = clamp(baseSuccess, 0.15, 0.95);
 
   const applyResourceDelta = (resource: 'fuel' | 'armor' | 'signal' | 'mainAmmo', amount: number) => {
@@ -839,6 +859,8 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
     if ((cost.armor ?? 0) > armor) return false;
     if ((cost.signal ?? 0) > signal) return false;
     if ((cost.mainAmmo ?? 0) > mainAmmo) return false;
+    if ((cost.seAmmo ?? 0) > seAmmo) return false;
+    if ((cost.salvageCredits ?? 0) > salvageCredits) return false;
     return true;
   };
   const payCost = () => {
@@ -848,6 +870,8 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
     if (cost.armor) armor = Math.max(0, armor - cost.armor);
     if (cost.signal) signal = Math.max(0, signal - cost.signal);
     if (cost.mainAmmo) mainAmmo = Math.max(0, mainAmmo - cost.mainAmmo);
+    if (cost.seAmmo) seAmmo = Math.max(0, seAmmo - cost.seAmmo);
+    if (cost.salvageCredits) salvageCredits = Math.max(0, salvageCredits - cost.salvageCredits);
   };
 
   const applyEffects = (effects: ConversationEffect[] | undefined, success: boolean) => {
@@ -884,7 +908,6 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
         const sign = effect.amount >= 0 ? '+' : '';
         logs.push(`> ${effect.resource.toUpperCase()} ${sign}${effect.amount}`);
       } else if (effect.type === 'enemyLeaves') {
-        target.hp = 0;
         target.exit = 'fled';
         logs.push(`> TARGET LEFT: ${target.name.toUpperCase()}`);
       } else if (effect.type === 'cancelNextIntent') {
@@ -946,10 +969,64 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
     encounter.phase = 'command';
   }
 
-  const alive = encounter.enemies.filter((enemy) => enemy.hp > 0);
+  const alive = encounter.enemies.filter(isAlive);
   if (alive.length > 0 && !alive.some((enemy) => enemy.id === encounter.selectedEnemyId)) {
     encounter.selectedEnemyId = alive[0].id;
   }
+
+  const cleared = encounter.enemies.every((enemy) => !isAlive(enemy));
+  if (cleared) {
+    const report = makeEncounterReport(state.encounterIndex + 1, encounter.enemies, false);
+    const summary = accumulateSummary(state.runSummary, report);
+    const logsWithClear = [...logs, '> ENCOUNTER CLEARED'];
+
+    if (state.gamePhase === 'boss_encounter') {
+      return {
+        ...state,
+        gamePhase: 'return_gate',
+        fuel,
+        armor,
+        signal,
+        mainAmmo,
+        seAmmo,
+        encounter: { ...encounter, phase: 'finished' },
+        encounterPrep,
+        logs: [...logsWithClear, '> RETURN GATE ROUTE OPEN'],
+        activeConversation: undefined,
+        negotiationRewards,
+        story,
+        moeLine,
+        moeSyncBank: newMoeSyncBank,
+        salvageCredits,
+        lastReport: report,
+        runSummary: summary,
+        resultType: 'Boss Cleared',
+      };
+    }
+
+    return {
+      ...state,
+      gamePhase: 'reward',
+      fuel,
+      armor,
+      signal,
+      mainAmmo,
+      seAmmo,
+      encounter: { ...encounter, phase: 'finished' },
+      encounterPrep,
+      logs: [...logsWithClear, '> SALVAGE RESULT READY'],
+      activeConversation: undefined,
+      negotiationRewards,
+      story,
+      moeLine,
+      moeSyncBank: newMoeSyncBank,
+      salvageCredits,
+      lastReport: report,
+      runSummary: summary,
+      rewardScope: state.encounter.kind === 'enc1' ? 'post_enc1' : 'post_enc2',
+    };
+  }
+
   const { forecast, unstable } = buildForecast(
     encounter.enemies,
     hasAiNaviContract(state.contracts),
@@ -967,6 +1044,7 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
     armor,
     signal,
     mainAmmo,
+    seAmmo,
     encounter,
     encounterPrep,
     logs,
@@ -975,5 +1053,6 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
     story,
     moeLine,
     moeSyncBank: newMoeSyncBank,
+    salvageCredits,
   };
 };

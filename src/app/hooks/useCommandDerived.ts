@@ -1,6 +1,6 @@
 import { commandAffinityMap } from '../../game/catalogs';
 import type { AffinityRating, AffinityType, CommandId, Devil, SpecialEquipment, State, SubGun, MainGun } from '../../game/types';
-import { getEnemyRevealState } from '../../game/runtimeHelpers';
+import { getEnemyRevealState, isAlive } from '../../game/runtimeHelpers';
 import { damageVarianceByCommand, getAffinityTag, getRollBounds, resolveDamageRoll } from '../state/stateReducer';
 
 type UseCommandDerivedArgs = {
@@ -28,7 +28,8 @@ export const useCommandDerived = ({
   selectedSubGun,
   selectedSE,
 }: UseCommandDerivedArgs): UseCommandDerivedResult => {
-  const aliveEnemies = state.encounter.enemies.filter((enemy) => enemy.hp > 0);
+  const aliveEnemies = state.encounter.enemies.filter(isAlive);
+  const selectedEnemyAlive = !!selectedEnemy && isAlive(selectedEnemy);
   const contractEnabled = !!selectedEnemy && selectedEnemy.contractWindow && selectedEnemy.contractable;
 
   const commandAffinityTagMap: Partial<Record<CommandId, string>> = selectedEnemyAnalyzed && selectedEnemy
@@ -38,13 +39,13 @@ export const useCommandDerived = ({
     : {};
 
   const commandEnabledMap: Record<CommandId, boolean> = {
-    main_gun: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && !!selectedEnemy && selectedEnemy.hp > 0 && state.mainAmmo > 0,
+    main_gun: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && selectedEnemyAlive && state.mainAmmo > 0,
     sub_gun: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && aliveEnemies.length > 0,
-    se_harpoon: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && !!selectedEnemy && selectedEnemy.hp > 0 && state.seAmmo >= selectedSE.seAmmoCost,
-    analyze: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && !!selectedEnemy && selectedEnemy.hp > 0 && state.signal > 0,
-    talk: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && !!selectedEnemy && selectedEnemy.hp > 0,
+    se_harpoon: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && selectedEnemyAlive && state.seAmmo >= selectedSE.seAmmoCost,
+    analyze: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && selectedEnemyAlive && state.signal > 0,
+    talk: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && selectedEnemyAlive,
     contract: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && contractEnabled,
-    ram: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && !!selectedEnemy && selectedEnemy.hp > 0 && state.armor > 0,
+    ram: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && selectedEnemyAlive && state.armor > 0,
     guard: state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter',
     escape: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && state.fuel > 0,
   };

@@ -51,6 +51,9 @@
 ### 永続化・分析
 - `src/saveSystem.ts`
 - `src/telemetry.ts`
+- `src/reproLog.ts`
+  - ローカル再現調査用（seed + action + random tape）
+  - **ゲーム本編仕様には影響させない**
 
 ---
 
@@ -75,6 +78,10 @@
 ### telemetry変更
 1. `src/telemetry.ts`
 2. `src/app/AppRoot.tsx`（emit 呼び出し点）
+
+### 再現調査ログ変更
+1. `src/reproLog.ts`
+2. `src/app/AppRoot.tsx`（dispatch 経路）
 
 ### runtime config / loader変更
 1. `src/app/hooks/useRuntimeConfigEffects.ts`
@@ -105,6 +112,12 @@
 ### アセット
 - `public/assets/manifest.yaml`
 - resolver: `src/assetManifest.ts`
+
+### ローカル調査データ（Git管理外）
+- `.local/repro-logs/`
+  - seed / action / random tape を保存するローカルワーク領域
+  - `.gitignore` 対象
+  - **通常の Codex 作業では読まない（ユーザーが明示したときのみ）**
 
 ---
 

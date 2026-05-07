@@ -1,5 +1,6 @@
 import { getBalanceConfig } from '../../balanceConfig';
 import { getMainGunSpec, getSpecialEquipmentSpec, isAlive } from '../../game/runtimeHelpers';
+import { canPayConversationChoiceCost } from '../../game/talkRules';
 import type { Action, ApproachOption, AutoPlayReport, AutoPlayStrategy, CommandId, Loadout, ResultType, RewardOption, State } from '../../game/types';
 
 export type AutoplayReducerDeps = {
@@ -8,7 +9,7 @@ export type AutoplayReducerDeps = {
 };
 
 const getSelectedEnemy = (state: State) =>
-  state.encounter.enemies.find((enemy) => enemy.id === state.encounter.selectedEnemyId && enemy.hp > 0)
+  state.encounter.enemies.find((enemy) => enemy.id === state.encounter.selectedEnemyId && isAlive(enemy))
   ?? state.encounter.enemies.find(isAlive);
 
 const chooseAutoplayReward = (state: State): RewardOption => {
@@ -70,6 +71,39 @@ const chooseAutoplayCommand = (state: State, strategy: AutoPlayStrategy): Comman
   return 'guard';
 };
 
+const chooseAutoplayTalkChoiceId = (state: State): string | undefined => {
+  const conversation = state.activeConversation;
+  if (!conversation || conversation.choices.length === 0) return undefined;
+  const target = state.encounter.enemies.find((enemy) => enemy.id === conversation.enemyId);
+  const affordable = conversation.choices.filter((choice) => canPayConversationChoiceCost(choice, state));
+
+  const pick = (...attitudes: Array<string>) =>
+    affordable.find((choice) => choice.attitude && attitudes.includes(choice.attitude))
+    ?? conversation.choices.find((choice) => choice.attitude && attitudes.includes(choice.attitude));
+
+  if (conversation.choices.some((choice) => choice.attitude === 'pay')) {
+    return pick('pay', 'bargain', 'refuse', 'threaten')?.id ?? conversation.choices[0].id;
+  }
+
+  if (conversation.mood === 'aggressive') {
+    return pick('listen', 'offer', 'logic', 'challenge')?.id ?? conversation.choices[0].id;
+  }
+  if (conversation.mood === 'desperate') {
+    return pick('offer', 'bargain', 'listen', 'logic')?.id ?? conversation.choices[0].id;
+  }
+
+  if (target && state.encounter.analyzedEnemyIds.includes(target.id)) {
+    if (target.temperament === 'hungry') return pick('offer', 'listen', 'logic', 'bargain')?.id ?? conversation.choices[0].id;
+    if (target.temperament === 'machine') return pick('logic', 'listen', 'offer')?.id ?? conversation.choices[0].id;
+    if (target.temperament === 'lonely') return pick('listen', 'flatter', 'offer')?.id ?? conversation.choices[0].id;
+    if (target.temperament === 'proud') return pick('flatter', 'challenge', 'logic')?.id ?? conversation.choices[0].id;
+    if (target.temperament === 'curious') return pick('joke', 'logic', 'offer')?.id ?? conversation.choices[0].id;
+    if (target.temperament === 'hostile') return pick('challenge', 'threaten', 'logic')?.id ?? conversation.choices[0].id;
+  }
+
+  return pick('listen', 'logic', 'offer', 'bargain')?.id ?? conversation.choices[0].id;
+};
+
 export const runAutoplayBatchWithDeps = (loadout: Loadout, runs: number, strategy: AutoPlayStrategy, deps: AutoplayReducerDeps): AutoPlayReport => {
   const total = Math.max(1, Math.min(1000, Math.floor(runs)));
   const counts: Record<ResultType, number> = {
@@ -108,6 +142,16 @@ export const runAutoplayBatchWithDeps = (loadout: Loadout, runs: number, strateg
           s = deps.reducer(s, { type: 'APPROACH_CONTINUE' });
         }
       } else if (s.gamePhase === 'encounter' || s.gamePhase === 'boss_encounter') {
+        if (s.encounter.phase === 'conversation') {
+          const choiceId = chooseAutoplayTalkChoiceId(s);
+          if (choiceId) {
+            s = deps.reducer(s, { type: 'TALK_CHOOSE', choiceId });
+          } else {
+            s = deps.reducer(s, { type: 'TALK_CANCEL' });
+          }
+          guard += 1;
+          continue;
+        }
         const command = chooseAutoplayCommand(s, strategy);
         s = deps.reducer(s, { type: 'EXECUTE_COMMAND', command });
       } else if (s.gamePhase === 'reward') {

@@ -224,3 +224,7 @@ __marimo__/
 # - reviewed JSON is intended for tracking/review
 drafts/scenarios/generated/*
 !drafts/scenarios/generated/.gitkeep
+
+# Local-only deterministic repro investigation logs
+.local/repro-logs/*
+!.local/repro-logs/.gitkeep

@@ -9,6 +9,7 @@ type CockpitHeaderProps = {
   isNaviActive: boolean;
   isWarnActive: boolean;
   isGameOver: boolean;
+  devBuildLabel?: string;
 };
 
 export const CockpitHeader = ({
@@ -19,6 +20,7 @@ export const CockpitHeader = ({
   isNaviActive,
   isWarnActive,
   isGameOver,
+  devBuildLabel,
 }: CockpitHeaderProps) => (
   <header className="cockpit-header panel">
     <div className="brand-stack" aria-label="Devil Drive Midnight Terminal">
@@ -42,7 +44,7 @@ export const CockpitHeader = ({
       <StatusLamp label="SYS" active tone={isGameOver ? 'red' : 'green'} />
       <StatusLamp label="NAVI" active={isNaviActive} tone="cyan" />
       <StatusLamp label="WARN" active={isWarnActive} tone="red" />
+      {devBuildLabel && <span className="build-chip">REV {devBuildLabel}</span>}
     </div>
   </header>
 );
-

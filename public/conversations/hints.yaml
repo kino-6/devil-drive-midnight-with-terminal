@@ -1,7 +1,19 @@
-version: "conversation-hints-v1"
+version: "conversation-hints-v2"
 
 lines:
   hint.analyze.short_term: "Analyze成功で対象の次攻撃/呪詛被害が-1。"
   hint.talk.short_term: "Talk成功で対象の次Intentを低脅威化。"
   hint.contract.short_term: "Contract成立で即時boon獲得。"
+  hint.talk.channel_desync: "TALK CHANNEL同期が外れた。"
+  hint.talk.return_to_command: "Return to Command"
 
+  talk.hint.offer: "Likely likes: Offer"
+  talk.hint.listen: "Likely likes: Listen"
+  talk.hint.logic: "Likely likes: Logic"
+  talk.hint.flatter: "Likely likes: Flatter"
+  talk.hint.challenge: "Risky: Challenge"
+  talk.hint.threaten: "Risky: Threaten"
+  talk.hint.joke: "Risky: Joke"
+  talk.hint.pay: "May open route to contract"
+  talk.hint.bargain: "No direct cost but unstable"
+  talk.hint.refuse: "May raise pressure"

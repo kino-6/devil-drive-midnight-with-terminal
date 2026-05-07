@@ -52,7 +52,7 @@ import type {
 } from './types';
 
 export const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
-export const isAlive = (d: Devil) => d.hp > 0;
+export const isAlive = (d: Devil) => d.hp > 0 && !d.exit;
 export const UNKNOWN_SIGN_LABEL = 'UNKNOWN SIGN';
 export const isEnemyIdentityKnown = (
   enemy: Devil,
@@ -442,7 +442,7 @@ export const buildEncounter = (
 };
 
 export const getSelectedEnemy = (encounter: EncounterState): Devil | undefined =>
-  encounter.enemies.find((enemy) => enemy.id === encounter.selectedEnemyId && enemy.hp > 0) ?? encounter.enemies.find(isAlive);
+  encounter.enemies.find((enemy) => enemy.id === encounter.selectedEnemyId && isAlive(enemy)) ?? encounter.enemies.find(isAlive);
 
 export const canOpenContractWindow = (enemy: Devil) =>
   enemy.interest >= 2 || enemy.trust >= 2 || (enemy.trust >= 1 && enemy.interest >= 1) || (enemy.hp <= enemy.maxHp / 2 && enemy.pressure >= 1);
