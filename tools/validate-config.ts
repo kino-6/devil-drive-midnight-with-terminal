@@ -39,17 +39,8 @@ const quotedCsvIds = (text: string): string[] =>
     .map((item) => item.trim())
     .filter(Boolean);
 
-const typeEncounterIds = (text: string): string[] => {
-  const start = text.indexOf('export type EncounterId =');
-  if (start < 0) return [];
-  const rest = text.slice(start);
-  const end = rest.indexOf(';');
-  const block = end >= 0 ? rest.slice(0, end) : rest;
-  return [...block.matchAll(/'([a-z0-9_]+)'/g)].map((match) => match[1]);
-};
-
-const devilConfigEncounterIds = (text: string): string[] => {
-  const start = text.indexOf('const encounterIds: EncounterId[] = [');
+const runtimeEncounterIds = (text: string): string[] => {
+  const start = text.indexOf('export const ENCOUNTER_IDS = [');
   if (start < 0) return [];
   const rest = text.slice(start);
   const end = rest.indexOf('];');
@@ -117,7 +108,7 @@ const main = async () => {
     readText('public/devils/lineups.yaml'),
     readText('public/assets/manifest.yaml'),
     readText('src/game/types.ts'),
-    readText('src/devilConfig.ts'),
+    readText('src/game/encounterIds.ts'),
   ]);
 
   const profileIds = sectionIds(profilesYaml, 'profiles');
@@ -125,8 +116,7 @@ const main = async () => {
   const supportEffectIds = nestedSectionIds(supportYaml, 'support', 'effects');
   const supportLinkIds = nestedSectionIds(supportYaml, 'support', 'linkLogs');
   const lineupIds = quotedCsvIds(lineupsYaml);
-  const encounterTypeIds = typeEncounterIds(typesTs);
-  const configEncounterIds = devilConfigEncounterIds(devilConfigTs);
+  const configEncounterIds = runtimeEncounterIds(devilConfigTs);
   const assetFiles = new Set(await readdir(path.resolve(rootDir, 'public/assets/images/devil')));
   const errors: string[] = [];
 
@@ -138,10 +128,11 @@ const main = async () => {
   addMissing(errors, 'support.linkLogs', profileIds, supportLinkIds);
   addMissing(errors, 'lineups.yaml', profileIds, lineupIds);
   addUnknown(errors, 'lineups.yaml', lineupIds, profileIds);
-  addMissing(errors, 'EncounterId type', profileIds, encounterTypeIds);
-  addUnknown(errors, 'EncounterId type', encounterTypeIds, profileIds);
-  addMissing(errors, 'devilConfig encounterIds', profileIds, configEncounterIds);
-  addUnknown(errors, 'devilConfig encounterIds', configEncounterIds, profileIds);
+  if (!typesTs.includes('export type EncounterId = EncounterIdValue;')) {
+    errors.push('EncounterId type is not derived from ENCOUNTER_IDS.');
+  }
+  addMissing(errors, 'ENCOUNTER_IDS', profileIds, configEncounterIds);
+  addUnknown(errors, 'ENCOUNTER_IDS', configEncounterIds, profileIds);
 
   for (const id of profileIds) {
     const block = manifestEnemyBlock(manifestYaml, id, profileIds);

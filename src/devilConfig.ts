@@ -1,4 +1,5 @@
 import type { AffinityRating, ContractId, EncounterId, Intent, Temperament } from './game/types';
+import { ENCOUNTER_IDS, isEncounterId } from './game/encounterIds';
 
 export type EncounterProfile = {
   label: string;
@@ -44,33 +45,6 @@ export type DevilConfig = {
     stability: Partial<Record<EncounterId, 'STABLE' | 'NOISY' | 'HUNGRY' | 'UNKNOWN'>>;
   };
 };
-
-const encounterIds: EncounterId[] = [
-  'whisper_broker',
-  'roadside_phone',
-  'pixie_shibuya_glow',
-  'foxfire_navi',
-  'no_face_taxi_passenger',
-  'silent_shape',
-  'abandoned_ai_navi',
-  'road_reaper',
-  'toll_gate_saint',
-  'tunnel_rider',
-  'closure_ogre',
-  'tow_collector',
-  'ghost_chaser',
-  'vending_spirit',
-  'phantom_patrol',
-  'midnight_taxi',
-  'cone_swarm',
-  'mirror_curve',
-  'fuel_tanker_saint',
-  'hearse_meridian',
-  'jackknife_trailer',
-  'kuchisake_onna',
-  'siren_ambulance',
-  'siren_ambulance_v2',
-];
 
 const defaultAffinity = {
   ballistic: 'normal',
@@ -365,7 +339,7 @@ const parseCsvIds = (value: unknown, fallback: EncounterId[]): EncounterId[] => 
   const parsed = value
     .split(',')
     .map((item) => item.trim())
-    .filter((item): item is EncounterId => encounterIds.includes(item as EncounterId));
+    .filter(isEncounterId);
   return parsed.length ? parsed : fallback;
 };
 
@@ -419,7 +393,7 @@ const fromRecord = (raw: Record<string, unknown>): DevilConfig => {
   const encounterProfiles = { ...defaultDevilConfig.encounterProfiles };
   const devilTemplates = { ...defaultDevilConfig.devilTemplates };
 
-  for (const id of encounterIds) {
+  for (const id of ENCOUNTER_IDS) {
     const baseProfile = defaultDevilConfig.encounterProfiles[id];
     const profileRaw = asRecord(profilesRaw[id]);
     encounterProfiles[id] = {
@@ -460,7 +434,7 @@ const fromRecord = (raw: Record<string, unknown>): DevilConfig => {
   const supportLinkLogs = { ...defaultDevilConfig.support.linkLogs };
   const supportStability = { ...defaultDevilConfig.support.stability };
 
-  for (const id of encounterIds) {
+  for (const id of ENCOUNTER_IDS) {
     supportEffects[id] = asStr(supportEffectsRaw[id], supportEffects[id]);
     supportLinkLogs[id] = asStr(supportLinkRaw[id], supportLinkLogs[id]);
     const stability = supportStabilityRaw[id];

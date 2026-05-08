@@ -5,34 +5,11 @@ import type {
   TalkMood,
   TalkPersona,
 } from './talkTypes';
+import type { EncounterIdValue } from './encounterIds';
 
 export type ContractId = 'radio_voice' | 'silent_shape' | 'abandoned_ai_navi';
 export type TerminalLogKind = 'warning' | 'contract' | 'damage' | 'system' | 'route';
-export type EncounterId =
-  | 'whisper_broker'
-  | 'roadside_phone'
-  | 'pixie_shibuya_glow'
-  | 'foxfire_navi'
-  | 'no_face_taxi_passenger'
-  | 'silent_shape'
-  | 'abandoned_ai_navi'
-  | 'road_reaper'
-  | 'toll_gate_saint'
-  | 'tunnel_rider'
-  | 'closure_ogre'
-  | 'tow_collector'
-  | 'ghost_chaser'
-  | 'vending_spirit'
-  | 'phantom_patrol'
-  | 'midnight_taxi'
-  | 'cone_swarm'
-  | 'mirror_curve'
-  | 'fuel_tanker_saint'
-  | 'hearse_meridian'
-  | 'jackknife_trailer'
-  | 'kuchisake_onna'
-  | 'siren_ambulance'
-  | 'siren_ambulance_v2';
+export type EncounterId = EncounterIdValue;
 export type CommandId = 'main_gun' | 'sub_gun' | 'se_harpoon' | 'analyze' | 'talk' | 'contract' | 'ram' | 'guard' | 'escape';
 export type AffinityType = 'ballistic' | 'suppressive' | 'impact' | 'signal' | 'talk';
 export type AffinityRating = 'weak' | 'normal' | 'resist';

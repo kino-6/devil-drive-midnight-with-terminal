@@ -1,4 +1,5 @@
 import { contractModules, garageMainGunOrder, garageSEOrder, garageSubGunOrder } from '../../game/catalogs';
+import { isEncounterId } from '../../game/encounterIds';
 import { normalizeUnlockState, sanitizeLoadoutForUnlocks } from '../../game/progression';
 import { limitStateLogs } from '../../runtimeLimits';
 import { getStageConfig, isStageConfigRuntimeLoaded } from '../../stageConfig';
@@ -88,32 +89,7 @@ export const sanitizeRestoredStateWithDeps = (raw: unknown, fallback: State, dep
         .filter((item): item is ContractModule => !!item)
       : fallback.contracts;
   const normalizeEncounterId = (value: unknown): EncounterId | undefined =>
-    value === 'whisper_broker'
-      || value === 'roadside_phone'
-      || value === 'pixie_shibuya_glow'
-      || value === 'foxfire_navi'
-      || value === 'no_face_taxi_passenger'
-      || value === 'silent_shape'
-      || value === 'abandoned_ai_navi'
-      || value === 'road_reaper'
-      || value === 'toll_gate_saint'
-      || value === 'tunnel_rider'
-      || value === 'closure_ogre'
-      || value === 'tow_collector'
-      || value === 'ghost_chaser'
-      || value === 'vending_spirit'
-      || value === 'phantom_patrol'
-      || value === 'midnight_taxi'
-      || value === 'cone_swarm'
-      || value === 'mirror_curve'
-      || value === 'fuel_tanker_saint'
-      || value === 'hearse_meridian'
-      || value === 'jackknife_trailer'
-      || value === 'kuchisake_onna'
-      || value === 'siren_ambulance'
-      || value === 'siren_ambulance_v2'
-      ? value
-      : undefined;
+    isEncounterId(value) ? value : undefined;
   const normalizeTemperament = (value: unknown): Temperament =>
     value === 'hungry' || value === 'proud' || value === 'lonely' || value === 'machine' || value === 'hostile' || value === 'curious'
       ? value
