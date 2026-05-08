@@ -110,7 +110,7 @@ export const GaragePanel = ({
       <p>
         <AssetFigure
           src={moeAsset}
-          alt="M.O.E."
+          alt=""
           className="radio-panel__avatar radio-panel__avatar--moe"
           fallback={<></>}
           transparencyMode="auto-corner"

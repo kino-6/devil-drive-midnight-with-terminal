@@ -4,6 +4,11 @@ import { getMoeLine } from '../../game/moeDialogue';
 import { initState } from './stateRuntime';
 import { claimRunGrowthIfNeeded, makePreviousRunSummary } from './storyProgression';
 
+const getGarageEntryMoeLine = (isFirstGarageEntry: boolean) =>
+  isFirstGarageEntry
+    ? getMoeLine('moe.garage.first_enter', 'Midnight Bay Garage、初回起動。装備とStageを確認しよう。', undefined, 'soft')
+    : getMoeLine('moe.garage.enter', '戻れたね。次は出る前に少し積み替えよっか。', undefined, 'soft');
+
 export function reduceRunLifecycle(state: State, action: Action): State {
   if (action.type === 'DEBUG_RESTORE') {
     return action.snapshot;
@@ -48,6 +53,7 @@ export function reduceRunLifecycle(state: State, action: Action): State {
 
   if (action.type === 'OPEN_GARAGE') {
     if (!(state.gamePhase === 'prologue' || state.gamePhase === 'result' || state.gamePhase === 'game_over' || state.gamePhase === 'garage')) return state;
+    const isFirstGarageEntry = state.gamePhase === 'prologue' && !state.previousRun;
     const claimed = claimRunGrowthIfNeeded(state);
     const previousRun = claimed.gamePhase === 'result' || claimed.gamePhase === 'game_over'
       ? makePreviousRunSummary(claimed, claimed.resultType ?? 'Early Return')
@@ -63,7 +69,7 @@ export function reduceRunLifecycle(state: State, action: Action): State {
       activeSupportDaemon: undefined,
       previousRun,
       logs: [...disconnectLogs, '> GARAGE: MIDNIGHT BAY ONLINE'],
-      moeLine: getMoeLine('moe.garage.enter', '戻れたね。次は出る前に少し積み替えよっか。', undefined, 'soft'),
+      moeLine: getGarageEntryMoeLine(isFirstGarageEntry),
     };
   }
 
