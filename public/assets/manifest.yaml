@@ -18,14 +18,14 @@ media:
     garage_enter: "sfx/garage_enter.wav"
 
 images:
-  moe: "images/moe/MOE_Default.png"
+  moe: "images/moe/MOE_Default.png?v=moe-alpha-2"
   moeVariants:
-    default: "images/moe/MOE_Default.png"
-    smile: "images/moe/MOE_Smile.png"
-    serious: "images/moe/MOE_Serious.png"
-    confused: "images/moe/MOE_Confused.png"
-    relaxed: "images/moe/MOE_Relaxed.png"
-    hud: "images/moe/MOE_HUD.png"
+    default: "images/moe/MOE_Default.png?v=moe-alpha-2"
+    smile: "images/moe/MOE_Smile.png?v=moe-alpha-2"
+    serious: "images/moe/MOE_Serious.png?v=moe-alpha-2"
+    confused: "images/moe/MOE_Confused.png?v=moe-alpha-2"
+    relaxed: "images/moe/MOE_Relaxed.png?v=moe-alpha-2"
+    hud: "images/moe/MOE_HUD.png?v=moe-alpha-2"
   enemies:
     whisper_broker:
       idle: "images/devil/whisper_broker_idle.png"

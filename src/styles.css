@@ -1650,12 +1650,86 @@ body {
 
 .radio-panel--terminal {
   border-color: #6a5238;
-  box-shadow: inset 0 0 0 1px rgba(215, 166, 92, 0.2);
+  background:
+    linear-gradient(180deg, rgba(14, 18, 25, 0.98), rgba(8, 12, 18, 0.98)),
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 3px);
+  box-shadow: inset 0 0 0 1px rgba(215, 166, 92, 0.2), inset 0 0 28px rgba(95, 151, 168, 0.08);
 }
 
-.radio-panel--terminal .radio-bubble {
-  border-color: #6d597d;
-  background: linear-gradient(180deg, rgba(20, 24, 36, 0.96), rgba(13, 17, 28, 0.96));
+.terminal-tabs {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.terminal-tab {
+  border: 1px solid #403226;
+  background: rgba(11, 15, 22, 0.92);
+  color: #87929f;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+}
+
+.terminal-tab.is-active {
+  border-color: #8a643f;
+  color: #e4be82;
+  background: linear-gradient(180deg, rgba(55, 38, 23, 0.96), rgba(22, 17, 14, 0.96));
+}
+
+.terminal-tabs small {
+  margin-left: auto;
+  min-width: 0;
+  color: #9facb7;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.moe-terminal {
+  display: grid;
+  grid-template-columns: minmax(112px, 138px) minmax(0, 1fr);
+  gap: 8px;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.moe-terminal__portrait {
+  border: 1px solid #5b4a36;
+  background: radial-gradient(circle at 50% 34%, rgba(116, 155, 175, 0.22), rgba(10, 14, 20, 0.9));
+  display: grid;
+  place-items: end center;
+  min-height: 136px;
+  overflow: hidden;
+}
+
+.moe-terminal__console {
+  border: 1px solid #4a3b2d;
+  background:
+    linear-gradient(180deg, rgba(10, 15, 22, 0.95), rgba(5, 8, 12, 0.95)),
+    repeating-linear-gradient(180deg, rgba(131, 202, 218, 0.045) 0 1px, transparent 1px 5px);
+  padding: 8px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.moe-terminal__prompt {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: #e4be82;
+  font-size: 0.7rem;
+  letter-spacing: 0.07em;
+}
+
+.moe-terminal__prompt small {
+  color: #89a8b0;
+  font-size: 0.6rem;
+  white-space: nowrap;
 }
 
 .radio-panel--command {
@@ -1700,12 +1774,15 @@ body {
 }
 
 .radio-panel--terminal .radio-panel__avatar {
-  width: clamp(164px, 14vw, 256px);
-  height: clamp(164px, 14vw, 256px);
+  width: 100%;
+  height: min(190px, 15vw);
+  min-height: 136px;
+  border: 0;
+  background: transparent;
 }
 
 .radio-panel__avatar--moe {
-  object-fit: cover;
+  object-fit: contain;
   object-position: 50% 10%;
   padding: 0;
   image-rendering: auto;
@@ -1733,7 +1810,16 @@ body {
 }
 
 .radio-panel--terminal .moe-live {
-  font-size: 1.06rem;
+  margin: 0;
+  color: #f3d59a;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  text-shadow: 0 0 10px rgba(219, 165, 91, 0.18);
+}
+
+.radio-panel--terminal .moe-live span {
+  color: var(--amber);
+  margin-right: 7px;
 }
 
 .radio-bubble .moe-command {
@@ -2614,19 +2700,11 @@ body {
   animation: anomalyBlink 850ms steps(1, end) infinite;
 }
 
-.terminal__head {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 6px;
-  color: var(--amber);
-  font-size: 0.78rem;
-}
-
 .terminal-status__chips {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  margin-top: 7px;
   margin-bottom: 8px;
 }
 

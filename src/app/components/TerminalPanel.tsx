@@ -40,27 +40,37 @@ export const TerminalPanel = ({
 }: TerminalPanelProps) => (
   <section className="terminal-stack panel">
     <section className="radio-panel radio-panel--terminal">
-      <div className="radio-panel__head">
-        <span>
+      <div className="terminal-tabs terminal-tabs--moe">
+        <span className="terminal-tab is-active">M.O.E.</span>
+        <span className="terminal-tab">NAVI</span>
+        <span className="terminal-tab">MSG</span>
+        <small>{gamePhase.toUpperCase()} / {signal <= 2 ? 'NOISY' : 'CLEAR'}</small>
+      </div>
+      <div className="moe-terminal">
+        <div className="moe-terminal__portrait">
           <AssetFigure
             src={moeAsset}
             alt="M.O.E."
             className="radio-panel__avatar radio-panel__avatar--moe"
             fallback={<></>}
-            transparencyMode="none"
+            transparencyMode="auto-corner"
           />
-          M.O.E. // NAVI AI
-        </span>
-        <small>{gamePhase.toUpperCase()} / {signal <= 2 ? 'NOISY' : 'CLEAR'}</small>
-      </div>
-      <div className="radio-bubble">
-        <p className="moe-live">「{liveMoeLine}」</p>
+        </div>
+        <div className="moe-terminal__console">
+          <div className="moe-terminal__prompt">
+            <span>M.O.E. // NAVI AI</span>
+            <small>LIVE CHANNEL</small>
+          </div>
+          <p className="moe-live"><span>&gt;</span>{liveMoeLine}</p>
+        </div>
       </div>
     </section>
     <section className={`terminal terminal-log ${isEncounterActive ? 'terminal--anomaly' : ''}`}>
-      <div className="terminal__head terminal-status">
-        <strong>DEVIL TERMINAL</strong>
-        <span>{runStatus}</span>
+      <div className="terminal-tabs terminal-tabs--log">
+        <span className="terminal-tab is-active">LOG</span>
+        <span className="terminal-tab">SYS</span>
+        <span className="terminal-tab">NAVI</span>
+        <small>{runStatus}</small>
       </div>
       <div className="terminal-status__chips">
         {terminalStatus.map((status) => (
