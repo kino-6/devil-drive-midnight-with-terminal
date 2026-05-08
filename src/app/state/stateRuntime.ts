@@ -44,6 +44,7 @@ import {
 } from '../../game/runtimeHelpers';
 import { assignTalkPersona } from '../../game/talkRules';
 import { getSupportBacklashChance, getVehicleUpgradeResourceBonuses } from '../../game/vehicleUpgrades';
+import { initRouteStateForStage } from './routeGraph';
 
 export const pickRewardChoices = (pool: RewardOption[], count = 3): RewardOption[] => {
   const shuffled = [...pool];
@@ -508,6 +509,7 @@ export const initState = (): State => {
     encounterIndex: 0,
     encounter: buildEncounter('enc1', [], selectedLoadout.contractSupportId, undefined, 0, 1),
     rewardOptions: pickRewardChoices(rewardCatalog),
+    routeState: undefined,
     rewardTarget: undefined,
     rewardScope: undefined,
     negotiationRewards: [],
@@ -540,6 +542,7 @@ export const getVehicleUpgradeCost = (currentLevel: number) => 2 + currentLevel;
 
 export const initRunWithLoadout = (state: State, logsPrefix: string[] = []): State => {
   const start = getRunStartResources(state.selectedLoadout, state.vehicleUpgrades);
+  const routeState = initRouteStateForStage(state.stage);
   const lineup = pickEncounterLineup('enc1', state.stage);
   const scanChance = getScanChance({ ...state, signal: start.signal }, 'enc1', lineup);
   const scanSuccess = Math.random() * 100 < scanChance;
@@ -576,6 +579,7 @@ export const initRunWithLoadout = (state: State, logsPrefix: string[] = []): Sta
     encounterIndex: 0,
     encounter: buildEncounter('enc1', [], state.selectedLoadout.contractSupportId, undefined, 0, state.stage, lineup),
     rewardOptions: pickRewardChoices(rewardCatalog),
+    routeState,
     rewardTarget: undefined,
     rewardScope: undefined,
     negotiationRewards: [],

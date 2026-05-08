@@ -82,6 +82,7 @@ export const defaultStageConfig: StageConfig = {
 };
 
 let runtimeStageConfig: StageConfig = defaultStageConfig;
+let runtimeStageConfigLoaded = false;
 
 const asRecord = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
@@ -306,6 +307,7 @@ export const loadStageConfig = async (): Promise<StageConfig> => {
       }
 
       runtimeStageConfig = toStageConfig(merged);
+      runtimeStageConfigLoaded = true;
       return runtimeStageConfig;
     } catch {
       continue;
@@ -313,5 +315,8 @@ export const loadStageConfig = async (): Promise<StageConfig> => {
   }
 
   runtimeStageConfig = defaultStageConfig;
+  runtimeStageConfigLoaded = false;
   return runtimeStageConfig;
 };
+
+export const isStageConfigRuntimeLoaded = () => runtimeStageConfigLoaded;

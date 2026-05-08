@@ -285,6 +285,13 @@ export type EncounterPrep = {
   firstTalkPending: boolean;
 };
 
+export type RouteState = {
+  stageRouteId: string;
+  currentNodeId: string;
+  visitedNodeIds: string[];
+  currentEventId?: string;
+};
+
 export type ActiveSupportDaemon = {
   id: EncounterId;
   name: string;
@@ -311,6 +318,7 @@ export type State = {
   encounterIndex: number;
   encounter: EncounterState;
   rewardOptions: RewardOption[];
+  routeState?: RouteState;
   rewardTarget?: RewardTarget;
   rewardScope?: RewardScope;
   negotiationRewards: string[];
@@ -353,6 +361,7 @@ export type Action =
   | { type: 'EXECUTE_COMMAND'; command?: CommandId }
   | { type: 'REWARD_CONTINUE' }
   | { type: 'ROUTE_CHOICE'; lane: 'salvage' | 'signal' | 'push_forward' | 'return_gate' }
+  | { type: 'ROUTE_NODE_CHOOSE'; nodeId: string }
   | { type: 'SALVAGE_PICK'; rewardId: string }
   | { type: 'SIGNAL_ROUTE_CHOICE'; choiceId: 'analyze_trace' | 'hold_lane' | 'open_radio' }
   | { type: 'SIGNAL_CONTINUE' }

@@ -18,6 +18,7 @@ import type {
   Loadout,
   MainGunId,
   ResultType,
+  RouteState,
   SpecialEquipmentId,
   State,
   SubGunId,
@@ -129,6 +130,21 @@ export const sanitizeRestoredStateWithDeps = (raw: unknown, fallback: State, dep
       expiresAt: 'run_end',
     }
     : undefined;
+  const normalizeRouteState = (value: unknown): RouteState | undefined => {
+    const raw = asRec(value);
+    const stageRouteId = asStr(raw.stageRouteId, '');
+    const currentNodeId = asStr(raw.currentNodeId, '');
+    if (!stageRouteId || !currentNodeId) return fallback.routeState;
+    const visitedNodeIds = Array.isArray(raw.visitedNodeIds)
+      ? raw.visitedNodeIds.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+      : fallback.routeState?.visitedNodeIds ?? [];
+    return {
+      stageRouteId,
+      currentNodeId,
+      visitedNodeIds: visitedNodeIds.length > 0 ? visitedNodeIds : [currentNodeId],
+      currentEventId: asStr(raw.currentEventId, undefined as unknown as string) || undefined,
+    };
+  };
 
   const restored: State = {
     ...base,
@@ -151,6 +167,7 @@ export const sanitizeRestoredStateWithDeps = (raw: unknown, fallback: State, dep
       : fallback.logs,
     selectedLoadout,
     unlocks,
+    routeState: normalizeRouteState(source.routeState),
     activeSupportDaemon,
     activeConversation: undefined,
     negotiationRewards: Array.isArray(source.negotiationRewards)

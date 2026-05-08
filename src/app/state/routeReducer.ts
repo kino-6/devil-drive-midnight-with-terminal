@@ -7,6 +7,7 @@ import { getSupportBacklashChance } from '../../game/vehicleUpgrades';
 import { getRareSalvageLog, getRareSalvageMoeLine, isRareSalvageReward, maybeAddRareSalvageReward } from '../../game/rareEvents';
 import { applyRewardOption, pickRewardChoices } from './stateRuntime';
 import { moveToApproach } from './approachReducer';
+import { getRouteChoiceTargetNodeId, getRouteNextNodeId, getStageRouteNode, moveRouteStateToNode } from './routeGraph';
 import { appendRecoveredStoryLogLines, getRunGrowth, makePreviousRunSummary, resolveStoryFromRun } from './storyProgression';
 
 type ApproachRouteKind = State['encounter']['kind'];
@@ -40,21 +41,101 @@ const completeRunAtReturnGate = (state: State, resultType: ResultType, moeLine: 
 
 const nextRouteEncounterKind = (toBoss: boolean): ApproachRouteKind => (toBoss ? 'boss' : 'enc2');
 
+const enterRouteNode = (state: State, nodeId: string): State => {
+  const graphState = moveRouteStateToNode(state, nodeId);
+  const node = getStageRouteNode(graphState, nodeId);
+  if (!node) return state;
+
+  if (node.type === 'route_choice') {
+    return {
+      ...graphState,
+      gamePhase: 'route_choice',
+      logs: [...graphState.logs, '> ROUTE CHOICE AVAILABLE'],
+      moeLine: getDialogueLine('moe.run.route_choice', '次の車線を選んで。補給・信号強化・強行突破・帰還、どれも正解になり得る。'),
+    };
+  }
+
+  if (node.type === 'salvage') {
+    const toBoss = node.next === 'boss_contact';
+    return {
+      ...graphState,
+      gamePhase: 'salvage',
+      rewardTarget: toBoss ? 'boss' : 'encounter2',
+      rewardOptions: pickRewardChoices(toBoss ? emergencyRewardCatalog : rewardCatalog),
+      logs: [...graphState.logs, `> ROUTE NODE: ${node.label.toUpperCase()}`],
+      moeLine: toBoss
+        ? getDialogueLine('moe.run.salvage_to_boss', '主砲弾か装甲を足してから行ける。選んで。')
+        : getDialogueLine('moe.run.salvage_ready', '補給反応あり。ひとつだけ拾える。'),
+    };
+  }
+
+  if (node.type === 'signal') {
+    return {
+      ...graphState,
+      gamePhase: 'signal',
+      logs: [...graphState.logs, `> ROUTE NODE: ${node.label.toUpperCase()}`],
+      moeLine: getDialogueLine('moe.run.route_signal', '信号帯がクリアになった。次の予測が少し長く見える。'),
+    };
+  }
+
+  if (node.type === 'boss_preview') {
+    return {
+      ...graphState,
+      gamePhase: 'boss_preview',
+      logs: [...graphState.logs, '> DEEP SIGNAL DETECTED: TOLL GATE SAINT'],
+      moeLine: getDialogueLine('moe.run.boss_preview', '料金所型の反応。無理なら引き返そ。'),
+    };
+  }
+
+  if (node.type === 'return_gate') {
+    return {
+      ...graphState,
+      gamePhase: 'return_gate',
+      logs: [...graphState.logs, '> RETURN GATE ROUTE OPEN'],
+      moeLine: getDialogueLine('moe.run.return_gate_seen', '帰還ゲート、見えた。まだ車は動くね。'),
+    };
+  }
+
+  if (node.type === 'encounter' || node.type === 'boss') {
+    const kind = node.encounterKind ?? (node.type === 'boss' ? 'boss' : 'enc2');
+    const encounterIndex = kind === 'enc1' ? 0 : kind === 'enc2' ? 1 : 2;
+    return moveToApproach({
+      ...graphState,
+      encounterIndex,
+      bossChallenged: kind === 'boss' ? true : graphState.bossChallenged,
+      tempForecastBoost: kind === 'boss' ? 0 : graphState.tempForecastBoost,
+      logs: [...graphState.logs, `> ROUTE NODE: ${node.label.toUpperCase()}`],
+    }, kind);
+  }
+
+  if (node.type === 'result') {
+    return { ...graphState, gamePhase: 'result' };
+  }
+
+  return graphState;
+};
+
 export function reduceRoute(state: State, action: Action): State {
+  if (action.type === 'ROUTE_NODE_CHOOSE') {
+    return enterRouteNode(state, action.nodeId);
+  }
+
   if (action.type === 'REWARD_CONTINUE') {
     if (state.gamePhase !== 'reward') return state;
     if (state.rewardScope === 'post_enc1') {
+      const graphState = moveRouteStateToNode(state, getRouteNextNodeId(state) ?? 'post_encounter_1');
       return {
-        ...state,
+        ...graphState,
         gamePhase: 'route_choice',
-        logs: [...state.logs, '> ROUTE CHOICE AVAILABLE'],
+        logs: [...graphState.logs, '> ROUTE CHOICE AVAILABLE'],
         moeLine: getDialogueLine('moe.run.route_choice', '次の車線を選んで。補給・信号強化・強行突破・帰還、どれも正解になり得る。'),
       };
     }
+    const graphState = moveRouteStateToNode(state, getRouteNextNodeId(state) ?? 'boss_preview');
     return {
-      ...state,
+      ...graphState,
       gamePhase: 'boss_preview',
-      logs: [...state.logs, '> DEEP SIGNAL DETECTED: TOLL GATE SAINT'],
+      logs: [...graphState.logs, '> DEEP SIGNAL DETECTED: TOLL GATE SAINT'],
       moeLine: getDialogueLine('moe.run.boss_preview', '料金所型の強い反応。無理なら引き返そ。'),
     };
   }
@@ -62,30 +143,33 @@ export function reduceRoute(state: State, action: Action): State {
   if (action.type === 'ROUTE_CHOICE') {
     if (state.gamePhase !== 'route_choice') return state;
     if (action.lane === 'return_gate') {
+      const graphState = moveRouteStateToNode(state, getRouteChoiceTargetNodeId(state, action.lane) ?? 'early_return');
       return completeRunAtReturnGate(
-        state,
+        graphState,
         'Early Return',
         getDialogueLine('moe.run.route_return', '帰るのも仕事だよ。持ち帰れなきゃ、全部ゼロ。'),
       );
     }
     if (action.lane === 'salvage') {
+      const graphState = moveRouteStateToNode(state, getRouteChoiceTargetNodeId(state, action.lane) ?? 'salvage_lane');
       const rewards = maybeAddRareSalvageReward(state, pickRewardChoices(rewardCatalog));
       return {
-        ...state,
+        ...graphState,
         gamePhase: 'salvage',
         rewardTarget: 'encounter2',
         rewardOptions: rewards,
-        logs: [...state.logs, '> SALVAGE LANE SELECTED'],
+        logs: [...graphState.logs, '> SALVAGE LANE SELECTED'],
         moeLine: getDialogueLine('moe.run.salvage_ready', '補給反応あり。ひとつだけ拾える。'),
       };
     }
     if (action.lane === 'signal') {
+      const graphState = moveRouteStateToNode(state, getRouteChoiceTargetNodeId(state, action.lane) ?? 'signal_tunnel');
       const signalGain = state.selectedLoadout.contractSupportId === 'radio_voice' ? 2 : 1;
       const forecastGain = state.selectedLoadout.contractSupportId === 'radio_voice' ? 2 : 1;
-      const signalLogs = [...state.logs, '> SIGNAL LANE SELECTED', `> SIGNAL +${signalGain}`];
+      const signalLogs = [...graphState.logs, '> SIGNAL LANE SELECTED', `> SIGNAL +${signalGain}`];
       if (state.selectedLoadout.contractSupportId === 'radio_voice' && Math.random() < getSupportBacklashChance(0.4, state.vehicleUpgrades)) signalLogs.push('> WARNING: AM 666.0 FALSE CARRIER');
       return {
-        ...state,
+        ...graphState,
         gamePhase: 'signal',
         signal: state.signal + signalGain,
         tempForecastBoost: forecastGain,
@@ -93,9 +177,10 @@ export function reduceRoute(state: State, action: Action): State {
         moeLine: getDialogueLine('moe.run.route_signal', '信号帯がクリアになった。次の予測が少し長く見える。'),
       };
     }
-    const pushedRoute = applySilentShapeBacklash(state, [...state.logs, '> PUSH FORWARD SELECTED', '> ENCOUNTER 2: FORWARD CONTACT']);
+    const graphState = moveRouteStateToNode(state, getRouteChoiceTargetNodeId(state, action.lane) ?? 'forward_contact');
+    const pushedRoute = applySilentShapeBacklash(state, [...graphState.logs, '> PUSH FORWARD SELECTED', '> ENCOUNTER 2: FORWARD CONTACT']);
     return moveToApproach({
-      ...state,
+      ...graphState,
       fuel: pushedRoute.fuel,
       routeBoostReward: true,
       logs: pushedRoute.logs,
@@ -111,9 +196,10 @@ export function reduceRoute(state: State, action: Action): State {
     if (isRareSalvageReward(selected.id)) {
       const toBoss = state.rewardTarget === 'boss';
       const nextKind = nextRouteEncounterKind(toBoss);
-      const logs = [...state.logs, `> ${getRareSalvageLog(selected.id)}`, `> ${toBoss ? 'BOSS CONTACT' : 'ENCOUNTER 2: SIGNAL CONTACT'}`];
+      const graphState = moveRouteStateToNode(state, getRouteNextNodeId(state) ?? (toBoss ? 'boss_contact' : 'encounter_2'));
+      const logs = [...graphState.logs, `> ${getRareSalvageLog(selected.id)}`, `> ${toBoss ? 'BOSS CONTACT' : 'ENCOUNTER 2: SIGNAL CONTACT'}`];
       return moveToApproach({
-        ...state,
+        ...graphState,
         rewardTarget: undefined,
         tempForecastBoost: 0,
         logs,
@@ -125,13 +211,14 @@ export function reduceRoute(state: State, action: Action): State {
     const patched = applyRewardOption(state, selected);
     const toBoss = state.rewardTarget === 'boss';
     const nextKind = nextRouteEncounterKind(toBoss);
+    const graphState = moveRouteStateToNode(state, getRouteNextNodeId(state) ?? (toBoss ? 'boss_contact' : 'encounter_2'));
     const rewardedRoute = applySilentShapeBacklash(
       state,
-      [...state.logs, `> SALVAGE APPLIED: ${selected.label.toUpperCase()}`, `> ${toBoss ? 'BOSS CONTACT' : 'ENCOUNTER 2: SIGNAL CONTACT'}`],
+      [...graphState.logs, `> SALVAGE APPLIED: ${selected.label.toUpperCase()}`, `> ${toBoss ? 'BOSS CONTACT' : 'ENCOUNTER 2: SIGNAL CONTACT'}`],
       patched.fuel,
     );
     return moveToApproach({
-      ...state,
+      ...graphState,
       ...patched,
       fuel: rewardedRoute.fuel,
       rewardTarget: undefined,
@@ -187,8 +274,9 @@ export function reduceRoute(state: State, action: Action): State {
 
     logs.push('> ENCOUNTER 2: SIGNAL CONTACT');
     const signaledRoute = applySilentShapeBacklash(state, logs, fuel);
+    const graphState = moveRouteStateToNode(state, getRouteNextNodeId(state) ?? 'encounter_2');
     return moveToApproach({
-      ...state,
+      ...graphState,
       signal,
       fuel: signaledRoute.fuel,
       encounterIndex: 1,
@@ -206,28 +294,31 @@ export function reduceRoute(state: State, action: Action): State {
   if (action.type === 'BOSS_PREVIEW_CHOICE') {
     if (state.gamePhase !== 'boss_preview') return state;
     if (action.choice === 'return_gate') {
+      const graphState = moveRouteStateToNode(state, getRouteChoiceTargetNodeId(state, action.choice) ?? 'boss_return');
       return completeRunAtReturnGate(
-        state,
+        graphState,
         'Boss Avoided',
         getDialogueLine('moe.run.boss_return', '引き返す判断、正解。持ち帰ることが最優先。'),
       );
     }
     if (action.choice === 'emergency_salvage') {
+      const graphState = moveRouteStateToNode(state, getRouteChoiceTargetNodeId(state, action.choice) ?? 'boss_salvage');
       const emergencyPool = state.routeBoostReward
         ? emergencyRewardCatalog.map((reward) => (reward.mainAmmo ? { ...reward, detail: 'Main Ammo +3', mainAmmo: 3 } : reward))
         : emergencyRewardCatalog;
       return {
-        ...state,
+        ...graphState,
         gamePhase: 'salvage',
         rewardTarget: 'boss',
         rewardOptions: pickRewardChoices(emergencyPool),
-        logs: [...state.logs, '> EMERGENCY SALVAGE OPEN'],
+        logs: [...graphState.logs, '> EMERGENCY SALVAGE OPEN'],
         moeLine: getDialogueLine('moe.run.salvage_to_boss', '主砲弾か装甲を足してから行ける。選んで。'),
       };
     }
-    const bossRoute = applySilentShapeBacklash(state, [...state.logs, '> BOSS ENCOUNTER: TOLL GATE SAINT']);
+    const graphState = moveRouteStateToNode(state, getRouteChoiceTargetNodeId(state, action.choice) ?? 'boss_contact');
+    const bossRoute = applySilentShapeBacklash(state, [...graphState.logs, '> BOSS ENCOUNTER: TOLL GATE SAINT']);
     return moveToApproach({
-      ...state,
+      ...graphState,
       fuel: bossRoute.fuel,
       encounterIndex: 2,
       bossChallenged: true,
@@ -239,17 +330,18 @@ export function reduceRoute(state: State, action: Action): State {
 
   if (action.type === 'RETURN_TO_SURFACE') {
     if (state.gamePhase !== 'return_gate') return state;
+    const graphState = moveRouteStateToNode(state, getRouteNextNodeId(state) ?? 'result');
     const resultType = state.resultType ?? 'Boss Cleared';
-    const disconnectLogs = appendSupportDaemonDisconnectLogs(state.logs, state.activeSupportDaemon, 'return_gate');
-    const unlockedAbyssLoop = resultType === 'Boss Cleared' && state.stageCount < 4 && state.stage >= 3;
-    if (resultType === 'Boss Cleared' && state.stage < state.stageCount) {
-      const growth = getRunGrowth(state);
-      const story = resolveStoryFromRun(state, resultType);
-      const unlockRewards = applyRunUnlockRewards({ ...state, resultType, story });
+    const disconnectLogs = appendSupportDaemonDisconnectLogs(graphState.logs, graphState.activeSupportDaemon, 'return_gate');
+    const unlockedAbyssLoop = resultType === 'Boss Cleared' && graphState.stageCount < 4 && graphState.stage >= 3;
+    if (resultType === 'Boss Cleared' && graphState.stage < graphState.stageCount) {
+      const growth = getRunGrowth(graphState);
+      const story = resolveStoryFromRun(graphState, resultType);
+      const unlockRewards = applyRunUnlockRewards({ ...graphState, resultType, story });
       const unlockLogs = unlockRewards.newlyUnlocked.map(formatUnlockRewardLog);
-      const nextStage = state.stage + 1;
+      const nextStage = graphState.stage + 1;
       return {
-        ...state,
+        ...graphState,
         gamePhase: 'garage',
         stage: nextStage,
         activeSupportDaemon: undefined,
@@ -263,19 +355,19 @@ export function reduceRoute(state: State, action: Action): State {
         logs: appendRecoveredStoryLogLines([
           ...disconnectLogs,
           ...unlockLogs,
-          `> STAGE CLEAR: ${state.stage}/${state.stageCount}`,
-          `> NEXT STAGE PREP: ${nextStage}/${state.stageCount}`,
+          `> STAGE CLEAR: ${graphState.stage}/${graphState.stageCount}`,
+          `> NEXT STAGE PREP: ${nextStage}/${graphState.stageCount}`,
           '> GARAGE: MIDNIGHT BAY ONLINE',
         ], story),
-        moeLine: `ステージ${state.stage}突破。次は深くなる、装備を組み直そう。`,
+        moeLine: `ステージ${graphState.stage}突破。次は深くなる、装備を組み直そう。`,
       };
     }
-    const story = resolveStoryFromRun(state, resultType);
+    const story = resolveStoryFromRun(graphState, resultType);
     return {
-      ...state,
+      ...graphState,
       gamePhase: 'result',
       resultType,
-      stageCount: unlockedAbyssLoop ? 4 : state.stageCount,
+      stageCount: unlockedAbyssLoop ? 4 : graphState.stageCount,
       activeSupportDaemon: undefined,
       story,
       logs: appendRecoveredStoryLogLines([
