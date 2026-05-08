@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+type ProloguePreviewMode = 'nightloop' | 'garage';
+
 type PrologueOverlayProps = {
   visible: boolean;
   narrativeMoeLine: string;
@@ -19,9 +21,19 @@ export const PrologueOverlay = ({
   onStartEngine,
   onOpenGarage,
 }: PrologueOverlayProps) => {
-  const [previewMode, setPreviewMode] = useState<'nightloop' | 'garage'>('nightloop');
+  const [previewMode, setPreviewMode] = useState<ProloguePreviewMode>('nightloop');
   if (!visible) return null;
 
+  const showNightLoopPreview = () => setPreviewMode('nightloop');
+  const showGaragePreview = () => setPreviewMode('garage');
+  const previewEvents = (mode: ProloguePreviewMode) => {
+    const showPreview = mode === 'garage' ? showGaragePreview : showNightLoopPreview;
+    return {
+      onFocus: showPreview,
+      onMouseEnter: showPreview,
+      onPointerDown: showPreview,
+    };
+  };
   const previewImage = previewMode === 'garage'
     ? garageIntroImage ?? nightLoopIntroImage
     : nightLoopIntroImage ?? garageIntroImage;
@@ -38,22 +50,18 @@ export const PrologueOverlay = ({
           </div>
         )}
         <p>M.O.E.: 「{narrativeMoeLine}」</p>
-        <div className="prologue-actions" onMouseLeave={() => setPreviewMode('nightloop')}>
+        <div className="prologue-actions" onMouseLeave={showNightLoopPreview}>
           <button
             className="command-button command-button--route"
             onClick={onStartEngine}
-            onFocus={() => setPreviewMode('nightloop')}
-            onMouseEnter={() => setPreviewMode('nightloop')}
-            onPointerDown={() => setPreviewMode('nightloop')}
+            {...previewEvents('nightloop')}
           >
             START ENGINE
           </button>
           <button
             className="command-button command-button--system"
             onClick={onOpenGarage}
-            onFocus={() => setPreviewMode('garage')}
-            onMouseEnter={() => setPreviewMode('garage')}
-            onPointerDown={() => setPreviewMode('garage')}
+            {...previewEvents('garage')}
           >
             ENTER GARAGE
           </button>
