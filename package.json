@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "start": "npm run build && vite preview --host localhost --port 4173 --strictPort",
     "scenario:generate": "node --experimental-strip-types tools/generate-scenario.ts",
-    "scenario:validate": "node --experimental-strip-types tools/validate-scenarios.ts"
+    "scenario:validate": "node --experimental-strip-types tools/validate-scenarios.ts",
+    "config:validate": "node --experimental-strip-types tools/validate-config.ts"
   },
   "dependencies": {
     "react": "^18.3.1",
