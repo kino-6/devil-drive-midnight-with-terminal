@@ -1020,33 +1020,38 @@ body {
 
 .battle-view__ingress {
   position: absolute;
-  left: 18px;
-  right: 18px;
-  top: 68px;
+  left: 50%;
+  top: 80px;
+  width: min(260px, 42%);
+  transform: translateX(-50%);
   z-index: 5;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
+  gap: 8px;
 }
 
 .battle-view__ingress-step {
-  border: 1px solid #3f3226;
-  background: rgba(13, 18, 27, 0.82);
-  color: #8f9dad;
-  font-size: 0.58rem;
-  letter-spacing: 0.05em;
-  padding: 3px 5px;
-  text-align: center;
+  height: 4px;
+  border: 0;
+  background: rgba(69, 82, 96, 0.38);
+  box-shadow: 0 0 10px rgba(24, 36, 48, 0.28);
+  overflow: hidden;
+}
+
+.battle-view__ingress-step span {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .battle-view__ingress-step.is-done {
-  border-color: #537f92;
-  color: #86c2cf;
+  background: rgba(99, 159, 176, 0.72);
+  box-shadow: 0 0 12px rgba(99, 185, 205, 0.22);
 }
 
 .battle-view__ingress-step.is-current {
-  border-color: #8a6b4c;
-  color: #e1bc86;
+  background: rgba(217, 166, 92, 0.82);
+  box-shadow: 0 0 14px rgba(217, 166, 92, 0.26);
 }
 
 .battle-view__navi-select {
@@ -1485,6 +1490,12 @@ body {
   color: #9eabb9;
   font-size: 0.76rem;
   letter-spacing: 0.04em;
+}
+
+.approach-contact__unknown {
+  color: #e2b676;
+  font-size: 1.2rem;
+  line-height: 1;
 }
 
 .command-core {

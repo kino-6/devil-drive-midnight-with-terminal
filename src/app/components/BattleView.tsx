@@ -118,10 +118,14 @@ export const BattleView = ({
       </div>
     )}
     {gamePhase === 'approach' && (
-      <div className="battle-view__ingress">
+      <div className="battle-view__ingress" aria-label="Approach progress">
         {ingressSteps.map((step, idx) => (
-          <div key={step.label} className={`battle-view__ingress-step ${step.done ? 'is-done' : ''} ${idx === ingressSteps.length - 1 ? 'is-current' : ''}`}>
-            <span>{step.label}</span>
+          <div
+            key={step.label}
+            className={`battle-view__ingress-step ${step.done ? 'is-done' : ''} ${idx === ingressSteps.length - 1 ? 'is-current' : ''}`}
+            aria-label={step.label}
+          >
+            <span aria-hidden="true" />
           </div>
         ))}
       </div>

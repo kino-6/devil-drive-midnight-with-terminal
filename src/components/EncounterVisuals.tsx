@@ -343,9 +343,13 @@ export function ApproachContactMarker({
       />
     </div>
     <div className="approach-contact__meta">
-      <strong>{showIdentity ? info.label : 'UNKNOWN CONTACT'}</strong>
-      <small>{showIdentity ? `suggested: ${getLikelyWeaknessSummary(profile)}` : 'suggested: Analyze / Guard'}</small>
-      <small>{showIdentity ? info.signal.toLowerCase() : 'signal noise / unknown lane object'}</small>
+      <strong>{showIdentity ? info.label : 'UNKNOWN'}</strong>
+      {showIdentity
+        ? <>
+          <small>{getLikelyWeaknessSummary(profile)}</small>
+          <small>{info.signal.toLowerCase()}</small>
+        </>
+        : <small className="approach-contact__unknown">?</small>}
     </div>
   </article>;
 }
