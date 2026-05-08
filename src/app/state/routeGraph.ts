@@ -30,6 +30,13 @@ export type NaviRouteBriefing = {
   intelLevel: NaviIntelLevel;
 };
 
+export type NaviRouteIntelStatus = {
+  level: NaviIntelLevel;
+  label: string;
+  detail: string;
+  isLimited: boolean;
+};
+
 const stageRouteIdForStage = (stage: number) => `stage_${stage}`;
 
 export const getActiveStageRoute = (stage: number): StageDefinition | undefined => {
@@ -122,13 +129,45 @@ const lowSignalRouteHints: Record<RouteLaneChoice, { tags: string; risk: string;
   },
 };
 
-export const getNaviIntelLevel = (state: State): NaviIntelLevel => {
+const getNaviIntelScore = (state: State) => {
   const supportBonus = state.selectedLoadout.contractSupportId === 'abandoned_ai_navi' ? 1 : 0;
   const contractBonus = state.contracts.some((contract) => contract.id === 'abandoned_ai_navi') ? 1 : 0;
-  const score = state.signal + state.skillLevels.scan_boost + supportBonus + contractBonus;
+  return state.signal + state.skillLevels.scan_boost + supportBonus + contractBonus;
+};
+
+export const getNaviIntelLevel = (state: State): NaviIntelLevel => {
+  const score = getNaviIntelScore(state);
   if (score >= 5) return 'high';
   if (score >= 3) return 'medium';
   return 'low';
+};
+
+export const getNaviRouteIntelStatus = (state: State): NaviRouteIntelStatus => {
+  const level = getNaviIntelLevel(state);
+  if (level === 'high') {
+    return {
+      level,
+      label: 'NAVI CLEAR',
+      detail: 'Route tags, risks, rewards, and effects readable.',
+      isLimited: false,
+    };
+  }
+  if (level === 'medium') {
+    return {
+      level,
+      label: 'SIGNAL PARTIAL',
+      detail: 'Reward detail is masked. Higher Signal improves forecast.',
+      isLimited: true,
+    };
+  }
+  return {
+    level,
+    label: state.signal <= 0 ? 'SIGNAL EMPTY' : 'SIGNAL WEAK',
+    detail: state.signal <= 0
+      ? 'Route detail masked: Signal is 0. Recover Signal or use NAVI support.'
+      : 'Route detail masked: Signal/Scan support is too low.',
+    isLimited: true,
+  };
 };
 
 const maskIntel = (

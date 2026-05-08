@@ -3,7 +3,7 @@ import { getMoeLine } from '../../game/moeDialogue';
 import { hasAiNaviContract } from '../state/stateReducer';
 import { isAlive } from '../../game/runtimeHelpers';
 import { getRouteEventScenario } from '../../scenario/scenarioLoader';
-import { getCurrentNaviRouteBriefing, getNaviRouteCandidates } from '../state/routeGraph';
+import { getCurrentNaviRouteBriefing, getNaviRouteCandidates, getNaviRouteIntelStatus } from '../state/routeGraph';
 import type { State } from '../../game/types';
 
 type RunGrowth = {
@@ -21,6 +21,7 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
   const aliveEnemies = state.encounter.enemies.filter(isAlive);
   const naviRouteBriefing = state.gamePhase === 'route_choice' ? getCurrentNaviRouteBriefing(state) : undefined;
   const naviRouteCandidates = state.gamePhase === 'route_choice' ? getNaviRouteCandidates(state) : [];
+  const naviRouteIntelStatus = state.gamePhase === 'route_choice' ? getNaviRouteIntelStatus(state) : undefined;
 
   return (
     <>
@@ -33,6 +34,10 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
           <strong>{naviRouteBriefing.title}</strong>
           <p>{naviRouteBriefing.body ?? 'NAVI signal is noisy. Details partially masked.'}</p>
           {naviRouteBriefing.effects && <p>{naviRouteBriefing.effects}</p>}
+        </div>}
+        {naviRouteIntelStatus?.isLimited && <div className={`command-alert command-alert--${naviRouteIntelStatus.level}`}>
+          <strong>{naviRouteIntelStatus.label}</strong>
+          <span>{naviRouteIntelStatus.detail}</span>
         </div>}
         {naviRouteCandidates.length > 0
           ? <div className="next-node-list">

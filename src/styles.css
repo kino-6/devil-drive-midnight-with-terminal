@@ -1021,6 +1021,31 @@ body {
   pointer-events: none;
 }
 
+.battle-view__route-status {
+  grid-column: 1 / -1;
+  justify-self: center;
+  max-width: min(560px, 86%);
+  border: 1px solid rgba(147, 92, 74, 0.58);
+  background: linear-gradient(180deg, rgba(36, 20, 20, 0.84), rgba(15, 19, 27, 0.72));
+  color: #f0c5a5;
+  padding: 6px 10px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.battle-view__route-status strong {
+  color: #ffb081;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.battle-view__route-status small {
+  color: #c8b6aa;
+  font-size: 0.64rem;
+}
+
 .battle-view__route-card {
   min-height: 82px;
   border: 1px solid rgba(123, 165, 188, 0.42);
@@ -2297,6 +2322,26 @@ body {
   letter-spacing: 0.06em;
   background: #111722;
   padding: 1px 4px;
+}
+
+.command-alert {
+  border: 1px solid rgba(147, 92, 74, 0.58);
+  background: linear-gradient(180deg, rgba(36, 20, 20, 0.86), rgba(16, 20, 27, 0.86));
+  color: #c8b6aa;
+  padding: 7px 9px;
+  display: grid;
+  gap: 2px;
+}
+
+.command-alert strong {
+  color: #ffb081;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+}
+
+.command-alert span {
+  font-size: 0.72rem;
+  line-height: 1.35;
 }
 
 .command-window--grid {

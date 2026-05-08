@@ -1,4 +1,4 @@
-import { getNaviRouteCandidates } from '../../state/routeGraph';
+import { getNaviRouteCandidates, getNaviRouteIntelStatus } from '../../state/routeGraph';
 import type { RewardOption, State } from '../../../game/types';
 import type { SignalChoice } from './types';
 
@@ -50,8 +50,15 @@ export const RouteCommands = ({
 
   if (gamePhase === 'route_choice') {
     const naviCandidates = getNaviRouteCandidates(state);
+    const intelStatus = getNaviRouteIntelStatus(state);
     if (naviCandidates.length > 0) {
       return <div className="command-window command-list">
+        {intelStatus.isLimited && (
+          <div className={`command-alert command-alert--${intelStatus.level}`}>
+            <strong>{intelStatus.label}</strong>
+            <span>{intelStatus.detail}</span>
+          </div>
+        )}
         {naviCandidates.map((candidate) => (
           <button
             key={`${candidate.nodeId}-${candidate.choiceId}`}

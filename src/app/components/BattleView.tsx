@@ -1,6 +1,6 @@
 import { ApproachContactMarker, BattleDevilSprite } from '../../components/EncounterVisuals';
 import { getEnemyRevealState } from '../../game/runtimeHelpers';
-import type { NaviRouteCandidate } from '../state/routeGraph';
+import type { NaviRouteCandidate, NaviRouteIntelStatus } from '../state/routeGraph';
 import type { EncounterProfile } from '../../devilConfig';
 import type { Devil, EncounterId, GamePhase, HitFxTone, Intent } from '../../game/types';
 
@@ -29,6 +29,7 @@ type BattleViewProps = {
   ingressSteps: IngressStep[];
   windshieldThreatLabel: string;
   routeCandidates?: NaviRouteCandidate[];
+  routeIntelStatus?: NaviRouteIntelStatus;
   detailEnemy?: Devil;
   detailIntentIconMap: Record<Intent, string>;
   profiles: Record<EncounterId, EncounterProfile>;
@@ -65,6 +66,7 @@ export const BattleView = ({
   ingressSteps,
   windshieldThreatLabel,
   routeCandidates = [],
+  routeIntelStatus,
   detailEnemy,
   detailIntentIconMap,
   profiles,
@@ -118,6 +120,12 @@ export const BattleView = ({
     </div>
     {gamePhase === 'route_choice' && routeCandidates.length > 0 && (
       <div className="battle-view__route-preview" aria-label="Route candidates">
+        {routeIntelStatus?.isLimited && (
+          <div className={`battle-view__route-status battle-view__route-status--${routeIntelStatus.level}`}>
+            <strong>{routeIntelStatus.label}</strong>
+            <small>{routeIntelStatus.detail}</small>
+          </div>
+        )}
         {routeCandidates.slice(0, 3).map((candidate, index) => (
           <div key={`${candidate.nodeId}-${candidate.choiceId}`} className={`battle-view__route-card battle-view__route-card--${index}`}>
             <span>{index === 0 ? 'LEFT' : index === 1 ? 'STRAIGHT' : 'RIGHT'}</span>
