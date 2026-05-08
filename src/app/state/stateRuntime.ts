@@ -1,5 +1,5 @@
 import { getBalanceConfig } from '../../balanceConfig';
-import { getDialogueLine } from '../../dialogueConfig';
+import { getMoeLine } from '../../game/moeDialogue';
 import { limitStateLogs } from '../../runtimeLimits';
 import { getEncounterScenario, getScenarioLine } from '../../scenario/scenarioLoader';
 import { getDevilConfig } from '../../devilConfig';
@@ -519,7 +519,7 @@ export const initState = (): State => {
     runSummary: { cleared: 0, defeated: 0, contracted: 0, escaped: 0 },
     resultType: undefined,
     bossChallenged: false,
-    moeLine: getDialogueLine('moe.prologue.open', '午前0時。夜環、開いたよ。'),
+    moeLine: getMoeLine('moe.prologue.open', '午前0時。夜環、開いたよ。'),
     selectedLoadout,
     activeSupportDaemon: undefined,
     previousRun: undefined,
@@ -598,8 +598,8 @@ export const initRunWithLoadout = (state: State, logsPrefix: string[] = []): Sta
     story: { ...state.story, recentRecoveredLogs: [] },
     logs,
     moeLine: scanSuccess
-      ? getDialogueLine('moe.run.scan_success', '先に見つけた。どう入る？')
-      : getDialogueLine('moe.run.scan_fail', 'ごめん、遅れた。来るよ。'),
+      ? getMoeLine('moe.run.scan_success', '先に見つけた。どう入る？', undefined, 'proud')
+      : getMoeLine('moe.run.scan_fail', 'ごめん、遅れた。来るよ。', undefined, 'flustered'),
   };
 };
 

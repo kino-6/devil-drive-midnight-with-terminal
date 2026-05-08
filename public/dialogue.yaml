@@ -9,6 +9,9 @@ version: "dialogue-v1"
 lines:
   # 利用場面: 初期起動時の導入（短文）
   moe.prologue.open: "午前0時。夜環、開いたよ。"
+  moe.prologue.open.1: "夜環、開いた。NAVI同期も良好。今日もちゃんと帰ろう。"
+  moe.prologue.open.2: "Midnight Bay接続確認。走れるよ、わたしも準備できてる。"
+  moe.prologue.open.3: "エンジン信号、安定。夜環の入口まで案内するね。"
   # 利用場面: プロローグオーバーレイ（長め導入）
   moe.prologue.narrative: "午前0時。夜環、開いたよ。浅層サルベージ任務……ってことになってる。本命は、前任者のログ反応。まだ消えてない。"
 
@@ -19,19 +22,38 @@ lines:
 
   # 利用場面: NAVIスキャン成功（通常）
   moe.run.scan_success: "先に見つけた。どう入る？"
+  moe.run.scan_success.1: "先に見つけた。えへん、今のは褒めていいやつ。"
+  moe.run.scan_success.2: "NAVI捕捉成功。入り方は選べる、焦らなくていいよ。"
+  moe.run.scan_success.3: "接触前に読めた。ここからは、こっちの都合で入れる。"
   # 利用場面: NAVIスキャン失敗（通常）
   moe.run.scan_fail: "ごめん、遅れた。来るよ。"
+  moe.run.scan_fail.1: "ごめん、反応が割れた。初撃に備えて。"
+  moe.run.scan_fail.2: "読み遅れた。でもまだ立て直せる。受け方を選ぼう。"
+  moe.run.scan_fail.3: "ノイズに隠れた。わたしのせい、は半分。残り半分は道路のせい。"
+  # 利用場面: Run開始直後の短いNAVI確認
+  moe.run.start: "Run開始。Fuel、Armor、Signalを監視する。無理は早めに止めるよ。"
+  moe.run.start.1: "夜環へ入る。残弾とSignal、わたしが見てる。"
+  moe.run.start.2: "Runログ開始。今日は欲張ってもいいけど、帰れる範囲でね。"
   # 利用場面: NAVIスキャン成功（ボス接近時）
   moe.run.scan_success_boss: "強い反応。見えてるけど、近づき方は選べる。"
+  moe.run.scan_success_boss.1: "深層反応、捕まえた。怖いけど、見えてるなら手はある。"
+  moe.run.scan_success_boss.2: "Boss信号、輪郭取れた。車も心も、少し締めていこう。"
   # 利用場面: approach終了→command開始
   moe.run.contact_to_command: "接触。コマンド選択へ。"
+  moe.run.contact_to_command.1: "接触。敵意と会話余地、両方見ていこう。"
+  moe.run.contact_to_command.2: "交戦距離。撃つ、読む、話す。順番を間違えなければいける。"
   # 利用場面: アンブッシュ発生
   moe.run.ambush_contact: "見落とした。ごめん、初撃来る。"
+  moe.run.ambush_contact.1: "アンブッシュ。謝るのは後、今は受けるよ。"
+  moe.run.ambush_contact.2: "来る。わたしも悔しいけど、まず姿勢を立て直して。"
+  moe.run.ambush_contact.3: "敵影、近すぎる。装甲とSignalを守って、次で戻す。"
 
   # 利用場面: approach選択時の不足リソース
   moe.run.approach.no_main_ammo: "主砲弾がない。別の入り方にして。"
   # 利用場面: approach選択時の不足リソース
   moe.run.approach.no_signal: "Signalが足りない。"
+  moe.run.approach.no_signal.1: "Signal不足。今は声を投げても、道路に食われるだけ。"
+  moe.run.approach.no_signal.2: "Signal残量が足りない。読みたい気持ちはわかる、でも無理。"
   # 利用場面: approach選択結果（preemptive）
   moe.run.approach.preemptive: "先に撃つ。交渉は少し荒れるよ。"
   # 利用場面: approach選択結果（hit-and-run）
@@ -43,19 +65,46 @@ lines:
 
   # 利用場面: Encounter1後→route choice
   moe.run.route_choice: "次の車線を選んで。補給・信号強化・強行突破・帰還、どれも正解になり得る。"
+  moe.run.route_choice.1: "分岐来た。補給、Signal、強行、帰還。どれも逃げじゃないよ。"
+  moe.run.route_choice.2: "車線候補を出すね。わたしのおすすめは状況次第、つまり今ちゃんと悩むところ。"
+  moe.run.route_choice.3: "NAVI候補を整理した。安全か、深さか、持ち帰りか。選ぼう。"
   # 利用場面: route choiceでSignal laneを選択
   moe.run.route_signal: "信号帯がクリアになった。次の予測が少し長く見える。"
+  moe.run.route_signal.1: "Signal帯、開いた。解析寄りで行くならここ、わたしは好き。"
+  moe.run.route_signal.2: "信号、澄んだ。先読みできると、少しだけ夜が浅くなる。"
   # 利用場面: route choiceでPush Forwardを選択
   moe.run.route_push: "回復なしで進むのね。報酬は少し盛れるかも。"
+  moe.run.route_push.1: "強行する？ いいよ、記録は取る。無茶と勇気の境目も一応。"
+  moe.run.route_push.2: "前進了解。欲張りは嫌いじゃない、帰れる範囲なら。"
   # 利用場面: route choiceでReturn Gateを選択
   moe.run.route_return: "帰るのも仕事だよ。持ち帰れなきゃ、全部ゼロ。"
+  moe.run.route_return.1: "帰るのも仕事。ちゃんと戻れたら、次はもっと深く行けるよ。"
+  moe.run.route_return.2: "撤退判断、受理。かっこ悪くない。生きてる車が一番えらい。"
+  moe.run.route_return.3: "Return routeを取る。戦果を地上へ戻すまでがRunだよ。"
+  # 利用場面: backtrack成功後の帰還チェックポイント
+  moe.run.return_checkpoint: "帰還チェックポイントに戻った。ここからなら安全に抜けられる。"
+  moe.run.return_checkpoint.1: "帰還点、再捕捉。ここまで戻れたのは判断勝ち。"
+  moe.run.return_checkpoint.2: "Checkpoint復帰。FuelとArmor、まだ残ってる。安全に抜けよう。"
 
   # 利用場面: サルベージ画面開始
   moe.run.salvage_ready: "補給反応あり。ひとつだけ拾える。"
+  moe.run.salvage_ready.1: "Salvage反応あり。弾か装甲かSignal、今の車に合うものを拾おう。"
+  moe.run.salvage_ready.2: "回収候補を出すね。欲しいもの全部は無理、ひとつだけ。"
   # 利用場面: ボス前応急サルベージ
   moe.run.salvage_to_boss: "主砲弾か装甲を足してから行ける。選んで。"
+  moe.run.salvage_to_boss.1: "Boss前の応急補給。足りないところを埋めよう、ここ大事。"
   # 利用場面: サルベージ選択後、次遭遇へ
   moe.run.salvage_done: "補給完了。次の区画へ。"
+  moe.run.salvage_done.1: "補給反映。車体ログ更新、次の接触へ行ける。"
+  moe.run.salvage_to_boss_done: "応急補給完了。Toll Gate Saintへ向かう。"
+  moe.run.salvage_to_boss_done.1: "Boss前補給、反映完了。これで少しだけ強気になれる。"
+  # 利用場面: Signal lane選択後の小分岐
+  moe.run.signal.analyze_trace: "断片ログを掴んだ。次接敵の読みは少し深い。"
+  moe.run.signal.analyze_trace.1: "Trace隔離成功。次のIntent、少し先まで読める。えへん。"
+  moe.run.signal.open_radio: "AM帯を開いた。最初の会話は通しやすい。"
+  moe.run.signal.open_radio.1: "Radio channel確保。Talk初手、少し柔らかく入れるよ。"
+  moe.run.signal.hold_lane: "速度維持で抜ける。接敵優先で行くよ。"
+  moe.run.signal.hold_lane.1: "Lane維持。Signalを温存して、次の接触に備える。"
   rare.salvage.blueprint_signal_antenna.label: "Signal Antenna Blueprint"
   rare.salvage.blueprint_signal_antenna.detail: "Garage unlock material / Signal Antenna"
   rare.salvage.blueprint_signal_antenna.log: "BLUEPRINT ACQUIRED: SIGNAL ANTENNA"
@@ -69,19 +118,38 @@ lines:
 
   # 利用場面: ボスプレビュー表示
   moe.run.boss_preview: "料金所型の強い反応。無理なら引き返そ。"
+  moe.run.boss_preview.1: "深層料金所、反応強い。強がるのは好きだけど、車は正直だよ。"
+  moe.run.boss_preview.2: "Boss前。主砲弾、S-E、装甲。足りないなら戻るのも手。"
+  moe.run.boss_preview.3: "Toll Gate Saint接近。勝つ準備か、帰る判断。どっちもちゃんと見てる。"
   # 利用場面: ボス突入
   moe.run.boss_start: "深層料金所、突入。主砲を温存しすぎないで。"
+  moe.run.boss_start.1: "突入する。火力もSignalも、出し惜しみなしで。"
+  moe.run.boss_start.2: "料金所に入るよ。怖い？ わたしも少し。でも読めてる。"
   # 利用場面: ボスプレビューで撤退
   moe.run.boss_return: "引き返す判断、正解。持ち帰ることが最優先。"
+  moe.run.boss_return.1: "撤退判断、了解。悔しいのはあと。今は戻る。"
 
   # 利用場面: ボス後リターンゲートフェーズ
   moe.run.return_gate_seen: "帰還ゲート、見えた。まだ車は動くね。"
+  moe.run.return_gate_seen.1: "帰還ゲート捕捉。よし、まだ帰れる。えらい。"
+  moe.run.return_gate_seen.2: "出口、見えた。ここまで持ってきたもの、ちゃんと地上へ運ぼう。"
   # 利用場面: リザルト遷移
   moe.run.result: "帰れたね。積んだもの、確認しよっか。"
+  moe.run.result.1: "帰投完了。積んだもの、失くしたもの、次に使えるものを見よう。"
+  moe.run.result.2: "戻れた。よし。……うん、今のは少し安心した。"
+  moe.run.result.3: "Result確定。持ち帰れた分は次の力になる。ちゃんと意味あるよ。"
   # 利用場面: ゲームオーバー
   moe.run.game_over: "応答して。……だめ、車両信号が落ちてる。"
+  moe.run.game_over.1: "車両信号、落ちた。少しだけ回収できる。次の判断材料にする。"
+  moe.run.game_over.2: "通信、途切れる。責めるより先に、持ち帰れるログを拾うね。"
+  moe.run.game_over.3: "Vehicle disabled。全損じゃない、少しは回収する。次に繋げるよ。"
   # 利用場面: 遭遇クリア時
   moe.run.encounter_clear: "遭遇クリア。次の判断に備えよう。"
+  moe.run.encounter_clear.1: "遭遇クリア。呼吸して。次の分岐、ちゃんと読む。"
+  moe.run.encounter_clear.2: "片付いた。まだ夜環は続くけど、今の判断は悪くない。"
+  moe.run.encounter_clear.3: "Hostile反応、沈黙。リソースを見て次の車線を選ぼう。"
+  moe.run.stage_clear: "ステージ{stage}突破。次は深くなる、装備を組み直そう。"
+  moe.run.abyss_unlocked: "深層封鎖鍵が外れた。次から最深層、Abyss Loopに入れる。"
 
   # 利用場面: 短い演出beat（フェーズ遷移スタンプ）
   run.beat.entry: "NIGHT LOOP ENTRY"
@@ -106,24 +174,45 @@ lines:
 
   # 利用場面: Garage遷移時
   moe.garage.enter: "戻れたね。次は出る前に少し積み替えよっか。"
+  moe.garage.enter.1: "Garage着。無事に戻るの、地味だけど一番強い。"
+  moe.garage.enter.2: "おかえり。整備ログ開くね。……ちょっとだけ安心した。"
+  moe.garage.enter.3: "Midnight Bay復帰。装備と報酬を照合する。次の準備、しよ。"
   # 利用場面: GarageでMain Gun変更
   moe.garage.set_main_gun: "主砲を重くするとBossは楽。でも弾切れは早いよ。"
+  moe.garage.set_main_gun.1: "Main Gun更新。火力と弾数の釣り合い、ちゃんと見てね。"
+  moe.garage.set_main_gun.2: "主砲設定、反映。強い砲ほど、外した時に少し寂しい。"
   # 利用場面: GarageでSub Gun変更
   moe.garage.set_sub_gun: "副砲は戦い方が出る。牽制か、手数か。"
+  moe.garage.set_sub_gun.1: "Sub Gun更新。Intentを鈍らせるなら、ここが効く。"
+  moe.garage.set_sub_gun.2: "副砲設定、保存。派手じゃないけど、流れを作れる武装だよ。"
   # 利用場面: GarageでS-E変更
   moe.garage.set_se: "S-Eは切り札。契約狙いか、殲滅寄りか選んで。"
+  moe.garage.set_se.1: "S-E更新。Analyze補助かBoss対策か、目的を決めると強い。"
+  moe.garage.set_se.2: "特殊装備、接続確認。使いどころはわたしも見る。たぶん完璧。"
   # 利用場面: GarageでSupport変更
   moe.garage.set_support: "契約サポートは一つだけ。何を車に残す？"
+  moe.garage.set_support.1: "Support設定、更新。契約daemonは便利、でも同乗者は選ぼう。"
+  moe.garage.set_support.2: "サポート枠、確定。わたしの席は取られないよね。……確認だけ。"
   # 利用場面: GarageでM.O.E.系スキル購入
   moe.garage.skill_sync: "同期率を使って調整した。次Runで効く。"
+  moe.garage.skill_sync.1: "M.O.E. Sync反映。読みと翻訳、少しだけ賢くなった。えへん。"
   # 利用場面: GarageでDriver系スキル購入
   moe.garage.skill_driver: "操縦技能を更新。次Runの反応が変わるはず。"
+  moe.garage.skill_driver.1: "Driver XP反映。車の動き、次はもう少し素直になる。"
   # 利用場面: Garageで車体改装購入
   moe.garage.vehicle_tune: "改装完了。車体側の余裕が増える。"
+  moe.garage.vehicle_tune.1: "Vehicle tune完了。FuelかArmorかSignal、余裕は判断を増やすよ。"
   # 利用場面: Garageアーカイブ下部
   moe.garage.memory: "断片が増えるほど、わたしの地図も変わる。"
+  moe.garage.memory.1: "Archive更新。記録が増えるほど、夜環の癖が読める。"
   # 利用場面: Garage深層反応プレビュー
   moe.garage.boss_tip: "料金所型の強い反応。主砲弾かS-E弾、どっちかは残しておきたいね。"
+  moe.garage.unlock_purchase: "アンロック完了。選択肢が増えたよ。"
+  moe.garage.unlock_purchase.1: "Unlock完了。Garage候補に追加した。選べるって強いね。"
+  moe.garage.ready_check: "積み替え、終わった？ このまま夜環へ入る。"
+  moe.garage.ready_check.1: "Ready check。Fuel、Armor、Signalの初期値、出撃前に見てね。"
+  moe.garage.sortie_confirm: "準備完了なら、出る。まだならここで調整して。"
+  moe.garage.sortie_confirm.1: "Sortie確認。今の構成で出るなら、わたしも腹をくくる。"
 
   # 利用場面: Previous Run未記録
   ui.common.no_previous_run: "No previous run data"
@@ -163,7 +252,15 @@ lines:
   # 利用変数:
   # - {target}: 現在対象の表示名（未解析時は Unknown Sign）
   moe.dynamic.battle.idle: "次の手を選んで。"
+  moe.dynamic.battle.idle.1: "次の手、見てる。急がなくていい、でも迷いすぎは危ない。"
+  moe.dynamic.battle.idle.2: "敵意、会話余地、残弾。ぜんぶ見えてる。選んで。"
   moe.dynamic.battle.signal_low: "Signalが足りない。"
+  moe.dynamic.battle.signal_low.1: "Signal薄い。無理はできるけど、わたしはおすすめしない。"
+  moe.dynamic.battle.signal_low.2: "Signal不足。AnalyzeやTalkを通すには、今の帯域が細すぎる。"
+  moe.dynamic.battle.signal_low.3: "Signal残量警告。読めないまま踏むのは、ちょっと怖い。"
+  moe.dynamic.battle.armor_low: "装甲、かなり薄い。次の被弾は重く見る。"
+  moe.dynamic.battle.armor_low.1: "Armor低下。強がるのは好きだけど、車は正直だよ。"
+  moe.dynamic.battle.armor_low.2: "装甲残量が危険域。GuardかReturn、選択肢に入れて。"
   moe.dynamic.battle.hit_and_run_success: "ひき逃げ成功。突破した。"
   moe.dynamic.battle.hit_and_run_bypass: "ひき逃げ成功。接敵を回避した。"
   moe.dynamic.battle.main_gun.weak: "{target}へ主砲射撃。刺さった。押し切れる。"
@@ -179,18 +276,41 @@ lines:
   moe.dynamic.battle.se.interest.normal: "{target}へS-E発射。署名を掴んだ。会話が通じやすい。"
   moe.dynamic.battle.se.emp: "{target}へEMPフレア。機械霊の挙動が鈍る。"
   moe.dynamic.battle.analyze.success: "{target}の解析完了。気質と相性を掴んだ。交渉の順番を合わせよう。"
+  moe.dynamic.battle.analyze.success.1: "{target}の解析、通った。えへん、情報は武器だよ。"
+  moe.dynamic.battle.analyze.success.2: "{target}の輪郭を掴んだ。撃つにも話すにも、これで少し優しくない。"
+  moe.dynamic.battle.analyze.success.3: "{target}の相性を取得。無駄撃ちを減らせる、こういうの大事。"
   moe.dynamic.battle.talk.boss_clear: "{target}との交渉成立。通行許可が出た。ボス反応が引いた。"
+  moe.dynamic.battle.talk.boss_clear.1: "{target}の通行許可を確保。撃たずに抜けた、かなり偉い。"
   moe.dynamic.battle.talk.success.weak: "{target}への交信成功。返事が柔らかい。契約窓を狙える。"
+  moe.dynamic.battle.talk.success.weak.1: "{target}へのTalk成功。反応が緩い、ここは押せる。"
   moe.dynamic.battle.talk.success.resist: "{target}への交信成功。通ったけど警戒が強い。押しすぎ注意。"
+  moe.dynamic.battle.talk.success.resist.1: "{target}に声は届いた。でも圧が残る。次は慎重に。"
   moe.dynamic.battle.talk.success.window_open: "{target}への交信成功。会話に乗った。今なら積める。"
+  moe.dynamic.battle.talk.success.window_open.1: "{target}の契約窓、開いてる。今なら通せる。……たぶん。うん、通せる。"
   moe.dynamic.battle.talk.success.normal: "{target}への交信成功。反応は良い。もう一押し。"
+  moe.dynamic.battle.talk.success.normal.1: "{target}へのTalk成功。敵意が少し落ちた、いい流れ。"
+  moe.dynamic.battle.talk.success.normal.2: "{target}が応答した。会話線、まだ繋がってる。"
   moe.dynamic.battle.talk.failure: "{target}への交信失敗。怒りが上がった。次手を変えよう。"
+  moe.dynamic.battle.talk.failure.1: "{target}への交信、弾かれた。大丈夫、次は圧を下げて組み直そう。"
+  moe.dynamic.battle.talk.failure.2: "{target}とのTalk失敗。Pressure上昇、でもまだ選べる手はある。"
   moe.dynamic.battle.contract.no_window: "{target}へ契約試行。契約窓が未開放。TalkかS-Eを先に。"
+  moe.dynamic.battle.contract.no_window.1: "{target}の契約窓、まだ閉じてる。焦ると鍵穴まで消えるよ。"
+  moe.dynamic.battle.contract.no_window.2: "{target}はまだ契約圏外。先にTrustかInterestを動かそう。"
   moe.dynamic.battle.contract.condition_fail: "{target}へ契約失敗。条件不足。反動が来る。"
+  moe.dynamic.battle.contract.condition_fail.1: "{target}との条件が噛んでない。反動来る、姿勢保って。"
+  moe.dynamic.battle.contract.condition_fail.2: "{target}の条件未達。SignalかPressureを見直そう、次で整える。"
   moe.dynamic.battle.contract.reject: "{target}へ契約失敗。拒否された。まだ早い。"
+  moe.dynamic.battle.contract.reject.1: "{target}に拒否された。傷ついてない。たぶん。次、変えよう。"
+  moe.dynamic.battle.contract.reject.2: "{target}の契約拒否。ログは取った、同じ失敗は減らせる。"
+  moe.dynamic.battle.contract.support_linked: "Support daemon accepted. I will monitor corruption drift."
+  moe.dynamic.battle.contract.support_linked.1: "契約署名、接続完了。新しい同乗者、変な返事をしても真似しないで。"
+  moe.dynamic.battle.contract.support_linked.2: "Support daemon安定化。……たぶん。わたしが見張るから。"
+  moe.dynamic.battle.contract.support_linked.3: "契約成立。短期支援を車載に接続した。変な声がしても落ち着いて。"
   moe.dynamic.battle.ram.weak: "{target}へラムアタック。効いてる。押し切れる。"
   moe.dynamic.battle.ram.resist: "{target}へラムアタック。固い。正面突破は不利。"
   moe.dynamic.battle.ram.normal: "{target}へラムアタック。衝突確認。こちらの装甲も削れてる。"
   moe.dynamic.battle.guard: "防御姿勢、固定。次の被弾を抑える。"
+  moe.dynamic.battle.guard.1: "防御姿勢。派手じゃないけど、こういう判断は好き。"
+  moe.dynamic.battle.guard.2: "Guard固定。退屈な手ほど、あとで効く。"
   moe.dynamic.battle.escape.success: "離脱。ルート確保。接触を切った。"
   moe.dynamic.battle.escape.fail: "離脱失敗。受ける準備して。"

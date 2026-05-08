@@ -1,5 +1,5 @@
-import { getDialogueLine } from '../../dialogueConfig';
 import type { Action, ResultType, State } from '../../game/types';
+import { getMoeLine } from '../../game/moeDialogue';
 import { emergencyRewardCatalog, rewardCatalog } from '../../game/catalogs';
 import { appendSupportDaemonDisconnectLogs } from '../../game/runtimeHelpers';
 import { applyRunUnlockRewards, formatUnlockRewardLog } from '../../game/progression';
@@ -81,7 +81,7 @@ const backtrackToReturnCheckpoint = (state: State, resultType: ResultType): Stat
     return completeRunAtReturnGate(
       state,
       resultType,
-      getDialogueLine('moe.run.route_return', '帰るのも仕事だよ。持ち帰れなきゃ、全部ゼロ。'),
+      getMoeLine('moe.run.route_return', '帰るのも仕事だよ。持ち帰れなきゃ、全部ゼロ。', undefined, 'soft'),
     );
   }
 
@@ -121,7 +121,7 @@ const backtrackToReturnCheckpoint = (state: State, resultType: ResultType): Stat
       activeSupportDaemon: undefined,
       story,
       logs: appendRecoveredStoryLogLines([...disconnectLogs, '> SIGNAL LOST', '> VEHICLE DISABLED DURING BACKTRACK'], story),
-      moeLine: getDialogueLine('moe.run.game_over', '応答して。……だめ、車両信号が落ちてる。'),
+      moeLine: getMoeLine('moe.run.game_over', '応答して。……だめ、車両信号が落ちてる。', undefined, 'flustered'),
     };
   }
 
@@ -133,7 +133,7 @@ const backtrackToReturnCheckpoint = (state: State, resultType: ResultType): Stat
     armor,
     signal,
     logs: [...logs, '> RETURN CHECKPOINT REACHED'],
-    moeLine: risk?.moeLine ?? getDialogueLine('moe.run.return_checkpoint', '帰還チェックポイントに戻った。ここからなら安全に抜けられる。'),
+    moeLine: risk?.moeLine ?? getMoeLine('moe.run.return_checkpoint', '帰還チェックポイントに戻った。ここからなら安全に抜けられる。', undefined, 'soft'),
   };
 };
 
@@ -149,7 +149,7 @@ const enterRouteNode = (state: State, nodeId: string): State => {
       ...graphState,
       gamePhase: 'route_choice',
       logs: [...graphState.logs, ...checkpointLogForCurrentNode(graphState), '> ROUTE CHOICE AVAILABLE'],
-      moeLine: getDialogueLine('moe.run.route_choice', '次の車線を選んで。補給・信号強化・強行突破・帰還、どれも正解になり得る。'),
+      moeLine: getMoeLine('moe.run.route_choice', '次の車線を選んで。補給・信号強化・強行突破・帰還、どれも正解になり得る。'),
     };
   }
 
@@ -162,8 +162,8 @@ const enterRouteNode = (state: State, nodeId: string): State => {
       rewardOptions: pickRewardChoices(toBoss ? emergencyRewardCatalog : rewardCatalog),
       logs: [...graphState.logs, `> ROUTE NODE: ${node.label.toUpperCase()}`],
       moeLine: toBoss
-        ? getDialogueLine('moe.run.salvage_to_boss', '主砲弾か装甲を足してから行ける。選んで。')
-        : getDialogueLine('moe.run.salvage_ready', '補給反応あり。ひとつだけ拾える。'),
+        ? getMoeLine('moe.run.salvage_to_boss', '主砲弾か装甲を足してから行ける。選んで。', undefined, 'serious')
+        : getMoeLine('moe.run.salvage_ready', '補給反応あり。ひとつだけ拾える。'),
     };
   }
 
@@ -172,7 +172,7 @@ const enterRouteNode = (state: State, nodeId: string): State => {
       ...graphState,
       gamePhase: 'signal',
       logs: [...graphState.logs, `> ROUTE NODE: ${node.label.toUpperCase()}`],
-      moeLine: getDialogueLine('moe.run.route_signal', '信号帯がクリアになった。次の予測が少し長く見える。'),
+      moeLine: getMoeLine('moe.run.route_signal', '信号帯がクリアになった。次の予測が少し長く見える。', undefined, 'proud'),
     };
   }
 
@@ -181,7 +181,7 @@ const enterRouteNode = (state: State, nodeId: string): State => {
       ...graphState,
       gamePhase: 'boss_preview',
       logs: [...graphState.logs, '> DEEP SIGNAL DETECTED: TOLL GATE SAINT'],
-      moeLine: getDialogueLine('moe.run.boss_preview', '料金所型の反応。無理なら引き返そ。'),
+      moeLine: getMoeLine('moe.run.boss_preview', '料金所型の反応。無理なら引き返そ。', undefined, 'serious'),
     };
   }
 
@@ -190,7 +190,7 @@ const enterRouteNode = (state: State, nodeId: string): State => {
       ...graphState,
       gamePhase: 'return_gate',
       logs: [...graphState.logs, '> RETURN GATE ROUTE OPEN'],
-      moeLine: getDialogueLine('moe.run.return_gate_seen', '帰還ゲート、見えた。まだ車は動くね。'),
+      moeLine: getMoeLine('moe.run.return_gate_seen', '帰還ゲート、見えた。まだ車は動くね。', undefined, 'soft'),
     };
   }
 
@@ -198,7 +198,7 @@ const enterRouteNode = (state: State, nodeId: string): State => {
     return completeRunAtReturnGate(
       withReturnIntent(graphState, 'extracting'),
       graphState.resultType ?? 'Early Return',
-      getDialogueLine('moe.run.route_return', '帰るのも仕事だよ。持ち帰れなきゃ、全部ゼロ。'),
+      getMoeLine('moe.run.route_return', '帰るのも仕事だよ。持ち帰れなきゃ、全部ゼロ。', undefined, 'soft'),
     );
   }
 
@@ -241,7 +241,7 @@ export function reduceRoute(state: State, action: Action): State {
       ...graphState,
       gamePhase: 'route_choice',
       logs: [...graphState.logs, ...checkpointLogForCurrentNode(graphState), '> ROUTE CHOICE AVAILABLE'],
-      moeLine: getDialogueLine('moe.run.route_choice', '次の車線を選んで。補給・信号強化・強行突破・帰還、どれも正解になり得る。'),
+      moeLine: getMoeLine('moe.run.route_choice', '次の車線を選んで。補給・信号強化・強行突破・帰還、どれも正解になり得る。'),
     };
     }
     const graphState = moveRouteStateToNode(state, getRouteNextNodeId(state) ?? 'boss_preview');
@@ -249,7 +249,7 @@ export function reduceRoute(state: State, action: Action): State {
       ...graphState,
       gamePhase: 'boss_preview',
       logs: [...graphState.logs, '> DEEP SIGNAL DETECTED: TOLL GATE SAINT'],
-      moeLine: getDialogueLine('moe.run.boss_preview', '料金所型の強い反応。無理なら引き返そ。'),
+      moeLine: getMoeLine('moe.run.boss_preview', '料金所型の強い反応。無理なら引き返そ。', undefined, 'serious'),
     };
   }
 
@@ -263,7 +263,7 @@ export function reduceRoute(state: State, action: Action): State {
       return completeRunAtReturnGate(
         withReturnIntent(graphState, 'extracting'),
         'Early Return',
-        getDialogueLine('moe.run.route_return', '帰るのも仕事だよ。持ち帰れなきゃ、全部ゼロ。'),
+        getMoeLine('moe.run.route_return', '帰るのも仕事だよ。持ち帰れなきゃ、全部ゼロ。', undefined, 'soft'),
       );
     }
     if (action.lane === 'salvage') {
@@ -275,7 +275,7 @@ export function reduceRoute(state: State, action: Action): State {
         rewardTarget: 'encounter2',
         rewardOptions: rewards,
         logs: [...graphState.logs, '> SALVAGE LANE SELECTED'],
-        moeLine: getDialogueLine('moe.run.salvage_ready', '補給反応あり。ひとつだけ拾える。'),
+        moeLine: getMoeLine('moe.run.salvage_ready', '補給反応あり。ひとつだけ拾える。'),
       };
     }
     if (action.lane === 'signal') {
@@ -290,7 +290,7 @@ export function reduceRoute(state: State, action: Action): State {
         signal: state.signal + signalGain,
         tempForecastBoost: forecastGain,
         logs: signalLogs,
-        moeLine: getDialogueLine('moe.run.route_signal', '信号帯がクリアになった。次の予測が少し長く見える。'),
+        moeLine: getMoeLine('moe.run.route_signal', '信号帯がクリアになった。次の予測が少し長く見える。', undefined, 'proud'),
       };
     }
     const graphState = moveRouteStateToNode(state, getRouteChoiceTargetNodeId(state, action.lane) ?? 'forward_contact');
@@ -301,7 +301,7 @@ export function reduceRoute(state: State, action: Action): State {
       routeBoostReward: true,
       logs: pushedRoute.logs,
       encounterIndex: 1,
-      moeLine: getDialogueLine('moe.run.route_push', '回復なしで進むのね。報酬は少し盛れるかも。'),
+      moeLine: getMoeLine('moe.run.route_push', '回復なしで進むのね。報酬は少し盛れるかも。'),
     }, 'enc2');
   }
 
@@ -342,7 +342,9 @@ export function reduceRoute(state: State, action: Action): State {
       logs: rewardedRoute.logs,
       bossChallenged: toBoss ? true : state.bossChallenged,
       encounterIndex: toBoss ? 2 : 1,
-      moeLine: toBoss ? '応急補給完了。Toll Gate Saintへ向かう。' : '補給完了。次の区画へ。',
+      moeLine: toBoss
+        ? getMoeLine('moe.run.salvage_to_boss_done', '応急補給完了。Toll Gate Saintへ向かう。', undefined, 'serious')
+        : getMoeLine('moe.run.salvage_done', '補給完了。次の区画へ。'),
     }, nextKind);
   }
 
@@ -400,10 +402,10 @@ export function reduceRoute(state: State, action: Action): State {
       logs: signaledRoute.logs,
       moeLine:
         normalizedChoice === 'analyze_trace'
-          ? '断片ログを掴んだ。次接敵の読みは少し深い。'
+          ? getMoeLine('moe.run.signal.analyze_trace', '断片ログを掴んだ。次接敵の読みは少し深い。', undefined, 'proud')
           : normalizedChoice === 'open_radio'
-            ? 'AM帯を開いた。最初の会話は通しやすい。'
-            : '速度維持で抜ける。接敵優先で行くよ。',
+            ? getMoeLine('moe.run.signal.open_radio', 'AM帯を開いた。最初の会話は通しやすい。')
+            : getMoeLine('moe.run.signal.hold_lane', '速度維持で抜ける。接敵優先で行くよ。'),
     }, 'enc2', [], prepSeed);
   }
 
@@ -415,7 +417,7 @@ export function reduceRoute(state: State, action: Action): State {
       return completeRunAtReturnGate(
         withReturnIntent(graphState, 'extracting'),
         'Boss Avoided',
-        getDialogueLine('moe.run.boss_return', '引き返す判断、正解。持ち帰ることが最優先。'),
+        getMoeLine('moe.run.boss_return', '引き返す判断、正解。持ち帰ることが最優先。', undefined, 'soft'),
       );
     }
     if (action.choice === 'emergency_salvage') {
@@ -429,7 +431,7 @@ export function reduceRoute(state: State, action: Action): State {
         rewardTarget: 'boss',
         rewardOptions: pickRewardChoices(emergencyPool),
         logs: [...graphState.logs, '> EMERGENCY SALVAGE OPEN'],
-        moeLine: getDialogueLine('moe.run.salvage_to_boss', '主砲弾か装甲を足してから行ける。選んで。'),
+        moeLine: getMoeLine('moe.run.salvage_to_boss', '主砲弾か装甲を足してから行ける。選んで。', undefined, 'serious'),
       };
     }
     const graphState = moveRouteStateToNode(state, getRouteChoiceTargetNodeId(state, action.choice) ?? 'boss_contact');
@@ -441,7 +443,7 @@ export function reduceRoute(state: State, action: Action): State {
       bossChallenged: true,
       tempForecastBoost: 0,
       logs: bossRoute.logs,
-      moeLine: getDialogueLine('moe.run.boss_start', '深層料金所、突入。主砲を温存しすぎないで。'),
+      moeLine: getMoeLine('moe.run.boss_start', '深層料金所、突入。主砲を温存しすぎないで。', undefined, 'serious'),
     }, 'boss');
   }
 
@@ -487,7 +489,7 @@ export function reduceRoute(state: State, action: Action): State {
           `> NEXT STAGE PREP: ${nextStage}/${graphState.stageCount}`,
           '> GARAGE: MIDNIGHT BAY ONLINE',
         ], story),
-        moeLine: `ステージ${graphState.stage}突破。次は深くなる、装備を組み直そう。`,
+        moeLine: getMoeLine('moe.run.stage_clear', 'ステージ{stage}突破。次は深くなる、装備を組み直そう。', { stage: graphState.stage }, 'proud'),
       };
     }
     const story = resolveStoryFromRun(graphState, resultType);
@@ -505,8 +507,8 @@ export function reduceRoute(state: State, action: Action): State {
         '> RUN COMPLETE',
       ], story),
       moeLine: unlockedAbyssLoop
-        ? '深層封鎖鍵が外れた。次から最深層、Abyss Loopに入れる。'
-        : getDialogueLine('moe.run.result', '帰れたね。積んだもの、確認しよっか。'),
+        ? getMoeLine('moe.run.abyss_unlocked', '深層封鎖鍵が外れた。次から最深層、Abyss Loopに入れる。', undefined, 'serious')
+        : getMoeLine('moe.run.result', '帰れたね。積んだもの、確認しよっか。', undefined, 'soft'),
     };
   }
 

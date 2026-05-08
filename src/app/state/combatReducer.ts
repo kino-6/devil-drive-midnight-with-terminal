@@ -1,6 +1,7 @@
 import { getBalanceConfig } from '../../balanceConfig';
 import { getConversationLine, getConversationLineWithVars } from '../../conversationConfig';
 import { getDialogueLine } from '../../dialogueConfig';
+import { getMoeLine } from '../../game/moeDialogue';
 import { getEncounterScenario, getScenarioLine } from '../../scenario/scenarioLoader';
 import { affinityLabel, affinityOrder, contractModules } from '../../game/catalogs';
 import { buildTalkConversation } from '../../game/talkRules';
@@ -14,7 +15,6 @@ import {
   isAlive,
   makeActiveSupportDaemon,
   supportDaemonLinkFlavorLogs,
-  supportDaemonMoeLinkLines,
 } from '../../game/runtimeHelpers';
 import { getVehicleUpgradeUtilityEffects } from '../../game/vehicleUpgrades';
 import type { Action, AffinityType, ConversationEffect, Devil, EncounterState, ResultType, State } from '../../game/types';
@@ -69,7 +69,7 @@ const encounterPrep = { ...state.encounterPrep };
 const maxFuelCap = getBalanceConfig().resources.baseFuel + state.vehicleUpgrades.fuel_tank;
 const maxArmorCap = getBalanceConfig().resources.baseArmor + state.vehicleUpgrades.armor_plating;
 const maxSignalCap = getBalanceConfig().resources.baseSignal;
-let moeLine = getDialogueLine('moe.dynamic.battle.idle', '次の手を選んで。');
+let moeLine = getMoeLine('moe.dynamic.battle.idle', '次の手を選んで。');
 let skipEnemyResolution = false;
 let escaped = false;
 const selectedMainGun = getMainGunSpec(state.selectedLoadout.mainGunId);
@@ -264,13 +264,13 @@ if (command === 'sub_gun') {
     logs.push(`> RANDOM HIT x${hits}`);
   }
   if (resistHits > weakHits && resistHits > 0) {
-    moeLine = getDialogueLine('moe.dynamic.battle.sub_gun.resist', '副砲制圧。効きが浅い。相性が悪い。');
+    moeLine = getMoeLine('moe.dynamic.battle.sub_gun.resist', '副砲制圧。効きが浅い。相性が悪い。');
   } else if (weakHits > 0) {
-    moeLine = getDialogueLine('moe.dynamic.battle.sub_gun.weak', '副砲制圧。刺さってる。崩せるよ。');
+    moeLine = getMoeLine('moe.dynamic.battle.sub_gun.weak', '副砲制圧。刺さってる。崩せるよ。');
   } else {
     moeLine = selectedSubGun.id === 'suppression_mg'
-      ? getDialogueLine('moe.dynamic.battle.sub_gun.suppress', '副砲制圧。攻勢が鈍るかも。')
-      : getDialogueLine('moe.dynamic.battle.sub_gun.normal', '副砲制圧。足止めにはなる。');
+      ? getMoeLine('moe.dynamic.battle.sub_gun.suppress', '副砲制圧。攻勢が鈍るかも。')
+      : getMoeLine('moe.dynamic.battle.sub_gun.normal', '副砲制圧。足止めにはなる。');
   }
 }
 
@@ -311,7 +311,7 @@ if (command === 'se_harpoon' && selectedEnemy && seAmmo >= selectedSE.seAmmoCost
         }
       }
       logs.push('> MICRO MISSILE SALVO: ALL TARGETS');
-      moeLine = getDialogueLine('moe.dynamic.battle.se.all_damage', 'S-E発射。制圧寄りにまとめて焼いた。');
+      moeLine = getMoeLine('moe.dynamic.battle.se.all_damage', 'S-E発射。制圧寄りにまとめて焼いた。');
     } else {
       const affinity = logAffinityReaction(encounter.enemies[idx], 'signal');
       const shield = encounter.enemies[idx].guardStacks > 0 ? 1 : 0;
@@ -348,9 +348,9 @@ if (command === 'se_harpoon' && selectedEnemy && seAmmo >= selectedSE.seAmmoCost
         encounter.enemies[idx].analyzeVulnerableTurns = Math.max(2, encounter.enemies[idx].analyzeVulnerableTurns ?? 0);
         logs.push('> SCAN BEACON: SIGNATURE LOCK EXTENDED');
         if (encounter.enemies[idx].affinityRevealed) logs.push('> SCAN BEACON: AFFINITY MAP STABILIZED');
-        moeLine = getConversationLineWithVars('moe.dynamic.battle.analyze.success', {
+        moeLine = getMoeLine('moe.dynamic.battle.analyze.success', '{target}の解析完了。気質と相性を掴んだ。交渉の順番を合わせよう。', {
           target: getMoeTargetName(encounter.enemies[idx]),
-        });
+        }, 'proud');
       } else if (selectedSE.effect === 'contract_window') {
         encounter.enemies[idx].interest += 2 + (affinity === 'weak' ? 1 : 0);
         encounter.enemies[idx].trust += affinity === 'resist' ? 0 : 1;
@@ -405,7 +405,7 @@ if (command === 'se_harpoon' && selectedEnemy && seAmmo >= selectedSE.seAmmoCost
 if (command === 'analyze' && selectedEnemy) {
   if (signal <= 0) {
     logs.push('> WARNING: SIGNAL TOO LOW FOR SCAN');
-    moeLine = getDialogueLine('moe.dynamic.battle.signal_low', 'Signalが足りない。');
+    moeLine = getMoeLine('moe.dynamic.battle.signal_low', 'Signalが足りない。', undefined, 'serious');
   } else {
     signal -= 1;
     let analyzedTarget: Devil | undefined;
@@ -429,9 +429,9 @@ if (command === 'analyze' && selectedEnemy) {
       logs.push(`> CONTRACT HINT: ${getContractHint(analyzedTarget).toUpperCase()}`);
     }
     analyzeSuccessCount += 1;
-    moeLine = getConversationLineWithVars('moe.dynamic.battle.analyze.success', {
+    moeLine = getMoeLine('moe.dynamic.battle.analyze.success', '{target}の解析完了。気質と相性を掴んだ。交渉の順番を合わせよう。', {
       target: getMoeTargetName(selectedEnemy),
-    });
+    }, 'proud');
   }
 }
 
@@ -464,7 +464,7 @@ if (command === 'talk' && selectedEnemy) {
     const scenarioTalkLine = getScenarioLine(getEncounterScenario(encounter.enemies[idx].profile)?.talk?.curious);
     if (scenarioTalkLine) logs.push(`> ${scenarioTalkLine}`);
     encounter.phase = 'conversation';
-    moeLine = getDialogueLine('moe.dynamic.battle.talk.success.normal', '会話に乗った。反応を見て選んで。');
+    moeLine = getMoeLine('moe.dynamic.battle.talk.success.normal', '会話に乗った。反応を見て選んで。');
     return {
       ...state,
       fuel,
@@ -495,9 +495,9 @@ if (command === 'contract' && selectedEnemy) {
     const target = encounter.enemies[idx];
     if (!target.contractable || !target.contractWindow) {
       logs.push('> CONTRACT REJECTED: NO CONTRACT WINDOW');
-      moeLine = getConversationLineWithVars('moe.dynamic.battle.contract.no_window', {
+      moeLine = getMoeLine('moe.dynamic.battle.contract.no_window', '{target}へ契約試行。契約窓が未開放。TalkかS-Eを先に。', {
         target: getMoeTargetName(target),
-      });
+      }, 'serious');
     } else if (!meetsContractCondition(target)) {
       logs.push('> CONTRACT REJECTED: CONDITION NOT MET');
       target.contractWindow = false;
@@ -508,9 +508,9 @@ if (command === 'contract' && selectedEnemy) {
         armor = Math.max(0, armor - 1);
         logs.push('> ARMOR -1');
       }
-      moeLine = getConversationLineWithVars('moe.dynamic.battle.contract.condition_fail', {
+      moeLine = getMoeLine('moe.dynamic.battle.contract.condition_fail', '{target}へ契約失敗。条件不足。反動が来る。', {
         target: getMoeTargetName(target),
-      });
+      }, 'flustered');
     } else {
       const contractCfg = getBalanceConfig().contract;
       const analyzedBonus = isEnemyIdentityKnown(target, encounter.analyzedEnemyIds) ? contractCfg.analyzeBonus : 0;
@@ -543,7 +543,7 @@ if (command === 'contract' && selectedEnemy) {
         if (activeSupportDaemon.profile === 'silent_shape') {
           encounter.supportArmorGuardReady = true;
         }
-        moeLine = `M.O.E.: ${supportDaemonMoeLinkLines[Math.floor(Math.random() * supportDaemonMoeLinkLines.length)]}`;
+        moeLine = getMoeLine('moe.dynamic.battle.contract.support_linked', 'Support daemon accepted. I will monitor corruption drift.');
       } else {
         encounter.enemies[idx].contractWindow = false;
         logs.push('> CONTRACT FAILED: SIGNAL REJECTED');
@@ -554,9 +554,9 @@ if (command === 'contract' && selectedEnemy) {
           armor = Math.max(0, armor - 1);
           logs.push('> ARMOR -1');
         }
-        moeLine = getConversationLineWithVars('moe.dynamic.battle.contract.reject', {
+        moeLine = getMoeLine('moe.dynamic.battle.contract.reject', '{target}へ契約失敗。拒否された。まだ早い。', {
           target: getMoeTargetName(target),
-        });
+        }, 'flustered');
       }
     }
   }
@@ -604,7 +604,7 @@ if (command === 'ram' && selectedEnemy && armor > 0) {
 if (command === 'guard') {
   encounter.guardActive = true;
   logs.push('> DEFENSIVE POSTURE LOCKED');
-  moeLine = getDialogueLine('moe.dynamic.battle.guard', '防御姿勢、固定。次の被弾を抑える。');
+  moeLine = getMoeLine('moe.dynamic.battle.guard', '防御姿勢、固定。次の被弾を抑える。');
 }
 
 if (command === 'escape' && fuel > 0) {
@@ -618,10 +618,10 @@ if (command === 'escape' && fuel > 0) {
     logs.push('> ESCAPE ROUTE FOUND');
     escaped = true;
     skipEnemyResolution = true;
-    moeLine = getDialogueLine('moe.dynamic.battle.escape.success', '離脱。ルート確保。接触を切った。');
+    moeLine = getMoeLine('moe.dynamic.battle.escape.success', '離脱。ルート確保。接触を切った。', undefined, 'soft');
   } else {
     logs.push('> ESCAPE FAILED');
-    moeLine = getDialogueLine('moe.dynamic.battle.escape.fail', '離脱失敗。受ける準備して。');
+    moeLine = getMoeLine('moe.dynamic.battle.escape.fail', '離脱失敗。受ける準備して。', undefined, 'flustered');
   }
 }
 
@@ -729,7 +729,7 @@ if (armor <= 0 || fuel <= 0) {
     story,
     encounterPrep,
     analyzeSuccessCount,
-    moeLine: getDialogueLine('moe.run.game_over', '応答して。……だめ、車両信号が落ちてる。'),
+    moeLine: getMoeLine('moe.run.game_over', '応答して。……だめ、車両信号が落ちてる。', undefined, 'flustered'),
   };
 }
 
@@ -759,7 +759,7 @@ if (cleared) {
       resultType: 'Boss Cleared',
       encounterPrep,
       analyzeSuccessCount,
-      moeLine: getDialogueLine('moe.run.return_gate_seen', '帰還ゲート、見えた。まだ車は動くね。'),
+      moeLine: getMoeLine('moe.run.return_gate_seen', '帰還ゲート、見えた。まだ車は動くね。', undefined, 'soft'),
     };
   }
 
@@ -782,7 +782,7 @@ if (cleared) {
     rewardScope: state.encounter.kind === 'enc1' ? 'post_enc1' : 'post_enc2',
     encounterPrep,
     analyzeSuccessCount,
-    moeLine: getDialogueLine('moe.run.encounter_clear', '遭遇クリア。次の判断に備えよう。'),
+    moeLine: getMoeLine('moe.run.encounter_clear', '遭遇クリア。次の判断に備えよう。'),
   };
 }
 

@@ -1,3 +1,4 @@
+import { getMoeLine } from '../../../game/moeDialogue';
 import type { StageProfile } from './types';
 
 type GarageStageSelectProps = {
@@ -56,7 +57,7 @@ export const GarageStageSelect = ({
         : <>
           <div className="command-window">
             <strong>Sortie Confirmation</strong>
-            <p>M.O.E.: 「準備完了なら、出る。まだならここで調整して。」</p>
+            <p>M.O.E.: 「{getMoeLine('moe.garage.sortie_confirm', '準備完了なら、出る。まだならここで調整して。', undefined, 'soft')}」</p>
             <details className="garage-fold">
               <summary>STARTING RESOURCES PREVIEW</summary>
               <div className="garage-fold__body">

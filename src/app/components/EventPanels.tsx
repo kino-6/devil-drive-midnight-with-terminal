@@ -1,5 +1,5 @@
-import { getDialogueLine } from '../../dialogueConfig';
 import { bossIntel, routeIntelCatalog, routeScenarioIdMap, storyLogById } from '../../game/catalogs';
+import { getMoeLine } from '../../game/moeDialogue';
 import { hasAiNaviContract } from '../state/stateReducer';
 import { isAlive } from '../../game/runtimeHelpers';
 import { getRouteEventScenario } from '../../scenario/scenarioLoader';
@@ -93,7 +93,7 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
           <div className="next-node"><span>▲</span><strong>Suggested Weakness</strong><small>{bossIntel.likelyWeaknesses}</small></div>
           <div className="next-node"><span>▲</span><strong>Risk / Reward</strong><small>{bossIntel.riskTags} / {bossIntel.rewardTags}</small></div>
         </div>
-        <p>M.O.E.: 「{getDialogueLine('moe.run.boss_preview', '料金所型の強い反応。無理なら引き返そ。')}」</p>
+        <p>M.O.E.: 「{getMoeLine('moe.run.boss_preview', '料金所型の強い反応。無理なら引き返そ。', undefined, 'serious')}」</p>
       </section>}
 
       {(state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && <section className="event-card">

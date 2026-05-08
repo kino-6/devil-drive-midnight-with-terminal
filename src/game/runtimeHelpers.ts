@@ -1,5 +1,6 @@
 import { getDialogueLine } from '../dialogueConfig';
-import { getEncounterScenario, getMoeLine, getScenarioLine } from '../scenario/scenarioLoader';
+import { getEncounterScenario, getMoeLine as getScenarioMoeLine, getScenarioLine } from '../scenario/scenarioLoader';
+import { getMoeLine } from './moeDialogue';
 import { getBalanceConfig } from '../balanceConfig';
 import { getDevilConfig } from '../devilConfig';
 import {
@@ -156,12 +157,6 @@ const supportDaemonStabilityByTemperament: Record<Temperament, 'STABLE' | 'NOISY
   hostile: 'UNKNOWN',
   curious: 'NOISY',
 };
-
-export const supportDaemonMoeLinkLines = [
-  'Support daemon accepted. I will monitor corruption drift.',
-  'Contract signature detected. This passenger is not registered.',
-  'Do not let the support daemon answer in your voice.',
-];
 
 export const getSupportDaemonStability = (daemon: ActiveSupportDaemon): 'STABLE' | 'NOISY' | 'HUNGRY' | 'UNKNOWN' =>
   supportDaemonLinkStability()[daemon.profile] ?? supportDaemonStabilityByTemperament[daemon.temperament];
@@ -354,7 +349,7 @@ export const initState = (): State => {
     runSummary: { cleared: 0, defeated: 0, contracted: 0, escaped: 0 },
     resultType: undefined,
     bossChallenged: false,
-    moeLine: getDialogueLine('moe.prologue.open', '午前0時。夜環、開いたよ。'),
+    moeLine: getMoeLine('moe.prologue.open', '午前0時。夜環、開いたよ。'),
     selectedLoadout,
     activeSupportDaemon: undefined,
     activeConversation: undefined,
@@ -379,19 +374,19 @@ export const getVehicleUpgradeCost = (currentLevel: number) => 2 + currentLevel;
 
 export const getNarrativeMoeLine = (state: State): string => {
   if (state.gamePhase === 'prologue') {
-    return getMoeLine(
+    return getScenarioMoeLine(
       'prologue.open',
       getDialogueLine('moe.prologue.narrative', '午前0時。夜環、開いたよ。浅層サルベージ任務……ってことになってる。本命は、前任者のログ反応。まだ消えてない。'),
     );
   }
   if (state.story.recoveredLogs.includes('LOG_01') && state.gamePhase === 'boss_preview') {
-    return getMoeLine(
+    return getScenarioMoeLine(
       'boss_preview.toll_gate',
       getDialogueLine('moe.story.boss_preview_log01', '料金所の反応、前よりは読める。通行料を払う相手を間違えないで。'),
     );
   }
   if (state.story.recoveredLogs.includes('LOG_00') && state.gamePhase === 'garage') {
-    return getMoeLine(
+    return getScenarioMoeLine(
       'garage.after_log00',
       getDialogueLine('moe.story.after_log00', '前任者の声……記録には残ってない。でも、知ってる気がする。'),
     );
@@ -456,8 +451,8 @@ export const initRunWithLoadout = (state: State, logsPrefix: string[] = []): Sta
     story: { ...state.story, recentRecoveredLogs: [] },
     logs,
     moeLine: scanSuccess
-      ? getDialogueLine('moe.run.scan_success', '先に見つけた。どう入る？')
-      : getDialogueLine('moe.run.scan_fail', 'ごめん、遅れた。来るよ。'),
+      ? getMoeLine('moe.run.scan_success', '先に見つけた。どう入る？', undefined, 'proud')
+      : getMoeLine('moe.run.scan_fail', 'ごめん、遅れた。来るよ。', undefined, 'flustered'),
   };
 };
 

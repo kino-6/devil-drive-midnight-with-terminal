@@ -1,5 +1,5 @@
 import { getBalanceConfig } from '../../balanceConfig';
-import { getDialogueLine } from '../../dialogueConfig';
+import { getMoeLine } from '../../game/moeDialogue';
 import type { Action, ApproachKind, EncounterPrep, ResultType, State } from '../../game/types';
 import { appendSupportDaemonDisconnectLogs, clamp, getMainGunSpec, isAlive } from '../../game/runtimeHelpers';
 import {
@@ -44,9 +44,9 @@ export const moveToApproach = (
     logs,
     moeLine: scanSuccess
       ? kind === 'boss'
-        ? getDialogueLine('moe.run.scan_success_boss', '強い反応。見えてるけど、近づき方は選べる。')
-        : getDialogueLine('moe.run.scan_success', '先に見つけた。どう入る？')
-      : getDialogueLine('moe.run.scan_fail', 'ごめん、遅れた。来るよ。'),
+        ? getMoeLine('moe.run.scan_success_boss', '強い反応。見えてるけど、近づき方は選べる。', undefined, 'serious')
+        : getMoeLine('moe.run.scan_success', '先に見つけた。どう入る？', undefined, 'proud')
+      : getMoeLine('moe.run.scan_fail', 'ごめん、遅れた。来るよ。', undefined, 'flustered'),
   };
 };
 
@@ -121,7 +121,7 @@ export const createEncounterFromApproach = (baseState: State): State => {
       seAmmo,
       encounterPrep: prep,
       logs,
-      moeLine: getDialogueLine('moe.run.ambush_contact', '見落とした。ごめん、初撃来る。'),
+      moeLine: getMoeLine('moe.run.ambush_contact', '見落とした。ごめん、初撃来る。', undefined, 'flustered'),
       approach: undefined,
     };
   }
@@ -142,7 +142,7 @@ export const createEncounterFromApproach = (baseState: State): State => {
       firstTalkPending: prep.firstTalkPending || baseState.skillLevels.translation_assist > 0,
     },
     logs: [...logs, '> NAVI FORECAST UPDATED'],
-    moeLine: getDialogueLine('moe.run.contact_to_command', '接触。コマンド選択へ。'),
+    moeLine: getMoeLine('moe.run.contact_to_command', '接触。コマンド選択へ。'),
     approach: undefined,
   };
 };
@@ -193,7 +193,7 @@ export function reduceApproach(state: State, action: Action): State {
         return {
           ...state,
           logs: [...state.logs, '> WARNING: MAIN AMMO EMPTY'],
-          moeLine: getDialogueLine('moe.run.approach.no_main_ammo', '主砲弾がない。別の入り方にして。'),
+          moeLine: getMoeLine('moe.run.approach.no_main_ammo', '主砲弾がない。別の入り方にして。', undefined, 'serious'),
         };
       }
       let firstStrikeDamage: number | undefined;
@@ -258,7 +258,7 @@ export function reduceApproach(state: State, action: Action): State {
             encounterPrep: { ...prep, approachLabel: 'BYPASS' },
             gamePhase: 'return_gate',
             resultType: 'Boss Avoided',
-            moeLine: getDialogueLine('moe.dynamic.battle.hit_and_run_success', 'ひき逃げ成功。突破した。'),
+          moeLine: getMoeLine('moe.dynamic.battle.hit_and_run_success', 'ひき逃げ成功。突破した。', undefined, 'proud'),
             approach: undefined,
           };
         }
@@ -277,7 +277,7 @@ export function reduceApproach(state: State, action: Action): State {
           encounterPrep: { ...prep, approachLabel: 'BYPASS' },
           gamePhase: 'reward',
           rewardScope: kind === 'enc1' ? 'post_enc1' : 'post_enc2',
-          moeLine: getDialogueLine('moe.dynamic.battle.hit_and_run_bypass', 'ひき逃げ成功。接敵を回避した。'),
+          moeLine: getMoeLine('moe.dynamic.battle.hit_and_run_bypass', 'ひき逃げ成功。接敵を回避した。', undefined, 'proud'),
           approach: undefined,
         };
       }
@@ -302,7 +302,7 @@ export function reduceApproach(state: State, action: Action): State {
         return {
           ...state,
           logs: [...state.logs, '> WARNING: SIGNAL TOO LOW'],
-          moeLine: getDialogueLine('moe.run.approach.no_signal', 'Signalが足りない。'),
+          moeLine: getMoeLine('moe.run.approach.no_signal', 'Signalが足りない。', undefined, 'serious'),
         };
       }
       signal = Math.max(0, signal - 1);
@@ -352,12 +352,12 @@ export function reduceApproach(state: State, action: Action): State {
       logs,
       moeLine:
         action.option === 'preemptive_main_gun'
-          ? getDialogueLine('moe.run.approach.preemptive', '先に撃つ。交渉は少し荒れるよ。')
+          ? getMoeLine('moe.run.approach.preemptive', '先に撃つ。交渉は少し荒れるよ。')
           : action.option === 'hit_and_run_ram'
-            ? getDialogueLine('moe.run.approach.hit_and_run', 'ひき逃げルート。成功すれば早いけど、車体は削れるよ。')
+            ? getMoeLine('moe.run.approach.hit_and_run', 'ひき逃げルート。成功すれば早いけど、車体は削れるよ。')
             : action.option === 'silent_coast'
-              ? getDialogueLine('moe.run.approach.silent_coast', '静かに寄る。話すならこれが一番マシ。')
-              : getDialogueLine('moe.run.approach.open_channel', '先に声をかけるね。返事が人間向けとは限らないけど。'),
+              ? getMoeLine('moe.run.approach.silent_coast', '静かに寄る。話すならこれが一番マシ。')
+              : getMoeLine('moe.run.approach.open_channel', '先に声をかけるね。返事が人間向けとは限らないけど。'),
     };
   }
 

@@ -1,6 +1,6 @@
 import type { Action, State } from '../../game/types';
 import { appendSupportDaemonDisconnectLogs } from '../../game/runtimeHelpers';
-import { getDialogueLine } from '../../dialogueConfig';
+import { getMoeLine } from '../../game/moeDialogue';
 import { initState } from './stateRuntime';
 import { claimRunGrowthIfNeeded, makePreviousRunSummary } from './storyProgression';
 
@@ -42,7 +42,7 @@ export function reduceRunLifecycle(state: State, action: Action): State {
       activeSupportDaemon: undefined,
       previousRun: makePreviousRunSummary(claimed, claimed.resultType ?? 'Early Return'),
       logs: [...disconnectLogs, '> GARAGE: MIDNIGHT BAY ONLINE'],
-      moeLine: getDialogueLine('moe.garage.enter', '戻れたね。次は出る前に少し積み替えよっか。'),
+      moeLine: getMoeLine('moe.garage.enter', '戻れたね。次は出る前に少し積み替えよっか。', undefined, 'soft'),
     };
   }
 
@@ -63,7 +63,7 @@ export function reduceRunLifecycle(state: State, action: Action): State {
       activeSupportDaemon: undefined,
       previousRun,
       logs: [...disconnectLogs, '> GARAGE: MIDNIGHT BAY ONLINE'],
-      moeLine: getDialogueLine('moe.garage.enter', '戻れたね。次は出る前に少し積み替えよっか。'),
+      moeLine: getMoeLine('moe.garage.enter', '戻れたね。次は出る前に少し積み替えよっか。', undefined, 'soft'),
     };
   }
 

@@ -1,5 +1,5 @@
-import { getDialogueLine } from '../../dialogueConfig';
 import { limitStateLogs } from '../../runtimeLimits';
+import { getMoeLine } from '../../game/moeDialogue';
 import type { Action, AutoPlayReport, AutoPlayStrategy, Loadout, State } from '../../game/types';
 import { isAlive } from '../../game/runtimeHelpers';
 import { resolveExecuteCommand, resolveTalkChoice } from './combatReducer';
@@ -111,7 +111,7 @@ function reducerCore(state: State, action: Action): State {
       ...state,
       activeConversation: undefined,
       encounter: { ...state.encounter, phase: 'command' },
-      moeLine: getDialogueLine('moe.dynamic.battle.idle', '次の手を選んで。'),
+      moeLine: getMoeLine('moe.dynamic.battle.idle', '次の手を選んで。'),
     };
   }
 
@@ -188,8 +188,8 @@ export function reducer(state: State, action: Action): State {
           toReturnGate ? '> RETURN GATE ROUTE OPEN' : '> SALVAGE RESULT READY',
         ],
         moeLine: toReturnGate
-          ? getDialogueLine('moe.run.return_gate_seen', '帰還ゲート、見えた。まだ車は動くね。')
-          : getDialogueLine('moe.run.encounter_clear', '遭遇クリア。次の判断に備えよう。'),
+          ? getMoeLine('moe.run.return_gate_seen', '帰還ゲート、見えた。まだ車は動くね。', undefined, 'soft')
+          : getMoeLine('moe.run.encounter_clear', '遭遇クリア。次の判断に備えよう。'),
       };
     }
 

@@ -7,6 +7,7 @@ import {
 } from '../assetManifest';
 import { defaultBalanceConfig, getBalanceConfig, type BalanceConfig } from '../balanceConfig';
 import { getDialogueConfig, getDialogueLine } from '../dialogueConfig';
+import { getMoeVariantForState, type MoeVariant } from '../game/moeDialogue';
 import {
 } from '../saveSystem';
 import {
@@ -176,21 +177,9 @@ export function App() {
   const resolveUnknownEnemyAsset = (_index: number): string | undefined => unknownEnemyAsset;
   const playerAsset = resolveAssetUrl(assetManifest.images.player);
   const moeVariantMap = assetManifest.images.moeVariants ?? {};
-  const resolveMoeAsset = (
-    variant: 'default' | 'smile' | 'serious' | 'confused' | 'relaxed',
-  ): string | undefined => resolveAssetUrl(moeVariantMap[variant]) ?? resolveAssetUrl(assetManifest.images.moe);
-  const selectedMoeVariant: 'default' | 'smile' | 'serious' | 'confused' | 'relaxed' =
-    state.gamePhase === 'game_over'
-      ? 'confused'
-      : state.gamePhase === 'boss_encounter' || state.gamePhase === 'boss_preview'
-        ? 'serious'
-        : state.gamePhase === 'garage'
-            ? 'relaxed'
-            : state.gamePhase === 'result' || state.gamePhase === 'reward' || state.gamePhase === 'return_gate'
-              ? 'smile'
-              : (state.armor <= 3 || state.signal <= 1)
-                ? 'serious'
-                : 'default';
+  const resolveMoeAsset = (variant: MoeVariant): string | undefined =>
+    resolveAssetUrl(moeVariantMap[variant]) ?? resolveAssetUrl(assetManifest.images.moe);
+  const selectedMoeVariant = getMoeVariantForState(state);
   const moeAsset = resolveMoeAsset(selectedMoeVariant);
   const logoAsset = resolveAssetUrl(assetManifest.images.logo);
   const windshieldImage = resolveAssetUrl(assetManifest.images.ui?.windshield);

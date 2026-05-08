@@ -1,4 +1,4 @@
-import { getDialogueLine } from '../../dialogueConfig';
+import { getMoeLine } from '../../game/moeDialogue';
 import type { Action, State } from '../../game/types';
 import { clamp } from '../../game/runtimeHelpers';
 import { contractSupportCatalog } from '../../game/catalogs';
@@ -26,7 +26,7 @@ export function reduceGarage(state: State, action: Action): State {
     return {
       ...state,
       selectedLoadout: { ...state.selectedLoadout, mainGunId: action.id },
-      moeLine: getDialogueLine('moe.garage.set_main_gun', '主砲を重くするとBossは楽。でも弾切れは早いよ。'),
+      moeLine: getMoeLine('moe.garage.set_main_gun', '主砲を重くするとBossは楽。でも弾切れは早いよ。', undefined, 'soft'),
     };
   }
 
@@ -38,7 +38,7 @@ export function reduceGarage(state: State, action: Action): State {
     return {
       ...state,
       selectedLoadout: { ...state.selectedLoadout, subGunId: action.id },
-      moeLine: getDialogueLine('moe.garage.set_sub_gun', '副砲は戦い方が出る。牽制か、手数か。'),
+      moeLine: getMoeLine('moe.garage.set_sub_gun', '副砲は戦い方が出る。牽制か、手数か。', undefined, 'soft'),
     };
   }
 
@@ -50,7 +50,7 @@ export function reduceGarage(state: State, action: Action): State {
     return {
       ...state,
       selectedLoadout: { ...state.selectedLoadout, specialEquipmentId: action.id },
-      moeLine: getDialogueLine('moe.garage.set_se', 'S-Eは切り札。契約狙いか、殲滅寄りか選んで。'),
+      moeLine: getMoeLine('moe.garage.set_se', 'S-Eは切り札。契約狙いか、殲滅寄りか選んで。', undefined, 'soft'),
     };
   }
 
@@ -62,7 +62,7 @@ export function reduceGarage(state: State, action: Action): State {
     return {
       ...state,
       selectedLoadout: { ...state.selectedLoadout, contractSupportId: action.id },
-      moeLine: getDialogueLine('moe.garage.set_support', '契約サポートは一つだけ。何を車に残す？'),
+      moeLine: getMoeLine('moe.garage.set_support', '契約サポートは一つだけ。何を車に残す？', undefined, 'soft'),
     };
   }
 
@@ -108,7 +108,7 @@ export function reduceGarage(state: State, action: Action): State {
         moeSyncBank: state.moeSyncBank - cost,
         skillLevels: { ...state.skillLevels, [action.upgrade]: currentLevel + 1 },
         logs: [...state.logs, `> SKILL UPGRADE: ${action.upgrade.toUpperCase()} Lv${currentLevel + 1}`],
-        moeLine: getDialogueLine('moe.garage.skill_sync', '同期率を使って調整した。次Runで効く。'),
+        moeLine: getMoeLine('moe.garage.skill_sync', '同期率を使って調整した。次Runで効く。', undefined, 'soft'),
       };
     }
     if (state.driverXpBank < cost) return state;
@@ -117,7 +117,7 @@ export function reduceGarage(state: State, action: Action): State {
       driverXpBank: state.driverXpBank - cost,
       skillLevels: { ...state.skillLevels, [action.upgrade]: currentLevel + 1 },
       logs: [...state.logs, `> SKILL UPGRADE: ${action.upgrade.toUpperCase()} Lv${currentLevel + 1}`],
-      moeLine: getDialogueLine('moe.garage.skill_driver', '操縦技能を更新。次Runの反応が変わるはず。'),
+      moeLine: getMoeLine('moe.garage.skill_driver', '操縦技能を更新。次Runの反応が変わるはず。', undefined, 'soft'),
     };
   }
 
@@ -134,7 +134,7 @@ export function reduceGarage(state: State, action: Action): State {
       creditBank: state.creditBank - cost,
       vehicleUpgrades: { ...state.vehicleUpgrades, [action.id]: currentLevel + 1 },
       logs: [...state.logs, `> VEHICLE TUNE: ${action.id.toUpperCase()} Lv${currentLevel + 1}`],
-      moeLine: getDialogueLine('moe.garage.vehicle_tune', '改装完了。車体側の余裕が増える。'),
+      moeLine: getMoeLine('moe.garage.vehicle_tune', '改装完了。車体側の余裕が増える。', undefined, 'soft'),
     };
   }
 
@@ -144,7 +144,7 @@ export function reduceGarage(state: State, action: Action): State {
     if (next === state) return state;
     return {
       ...next,
-      moeLine: getDialogueLine('moe.garage.unlock_purchase', 'アンロック完了。選択肢が増えたよ。'),
+      moeLine: getMoeLine('moe.garage.unlock_purchase', 'アンロック完了。選択肢が増えたよ。', undefined, 'soft'),
     };
   }
 

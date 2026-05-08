@@ -1,4 +1,5 @@
 import { getDialogueLine } from '../../../dialogueConfig';
+import { getMoeLine } from '../../../game/moeDialogue';
 import { resultLabel } from '../../../game/runInsights';
 import { storyLogCatalog } from '../../../game/catalogs';
 import type { MoeMemoryEntry, RouteLogEntry, RunRecord, SaveData } from '../../../saveSystem';
@@ -115,7 +116,7 @@ export const GaragePreviousRunSection = ({
             </div>;
           })}
         </div>
-        <p>M.O.E.: 「{getDialogueLine('moe.garage.memory', '断片が増えるほど、わたしの地図も変わる。')}」</p>
+        <p>M.O.E.: 「{getMoeLine('moe.garage.memory', '断片が増えるほど、わたしの地図も変わる。', undefined, 'soft')}」</p>
       </div>
     </details>
   </div>

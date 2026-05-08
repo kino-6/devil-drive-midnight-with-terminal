@@ -1,5 +1,5 @@
 import { getDialogueLine } from '../../dialogueConfig';
-import { getMoeLine } from '../../scenario/scenarioLoader';
+import { getMoeLine as getScenarioMoeLine } from '../../scenario/scenarioLoader';
 import { storyLogById } from '../../game/catalogs';
 import type { PreviousRunSummary, ResultType, State, StoryLogId, StoryState } from '../../game/types';
 import { getMainGunSpec, getSpecialEquipmentSpec, getSubGunSpec } from '../../game/runtimeHelpers';
@@ -97,19 +97,19 @@ export const resolveStoryFromRun = (state: State, resultType: ResultType): Story
 
 export const getNarrativeMoeLine = (state: State): string => {
   if (state.gamePhase === 'prologue') {
-    return getMoeLine(
+    return getScenarioMoeLine(
       'prologue.open',
       getDialogueLine('moe.prologue.narrative', '午前0時。夜環、開いたよ。浅層サルベージ任務……ってことになってる。本命は、前任者のログ反応。まだ消えてない。'),
     );
   }
   if (state.story.recoveredLogs.includes('LOG_01') && state.gamePhase === 'boss_preview') {
-    return getMoeLine(
+    return getScenarioMoeLine(
       'boss_preview.toll_gate',
       getDialogueLine('moe.story.boss_preview_log01', '料金所の反応、前よりは読める。通行料を払う相手を間違えないで。'),
     );
   }
   if (state.story.recoveredLogs.includes('LOG_00') && state.gamePhase === 'garage') {
-    return getMoeLine(
+    return getScenarioMoeLine(
       'garage.after_log00',
       getDialogueLine('moe.story.after_log00', '前任者の声……記録には残ってない。でも、知ってる気がする。'),
     );
