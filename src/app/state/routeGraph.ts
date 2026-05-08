@@ -58,7 +58,16 @@ export const getStageRouteNode = (state: State, nodeId = state.routeState?.curre
 
 const pickEventIdForNode = (node?: StageRouteNode): string | undefined => {
   if (!node?.eventPool) return undefined;
-  return getEventsByPool(node.eventPool)[0]?.id;
+  const events = getEventsByPool(node.eventPool);
+  if (events.length === 0) return undefined;
+  const totalWeight = events.reduce((sum, event) => sum + Math.max(0, event.weight || 0), 0);
+  if (totalWeight <= 0) return events[Math.floor(Math.random() * events.length)]?.id;
+  let roll = Math.random() * totalWeight;
+  for (const event of events) {
+    roll -= Math.max(0, event.weight || 0);
+    if (roll <= 0) return event.id;
+  }
+  return events[events.length - 1]?.id;
 };
 
 export const initRouteStateForStage = (stage: number): RouteState | undefined => {

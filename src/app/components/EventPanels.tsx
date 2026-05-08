@@ -3,6 +3,7 @@ import { getMoeLine } from '../../game/moeDialogue';
 import { hasAiNaviContract } from '../state/stateReducer';
 import { isAlive } from '../../game/runtimeHelpers';
 import { getRouteEventScenario } from '../../scenario/scenarioLoader';
+import { getEventById } from '../../eventConfig';
 import { getCurrentNaviRouteBriefing, getNaviRouteCandidates, getNaviRouteIntelStatus } from '../state/routeGraph';
 import type { State } from '../../game/types';
 
@@ -22,6 +23,7 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
   const naviRouteBriefing = state.gamePhase === 'route_choice' ? getCurrentNaviRouteBriefing(state) : undefined;
   const naviRouteCandidates = state.gamePhase === 'route_choice' ? getNaviRouteCandidates(state) : [];
   const naviRouteIntelStatus = state.gamePhase === 'route_choice' ? getNaviRouteIntelStatus(state) : undefined;
+  const salvageEvent = state.gamePhase === 'salvage' ? getEventById(state.routeState?.currentEventId) : undefined;
 
   return (
     <>
@@ -64,6 +66,27 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
               </div>;
             })}
           </div>}
+      </section>}
+
+      {state.gamePhase === 'salvage' && <section className="event-card">
+        <div className="event-header">
+          <div className="event-kicker">{state.rewardTarget === 'boss' ? 'EMERGENCY SALVAGE' : 'SALVAGE LANE'}</div>
+          <span className="event-chip event-chip--route">ONE SAFE PULL</span>
+        </div>
+        <h2>{salvageEvent?.title ?? 'Salvage Window'}</h2>
+        <p>{salvageEvent?.body ?? 'The loop opens a short supply window. Only one safe extraction fits before the lane collapses.'}</p>
+        <div className="next-node-list">
+          <div className="next-node">
+            <span>◎</span>
+            <strong>Why one?</strong>
+            <small>{salvageEvent?.effects ?? 'One safe extraction before the Night Loop notices the vehicle.'}</small>
+          </div>
+          <div className="next-node">
+            <span>▲</span>
+            <strong>Current need</strong>
+            <small>Fuel {state.fuel} / Armor {state.armor} / Signal {state.signal} / Main {state.mainAmmo} / S-E {state.seAmmo}</small>
+          </div>
+        </div>
       </section>}
 
       {state.gamePhase === 'signal' && <section className="event-card">

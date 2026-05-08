@@ -1,11 +1,11 @@
-import type { Action, ResultType, State } from '../../game/types';
+import type { Action, ResultType, RewardOption, State } from '../../game/types';
 import { getMoeLine } from '../../game/moeDialogue';
 import { emergencyRewardCatalog, rewardCatalog } from '../../game/catalogs';
 import { appendSupportDaemonDisconnectLogs } from '../../game/runtimeHelpers';
 import { applyRunUnlockRewards, formatUnlockRewardLog } from '../../game/progression';
 import { getSupportBacklashChance } from '../../game/vehicleUpgrades';
 import { getRareSalvageLog, getRareSalvageMoeLine, isRareSalvageReward, maybeAddRareSalvageReward } from '../../game/rareEvents';
-import { getEventsByPool } from '../../eventConfig';
+import { getEventById, getEventsByPool } from '../../eventConfig';
 import { applyRewardOption, pickRewardChoices } from './stateRuntime';
 import { moveToApproach } from './approachReducer';
 import { getRouteChoiceTargetNodeId, getRouteNextNodeId, getStageRouteNode, moveRouteStateToNode } from './routeGraph';
@@ -73,6 +73,18 @@ const getBacktrackRiskEvent = (state: State) => {
   const pool = getEventsByPool(`return.stage_${state.stage}`);
   if (pool.length === 0) return undefined;
   return pool[Math.floor(Math.random() * pool.length)];
+};
+
+const prioritizeSalvageEventReward = (
+  rewards: RewardOption[],
+  eventId: string | undefined,
+  catalog: RewardOption[],
+): RewardOption[] => {
+  const rewardId = getEventById(eventId)?.rewardId;
+  if (!rewardId || rewards.some((reward) => reward.id === rewardId)) return rewards;
+  const eventReward = catalog.find((reward) => reward.id === rewardId);
+  if (!eventReward) return rewards;
+  return [eventReward, ...rewards.slice(0, Math.max(0, rewards.length - 1))];
 };
 
 const backtrackToReturnCheckpoint = (state: State, resultType: ResultType): State => {
@@ -155,11 +167,12 @@ const enterRouteNode = (state: State, nodeId: string): State => {
 
   if (node.type === 'salvage') {
     const toBoss = node.next === 'boss_contact';
+    const rewardPool = toBoss ? emergencyRewardCatalog : rewardCatalog;
     return {
       ...graphState,
       gamePhase: 'salvage',
       rewardTarget: toBoss ? 'boss' : 'encounter2',
-      rewardOptions: pickRewardChoices(toBoss ? emergencyRewardCatalog : rewardCatalog),
+      rewardOptions: prioritizeSalvageEventReward(pickRewardChoices(rewardPool), graphState.routeState?.currentEventId, rewardPool),
       logs: [...graphState.logs, `> ROUTE NODE: ${node.label.toUpperCase()}`],
       moeLine: toBoss
         ? getMoeLine('moe.run.salvage_to_boss', '主砲弾か装甲を足してから行ける。選んで。', undefined, 'serious')
@@ -268,7 +281,10 @@ export function reduceRoute(state: State, action: Action): State {
     }
     if (action.lane === 'salvage') {
       const graphState = moveRouteStateToNode(state, getRouteChoiceTargetNodeId(state, action.lane) ?? 'salvage_lane');
-      const rewards = maybeAddRareSalvageReward(state, pickRewardChoices(rewardCatalog));
+      const rewards = maybeAddRareSalvageReward(
+        state,
+        prioritizeSalvageEventReward(pickRewardChoices(rewardCatalog), graphState.routeState?.currentEventId, rewardCatalog),
+      );
       return {
         ...graphState,
         gamePhase: 'salvage',
@@ -429,7 +445,7 @@ export function reduceRoute(state: State, action: Action): State {
         ...graphState,
         gamePhase: 'salvage',
         rewardTarget: 'boss',
-        rewardOptions: pickRewardChoices(emergencyPool),
+        rewardOptions: prioritizeSalvageEventReward(pickRewardChoices(emergencyPool), graphState.routeState?.currentEventId, emergencyPool),
         logs: [...graphState.logs, '> EMERGENCY SALVAGE OPEN'],
         moeLine: getMoeLine('moe.run.salvage_to_boss', '主砲弾か装甲を足してから行ける。選んで。', undefined, 'serious'),
       };

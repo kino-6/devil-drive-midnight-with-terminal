@@ -1,52 +1,72 @@
 events:
   salvage:
-    main_ammo_cache:
-      title: "Main Ammo Cache"
+    sealed_cannon_crate:
+      title: "Sealed Cannon Crate"
       pool: "salvage.stage_1"
       weight: 1
-      tags: "ammo, common"
-      body: "A half-buried crate still carries usable main gun shells."
-      effects: "Main ammo salvage candidate."
-      rewardId: "main_ammo"
-      log: "SALVAGE EVENT: MAIN AMMO CACHE"
-      moeLine: "主砲弾、まだ使える。"
-    armor_patch:
-      title: "Armor Patch"
+      tags: "ammo, safe, one_pull"
+      body: "An old service crate is still sealed. The lane camera is waking up, so only one bundle can be lifted before the shutter drops."
+      effects: "Main ammo favored / one safe extraction."
+      rewardId: "cannon_shell"
+      log: "SALVAGE EVENT: SEALED CANNON CRATE"
+      moeLine: "封印コンテナ。開けたら閉じる、だから一回だけ。"
+    roadside_patch_bay:
+      title: "Roadside Patch Bay"
       pool: "salvage.stage_1"
       weight: 1
-      tags: "armor, common"
-      body: "Plate scraps can be strapped onto the chassis before the next contact."
-      effects: "Armor salvage candidate."
+      tags: "armor, repair, one_pull"
+      body: "A broken maintenance arm can weld one plate before its daemon timer burns out. Choose the repair that matters most."
+      effects: "Armor favored / one repair cycle."
       rewardId: "armor_patch"
-      log: "SALVAGE EVENT: ARMOR PATCH"
-      moeLine: "応急装甲材。今なら貼れる。"
-    signal_scrap:
-      title: "Signal Scrap"
+      log: "SALVAGE EVENT: ROADSIDE PATCH BAY"
+      moeLine: "整備アーム、まだ一回だけ動く。装甲を戻すなら今。"
+    flicker_sign_post:
+      title: "Flicker Sign Post"
       pool: "salvage.stage_1"
       weight: 1
-      tags: "signal, uncommon"
-      body: "A cracked guide sign repeats a clean signal edge."
-      effects: "Signal salvage candidate."
-      rewardId: "signal_boost"
-      log: "SALVAGE EVENT: SIGNAL SCRAP"
-      moeLine: "信号片。解析に回せる。"
-    fuel_siphon:
-      title: "Fuel Siphon"
+      tags: "signal, analyze, one_pull"
+      body: "A cracked route sign repeats a clean edge under heavy noise. Pulling the trace will collapse the other readings."
+      effects: "Signal favored / other readings lost."
+      rewardId: "signal_core"
+      log: "SALVAGE EVENT: FLICKER SIGN POST"
+      moeLine: "標識にきれいなSignal。抜くと他の反応は消えるよ。"
+    tilted_fuel_tank:
+      title: "Tilted Fuel Tank"
       pool: "salvage.stage_1"
       weight: 1
-      tags: "fuel, risk"
-      body: "A roadside tank still holds fuel, but the line is unstable."
-      effects: "Fuel salvage candidate with route risk."
+      tags: "fuel, risk, one_pull"
+      body: "A roadside tank leans over the lane, leaking just enough pressure for one siphon before the valve snaps shut."
+      effects: "Fuel favored / short siphon window."
       rewardId: "fuel_cell"
-      log: "SALVAGE EVENT: FUEL SIPHON"
-      moeLine: "燃料は取れる。でも長居は危ない。"
+      log: "SALVAGE EVENT: TILTED FUEL TANK"
+      moeLine: "燃料、取れる。でも弁がもたない。一回で決めよう。"
+    capacitor_shrine:
+      title: "Capacitor Shrine"
+      pool: "salvage.stage_1"
+      weight: 1
+      tags: "se, ammo, one_pull"
+      body: "Small capacitors are lined up like offerings. Touching one wakes the rest and drains the shrine dark."
+      effects: "S-E ammo favored / one capacitor pull."
+      rewardId: "se_cell"
+      log: "SALVAGE EVENT: CAPACITOR SHRINE"
+      moeLine: "S-E用の蓄電体。ひとつ取ると、残りは寝ちゃう。"
+    field_cache_marker:
+      title: "Field Cache Marker"
+      pool: "salvage.stage_1"
+      weight: 1
+      tags: "mixed, safe, one_pull"
+      body: "A faded driver mark points to a balanced cache. The marker is drifting, so there is time for one clean grab."
+      effects: "Mixed fuel and armor favored."
+      rewardId: "mixed_pack"
+      log: "SALVAGE EVENT: FIELD CACHE MARKER"
+      moeLine: "前のドライバー印。燃料と装甲、少しずつ拾える。"
     blueprint_ping:
       title: "Blueprint Ping"
       pool: "salvage.stage_1"
       weight: 1
       tags: "rare, blueprint, signal"
-      body: "A faint part signature points deeper into salvage noise."
-      effects: "Rare salvage hint."
-      rewardId: "signal_boost"
+      body: "A faint part signature hides under the salvage noise. The ping is unstable, but it marks a deeper blueprint trail."
+      effects: "Rare salvage hint / Signal favored."
+      rewardId: "signal_core"
       log: "SALVAGE EVENT: BLUEPRINT PING"
       moeLine: "設計図っぽい反応。今夜は薄いけど、覚えておく。"

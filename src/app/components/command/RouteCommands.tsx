@@ -1,4 +1,5 @@
 import { getNaviRouteCandidates, getNaviRouteIntelStatus } from '../../state/routeGraph';
+import { getEventById } from '../../../eventConfig';
 import type { RewardOption, State } from '../../../game/types';
 import type { SignalChoice } from './types';
 
@@ -82,7 +83,12 @@ export const RouteCommands = ({
   }
 
   if (gamePhase === 'salvage') {
+    const salvageEvent = getEventById(state.routeState?.currentEventId);
     return <div className="command-window command-list">
+      <div className="command-alert command-alert--salvage">
+        <strong>{salvageEvent?.title ?? 'SALVAGE WINDOW'}</strong>
+        <span>{salvageEvent?.effects ?? 'One safe extraction before the lane collapses.'}</span>
+      </div>
       {rewardOptions.map((option: RewardOption) => <button
         key={option.id}
         className="command-button command-button--route"
