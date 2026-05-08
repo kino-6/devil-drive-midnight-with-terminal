@@ -499,6 +499,7 @@ const tacticalLinesCompact = tacticalLines
       visible={state.gamePhase === 'prologue'}
       narrativeMoeLine={narrativeMoeLine}
       nightLoopIntroImage={nightLoopIntroImage}
+      garageIntroImage={garageImage}
       showFirstGarageGuide={showFirstGarageGuide}
       onStartEngine={() => dispatch({ type: 'START_ENGINE' })}
       onOpenGarage={() => dispatch({ type: 'OPEN_GARAGE' })}
