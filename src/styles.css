@@ -1009,6 +1009,60 @@ body {
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
 }
 
+.battle-view__route-preview {
+  position: absolute;
+  z-index: 5;
+  left: 8%;
+  right: 8%;
+  top: 33%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  pointer-events: none;
+}
+
+.battle-view__route-card {
+  min-height: 64px;
+  border: 1px solid rgba(123, 165, 188, 0.42);
+  background: linear-gradient(180deg, rgba(13, 20, 28, 0.78), rgba(8, 12, 18, 0.42));
+  box-shadow: inset 0 0 18px rgba(91, 132, 157, 0.1);
+  padding: 8px 10px;
+  display: grid;
+  gap: 3px;
+  align-content: start;
+}
+
+.battle-view__route-card--0 {
+  transform: translateY(22px) skewY(-2deg);
+}
+
+.battle-view__route-card--1 {
+  transform: translateY(-2px);
+  border-color: rgba(211, 154, 74, 0.48);
+}
+
+.battle-view__route-card--2 {
+  transform: translateY(22px) skewY(2deg);
+}
+
+.battle-view__route-card span {
+  color: #7fc0cf;
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+}
+
+.battle-view__route-card strong {
+  color: #f0d3a4;
+  font-size: 0.8rem;
+  line-height: 1.15;
+}
+
+.battle-view__route-card small {
+  color: #9fb2bd;
+  font-size: 0.64rem;
+  line-height: 1.25;
+}
+
 .battle-view__boss-alert {
   position: absolute;
   top: 8px;
@@ -3126,6 +3180,16 @@ body {
 
   .battle-view__route-list {
     grid-template-columns: 1fr;
+  }
+
+  .battle-view__route-preview {
+    left: 4%;
+    right: 4%;
+    gap: 6px;
+  }
+
+  .battle-view__route-card {
+    padding: 7px;
   }
 
   .battle-devil {

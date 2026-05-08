@@ -60,7 +60,7 @@ export const RouteCommands = ({
             onMouseLeave={clearHoveredHint}
             onClick={() => onRouteChoice(candidate.choiceId)}
           >
-            {candidate.title} <span>{candidate.risk} / {candidate.reward}</span>
+            {candidate.title} <span>{candidate.tags} / {candidate.risk} → {candidate.reward}</span>
           </button>
         ))}
       </div>;

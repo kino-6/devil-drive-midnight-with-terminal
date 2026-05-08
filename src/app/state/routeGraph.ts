@@ -97,6 +97,29 @@ export const getRouteNextNodeId = (state: State): string | undefined =>
 const isRouteLaneChoice = (value: string): value is RouteLaneChoice =>
   value === 'salvage' || value === 'signal' || value === 'push_forward' || value === 'return_gate';
 
+const lowSignalRouteHints: Record<RouteLaneChoice, { tags: string; risk: string; reward: string }> = {
+  salvage: {
+    tags: 'supply / repair',
+    risk: 'armor?',
+    reward: 'fuel / ammo?',
+  },
+  signal: {
+    tags: 'signal / analyze',
+    risk: 'signal?',
+    reward: 'intel?',
+  },
+  push_forward: {
+    tags: 'contact / speed',
+    risk: 'armor!',
+    reward: 'progress+',
+  },
+  return_gate: {
+    tags: 'extract / safe',
+    risk: 'low',
+    reward: 'secure',
+  },
+};
+
 export const getNaviIntelLevel = (state: State): NaviIntelLevel => {
   const supportBonus = state.selectedLoadout.contractSupportId === 'abandoned_ai_navi' ? 1 : 0;
   const contractBonus = state.contracts.some((contract) => contract.id === 'abandoned_ai_navi') ? 1 : 0;
@@ -110,10 +133,12 @@ const maskIntel = (
   value: string,
   intelLevel: NaviIntelLevel,
   revealAt: NaviIntelLevel,
+  lowFallback: string,
 ): string => {
   if (intelLevel === 'high') return value;
   if (intelLevel === 'medium' && revealAt !== 'high') return value;
-  return 'UNKNOWN';
+  if (intelLevel === 'medium') return lowFallback;
+  return lowFallback;
 };
 
 export const getCurrentNaviRouteBriefing = (state: State): NaviRouteBriefing | undefined => {
@@ -146,9 +171,9 @@ export const getNaviRouteCandidates = (state: State): NaviRouteCandidate[] => {
       nodeId,
       title: event.title || intel.label,
       body: intelLevel === 'low' ? undefined : event.body,
-      tags: maskIntel(event.tags.join(' / '), intelLevel, 'medium'),
-      risk: maskIntel(intel.riskTags, intelLevel, 'medium'),
-      reward: maskIntel(intel.rewardTags, intelLevel, 'high'),
+      tags: maskIntel(event.tags.join(' / '), intelLevel, 'medium', lowSignalRouteHints[choiceId].tags),
+      risk: maskIntel(intel.riskTags, intelLevel, 'medium', lowSignalRouteHints[choiceId].risk),
+      reward: maskIntel(intel.rewardTags, intelLevel, 'high', lowSignalRouteHints[choiceId].reward),
       effects: intelLevel === 'high' ? event.effects : undefined,
       eventId: event.id,
       intelLevel,
@@ -168,9 +193,9 @@ export const getNaviRouteCandidates = (state: State): NaviRouteCandidate[] => {
         choiceId: lane,
         nodeId,
         title: intel.label,
-        tags: maskIntel(intel.likelyEnemyTags, intelLevel, 'medium'),
-        risk: maskIntel(intel.riskTags, intelLevel, 'medium'),
-        reward: maskIntel(intel.rewardTags, intelLevel, 'high'),
+        tags: maskIntel(intel.likelyEnemyTags, intelLevel, 'medium', lowSignalRouteHints[lane].tags),
+        risk: maskIntel(intel.riskTags, intelLevel, 'medium', lowSignalRouteHints[lane].risk),
+        reward: maskIntel(intel.rewardTags, intelLevel, 'high', lowSignalRouteHints[lane].reward),
         intelLevel,
       };
     });

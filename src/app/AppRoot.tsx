@@ -79,6 +79,7 @@ import { useSaveRuntime } from './hooks/useSaveRuntime';
 import { useSaveTools } from './hooks/useSaveTools';
 import { useTelemetryEffects } from './hooks/useTelemetryEffects';
 import { useRunBeatQueue } from './hooks/useRunBeatQueue';
+import { getNaviRouteCandidates } from './state/routeGraph';
 import { CockpitHeader } from './components/CockpitHeader';
 import { PrologueOverlay } from './components/PrologueOverlay';
 import { BattleView } from './components/BattleView';
@@ -259,6 +260,7 @@ const tacticalLinesCompact = tacticalLines
     }
     return 'ROAD OPEN';
   })();
+  const naviRouteCandidates = state.gamePhase === 'route_choice' ? getNaviRouteCandidates(state) : [];
   const signalTunnelScenario = getRouteEventScenario('signal_tunnel_01');
   const signalChoices: SignalChoice[] = (signalTunnelScenario?.choices && signalTunnelScenario.choices.length > 0
     ? signalTunnelScenario.choices
@@ -550,6 +552,7 @@ const tacticalLinesCompact = tacticalLines
           aliveEnemiesCount={aliveEnemies.length}
           ingressSteps={ingressSteps}
           windshieldThreatLabel={windshieldThreatLabel}
+          routeCandidates={naviRouteCandidates}
           detailEnemy={detailEnemy}
           detailIntentIconMap={detailIntentIconMap}
           profiles={encounterProfileMap}
