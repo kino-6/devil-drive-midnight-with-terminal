@@ -87,7 +87,14 @@ import { VehiclePanel } from './components/VehiclePanel';
 import { SystemEventPanel } from './components/SystemEventPanel';
 import { RunBeatOverlay } from './components/RunBeatOverlay';
 
+const hasBootDebugFlag = () => {
+  if (typeof window === 'undefined') return false;
+  const params = new URLSearchParams(window.location.search);
+  return params.has('debug') || params.has('debugSave') || params.has('devtools') || window.location.hash.includes('debug');
+};
+
 export function App() {
+  const bootDebugEnabled = import.meta.env.DEV && hasBootDebugFlag();
   const [state, rawDispatch] = useReducer(reducer, undefined, initState);
   const stateBeforeDispatchRef = useRef(state);
   useEffect(() => {
@@ -103,9 +110,9 @@ export function App() {
   const [autoplayStrategy, setAutoplayStrategy] = useState<AutoPlayStrategy>('balanced');
   const [autoplayReport, setAutoplayReport] = useState<AutoPlayReport | null>(null);
   const [showPlaytestReport, setShowPlaytestReport] = useState(false);
-  const [showSaveTools, setShowSaveTools] = useState(false);
+  const [showSaveTools, setShowSaveTools] = useState(bootDebugEnabled);
   const [showArchive, setShowArchive] = useState(false);
-  const [showUtilityPanels, setShowUtilityPanels] = useState(false);
+  const [showUtilityPanels, setShowUtilityPanels] = useState(bootDebugEnabled);
   const [showRunHistory, setShowRunHistory] = useState(false);
   const [showGarageLaunchConfirm, setShowGarageLaunchConfirm] = useState(false);
   const [, setHoveredMoeHint] = useState('');
@@ -490,8 +497,16 @@ const tacticalLinesCompact = tacticalLines
       nightLoopIntroImage={nightLoopIntroImage}
       garageIntroImage={garageImage}
       showFirstGarageGuide={showFirstGarageGuide}
+      showDebugSaveBoot={bootDebugEnabled}
+      mainSaveSummary={`${saveSnapshot.totalRuns} runs / best ${saveSnapshot.bestResult ?? '-'}`}
+      autoSaveLabel={autoSaveSnapshot ? new Date(autoSaveSnapshot.savedAt).toLocaleString() : 'none'}
+      autoSaveReason={autoSaveSnapshot?.reason ?? '-'}
+      autoSaveAvailable={!!autoSaveSnapshot}
+      debugSaveHeaders={debugSaveHeaders}
       onStartEngine={() => dispatch({ type: 'START_ENGINE' })}
       onOpenGarage={() => dispatch({ type: 'OPEN_GARAGE' })}
+      onRestoreAutoSave={restoreAutoSaveNow}
+      onRestoreDebugSave={restoreDebugById}
     />
 
     <div className="cockpit-frame">
@@ -543,6 +558,7 @@ const tacticalLinesCompact = tacticalLines
           resolveEnemyAnimationFrames={(profile) => resolveEnemyAnimationFrames(profile, enemyAssetMap)}
           resolveEnemyLane={resolveEnemyLane}
           getLikelyWeaknessSummary={getLikelyWeaknessSummary}
+          showDebugBadges={bootDebugEnabled}
           onSelectEnemy={(enemyId) => dispatch({ type: 'SELECT_ENEMY', enemyId })}
           onHoverEnemy={setHoveredEnemyId}
         />

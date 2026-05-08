@@ -157,7 +157,6 @@ export const GarageGrowthSection = ({
               disabled={!canBuy}
               onClick={() => onPurchaseVehicleUpgrade(upgradeId)}
               data-desc={desc}
-              title={desc}
             >
               {vehicleUpgradeLabels[upgradeId]} <span>{locked ? desc : `Lv${level}`}</span>
             </button>;

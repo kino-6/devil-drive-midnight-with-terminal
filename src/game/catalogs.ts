@@ -137,6 +137,14 @@ export const demonArchiveFlavor: Partial<Record<EncounterId, string>> = {
   vending_spirit: 'Neon can-machine entity bargaining with route favors.',
   phantom_patrol: 'Ghost patrol unit scanning forbidden exits.',
   midnight_taxi: 'An empty cab offering one-way fares at 00:00.',
+  cone_swarm: 'Warning cones moving in synchronized lane blockade patterns.',
+  mirror_curve: 'A blind bend reflecting the route you refused to take.',
+  fuel_tanker_saint: 'A fuel-hauling saint leaking blessings and pressure.',
+  hearse_meridian: 'A black hearse cruising the centerline between exits.',
+  jackknife_trailer: 'A folded trailer blocking three futures at once.',
+  kuchisake_onna: 'A slit-smile passenger testing the talk channel.',
+  siren_ambulance: 'An emergency vehicle answering accidents before they happen.',
+  siren_ambulance_v2: 'A corrupted rescue protocol wrapped in red siren light.',
 };
 
 export const rewardCatalog: RewardOption[] = [

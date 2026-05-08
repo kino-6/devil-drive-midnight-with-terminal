@@ -46,7 +46,6 @@ export const GarageLoadoutSection = ({
               disabled={!!locked}
               onClick={() => onSetMainGun(id)}
               data-desc={desc}
-              title={desc}
             >
               {mainGunCatalog[id].name} {locked && <span>{locked}</span>}
             </button>;
@@ -68,7 +67,6 @@ export const GarageLoadoutSection = ({
               disabled={!!locked}
               onClick={() => onSetSubGun(id)}
               data-desc={desc}
-              title={desc}
             >
               {subGunCatalog[id].name} {locked && <span>{locked}</span>}
             </button>;
@@ -90,7 +88,6 @@ export const GarageLoadoutSection = ({
               disabled={!!locked}
               onClick={() => onSetSpecial(id)}
               data-desc={desc}
-              title={desc}
             >
               {specialEquipmentCatalog[id].name} {locked && <span>{locked}</span>}
             </button>;
@@ -112,7 +109,6 @@ export const GarageLoadoutSection = ({
               disabled={!!locked}
               onClick={() => onSetSupport(id)}
               data-desc={desc}
-              title={desc}
             >
               {id === 'none' ? 'Support: None' : `Support: ${contractSupportCatalog[id].name}`} {locked && <span>{locked}</span>}
             </button>;

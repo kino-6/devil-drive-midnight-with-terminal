@@ -104,6 +104,14 @@ export const sanitizeRestoredStateWithDeps = (raw: unknown, fallback: State, dep
       || value === 'vending_spirit'
       || value === 'phantom_patrol'
       || value === 'midnight_taxi'
+      || value === 'cone_swarm'
+      || value === 'mirror_curve'
+      || value === 'fuel_tanker_saint'
+      || value === 'hearse_meridian'
+      || value === 'jackknife_trailer'
+      || value === 'kuchisake_onna'
+      || value === 'siren_ambulance'
+      || value === 'siren_ambulance_v2'
       ? value
       : undefined;
   const normalizeTemperament = (value: unknown): Temperament =>

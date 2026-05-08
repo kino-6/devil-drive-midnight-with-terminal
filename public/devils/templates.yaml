@@ -300,3 +300,154 @@ templates:
       interestBonus: 0
       failPressure: 1
       failIntent: "curse"
+
+  cone_swarm:
+    name: "Cone Swarm"
+    maxHp: 5
+    temperament: "machine"
+    contractable: false
+    affinities:
+      ballistic: "normal"
+      suppressive: "weak"
+      impact: "resist"
+      signal: "normal"
+      talk: "resist"
+    talkTendency:
+      successBias: -0.15
+      trustBonus: 0
+      interestBonus: 0
+      failPressure: 1
+      failIntent: "guard"
+
+  mirror_curve:
+    name: "Mirror Curve"
+    maxHp: 7
+    temperament: "curious"
+    contractable: true
+    targetModuleId: "abandoned_ai_navi"
+    affinities:
+      ballistic: "resist"
+      suppressive: "normal"
+      impact: "normal"
+      signal: "weak"
+      talk: "normal"
+    talkTendency:
+      successBias: 0.02
+      trustBonus: 0
+      interestBonus: 1
+      failPressure: 1
+      failIntent: "curse"
+
+  fuel_tanker_saint:
+    name: "Fuel Tanker Saint"
+    maxHp: 10
+    temperament: "hungry"
+    contractable: true
+    targetModuleId: "radio_voice"
+    armored: true
+    affinities:
+      ballistic: "resist"
+      suppressive: "normal"
+      impact: "resist"
+      signal: "weak"
+      talk: "normal"
+    talkTendency:
+      successBias: -0.02
+      trustBonus: 0
+      interestBonus: 2
+      failPressure: 2
+      failIntent: "bargain"
+
+  hearse_meridian:
+    name: "Hearse Meridian"
+    maxHp: 9
+    temperament: "lonely"
+    contractable: true
+    targetModuleId: "silent_shape"
+    affinities:
+      ballistic: "normal"
+      suppressive: "resist"
+      impact: "normal"
+      signal: "normal"
+      talk: "weak"
+    talkTendency:
+      successBias: 0.01
+      trustBonus: 1
+      interestBonus: 0
+      failPressure: 2
+      failIntent: "curse"
+
+  jackknife_trailer:
+    name: "Jackknife Trailer"
+    maxHp: 12
+    temperament: "hostile"
+    contractable: false
+    armored: true
+    affinities:
+      ballistic: "weak"
+      suppressive: "normal"
+      impact: "resist"
+      signal: "normal"
+      talk: "resist"
+    talkTendency:
+      successBias: -0.20
+      trustBonus: 0
+      interestBonus: 0
+      failPressure: 2
+      failIntent: "attack"
+
+  kuchisake_onna:
+    name: "Kuchisake-Onna"
+    maxHp: 8
+    temperament: "proud"
+    contractable: true
+    targetModuleId: "silent_shape"
+    affinities:
+      ballistic: "normal"
+      suppressive: "normal"
+      impact: "resist"
+      signal: "normal"
+      talk: "weak"
+    talkTendency:
+      successBias: -0.04
+      trustBonus: 1
+      interestBonus: 0
+      failPressure: 2
+      failIntent: "bargain"
+
+  siren_ambulance:
+    name: "Siren Ambulance"
+    maxHp: 8
+    temperament: "machine"
+    contractable: true
+    targetModuleId: "abandoned_ai_navi"
+    affinities:
+      ballistic: "normal"
+      suppressive: "weak"
+      impact: "normal"
+      signal: "weak"
+      talk: "normal"
+    talkTendency:
+      successBias: 0.04
+      trustBonus: 1
+      interestBonus: 1
+      failPressure: 1
+      failIntent: "guard"
+
+  siren_ambulance_v2:
+    name: "Siren Ambulance V2"
+    maxHp: 10
+    temperament: "hostile"
+    contractable: false
+    affinities:
+      ballistic: "normal"
+      suppressive: "weak"
+      impact: "normal"
+      signal: "resist"
+      talk: "resist"
+    talkTendency:
+      successBias: -0.18
+      trustBonus: 0
+      interestBonus: 0
+      failPressure: 2
+      failIntent: "attack"

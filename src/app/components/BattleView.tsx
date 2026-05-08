@@ -37,6 +37,7 @@ type BattleViewProps = {
   resolveEnemyAnimationFrames: (profile: EncounterId) => string[];
   resolveEnemyLane: (index: number, total: number, isBoss: boolean) => 'left' | 'center' | 'right';
   getLikelyWeaknessSummary: (profile: EncounterId) => string;
+  showDebugBadges?: boolean;
   onSelectEnemy: (enemyId: string) => void;
   onHoverEnemy: (enemyId: string | null) => void;
 };
@@ -70,6 +71,7 @@ export const BattleView = ({
   resolveEnemyAnimationFrames,
   resolveEnemyLane,
   getLikelyWeaknessSummary,
+  showDebugBadges = false,
   onSelectEnemy,
   onHoverEnemy,
 }: BattleViewProps) => {
@@ -146,6 +148,7 @@ export const BattleView = ({
               revealState={reveal}
               imageSrc={imageSrc}
               imageFrames={imageFrames}
+              showDebugBadge={showDebugBadges}
               hitFx={enemy.id === selectedEnemyId ? hitFxTone ?? undefined : undefined}
               onSelect={() => onSelectEnemy(enemy.id)}
               onHoverEnemy={onHoverEnemy}

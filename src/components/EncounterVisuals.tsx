@@ -230,6 +230,7 @@ export function BattleDevilSprite({
   onHoverEnemy,
   imageSrc,
   imageFrames,
+  showDebugBadge = false,
   hitFx,
   encounterProfiles,
 }: {
@@ -241,6 +242,7 @@ export function BattleDevilSprite({
   onHoverEnemy?: (enemyId: string | null) => void;
   imageSrc?: string;
   imageFrames?: string[];
+  showDebugBadge?: boolean;
   hitFx?: HitFxTone;
   encounterProfiles: Record<EncounterId, EncounterProfile>;
 }) {
@@ -302,6 +304,11 @@ export function BattleDevilSprite({
         <small>{revealState.showIntent ? devil.intent.toUpperCase() : 'UNKNOWN'}</small>
       </div>
     </div>
+    {showDebugBadge && (
+      <span className={`battle-devil__debug ${canAnimate ? 'is-animated' : ''}`}>
+        {revealState.showName ? `ANIM ${animationFrames.length}F` : 'UNKNOWN STATIC'}
+      </span>
+    )}
     {focused && <span className="battle-devil__target">TARGET LOCK</span>}
   </article>;
 }

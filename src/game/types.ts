@@ -24,7 +24,15 @@ export type EncounterId =
   | 'ghost_chaser'
   | 'vending_spirit'
   | 'phantom_patrol'
-  | 'midnight_taxi';
+  | 'midnight_taxi'
+  | 'cone_swarm'
+  | 'mirror_curve'
+  | 'fuel_tanker_saint'
+  | 'hearse_meridian'
+  | 'jackknife_trailer'
+  | 'kuchisake_onna'
+  | 'siren_ambulance'
+  | 'siren_ambulance_v2';
 export type CommandId = 'main_gun' | 'sub_gun' | 'se_harpoon' | 'analyze' | 'talk' | 'contract' | 'ram' | 'guard' | 'escape';
 export type AffinityType = 'ballistic' | 'suppressive' | 'impact' | 'signal' | 'talk';
 export type AffinityRating = 'weak' | 'normal' | 'resist';

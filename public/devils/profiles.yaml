@@ -126,3 +126,67 @@ profiles:
     signal: "METER PULSE / EMPTY CAB"
     contractable: true
     assetImage: "images/devil/midnight_taxi_idle.png"
+
+  cone_swarm:
+    label: "CONE SWARM"
+    subtitle: "Warning cones moving in a synchronized lane blockade."
+    threat: "LOW"
+    signal: "WORK ZONE STATIC / ORANGE BAND"
+    contractable: false
+    assetImage: "images/devil/cone_swarm_idle.png"
+
+  mirror_curve:
+    label: "MIRROR CURVE"
+    subtitle: "A blind bend reflecting the route you refused to take."
+    threat: "MED"
+    signal: "REFLECTION LOOP / EDGE NOISE"
+    contractable: true
+    assetImage: "images/devil/mirror_curve_idle.png"
+
+  fuel_tanker_saint:
+    label: "FUEL TANKER SAINT"
+    subtitle: "A fuel-hauling saint leaking midnight blessings and fumes."
+    threat: "HIGH"
+    signal: "FUEL CHOIR / PRESSURE VALVE"
+    contractable: true
+    assetImage: "images/devil/fuel_tanker_saint_idle.png"
+
+  hearse_meridian:
+    label: "HEARSE MERIDIAN"
+    subtitle: "A black hearse cruising the centerline between exits."
+    threat: "HIGH"
+    signal: "FUNERAL BAND / CENTERLINE DRIFT"
+    contractable: true
+    assetImage: "images/devil/hearse_meridian_idle.png"
+
+  jackknife_trailer:
+    label: "JACKKNIFE TRAILER"
+    subtitle: "A folded trailer blocking three futures at once."
+    threat: "CRITICAL"
+    signal: "FOLDED VECTOR / IMPACT WALL"
+    contractable: false
+    assetImage: "images/devil/jackknife_trailer_idle.png"
+
+  kuchisake_onna:
+    label: "KUCHISAKE-ONNA"
+    subtitle: "A slit-smile passenger asking if the road is beautiful."
+    threat: "HIGH"
+    signal: "SMILE STATIC / BACKSEAT WHISPER"
+    contractable: true
+    assetImage: "images/devil/kuchisake_onna_idle.png"
+
+  siren_ambulance:
+    label: "SIREN AMBULANCE"
+    subtitle: "An emergency vehicle answering accidents before they happen."
+    threat: "MED"
+    signal: "SIREN PULSE / MEDICAL GHOST"
+    contractable: true
+    assetImage: "images/devil/siren_ambulance_idle.png"
+
+  siren_ambulance_v2:
+    label: "SIREN AMBULANCE V2"
+    subtitle: "A deeper siren unit with a corrupted rescue protocol."
+    threat: "HIGH"
+    signal: "SIREN PULSE / RED TRIAGE"
+    contractable: false
+    assetImage: "images/devil/siren_ambulance_v2_idle.png"

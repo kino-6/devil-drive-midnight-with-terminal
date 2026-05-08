@@ -1,6 +1,7 @@
 import { MAX_DEBUG_SAVE_ENTRIES, limitStateLogs } from './runtimeLimits';
 import { getAllUnlocks, getInitialUnlocks, mergeUnlocks, normalizeUnlockState } from './game/progression';
 import type { UnlockState } from './game/types';
+import { getProgressionConfig } from './progressionConfig';
 
 export type SaveVersion = 1;
 
@@ -115,6 +116,19 @@ const asBool = (value: unknown, fallback = false) =>
 
 const asStringArray = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+
+const unlockArraysMatch = (left: string[], right: string[]) =>
+  left.length === right.length && left.every((id) => right.includes(id));
+
+const unlockStatesMatch = (left: UnlockState, right: UnlockState) =>
+  unlockArraysMatch(left.mainGuns, right.mainGuns)
+  && unlockArraysMatch(left.subGuns, right.subGuns)
+  && unlockArraysMatch(left.specialEquipment, right.specialEquipment)
+  && unlockArraysMatch(left.support, right.support)
+  && unlockArraysMatch(left.vehicleUpgrades, right.vehicleUpgrades);
+
+const missingUnlockFallback = (fallback: UnlockState): UnlockState =>
+  getProgressionConfig().fallbackMode === 'all' ? getAllUnlocks() : fallback;
 
 export const createInitialSaveData = (): SaveData => {
   const ts = now();
@@ -243,9 +257,18 @@ export const sanitizeSaveData = (raw: unknown): SaveData => {
   const runHistory = runHistoryRaw.map(normalizeRunRecord).filter((value): value is RunRecord => !!value);
   const createdAt = asNumber(source.createdAt, fallback.createdAt);
   const updatedAt = asNumber(source.updatedAt, createdAt);
-  const unlocks = 'unlocks' in source
+  const normalizedUnlocks = 'unlocks' in source
     ? normalizeUnlockState(source.unlocks, fallback.unlocks)
-    : getAllUnlocks();
+    : missingUnlockFallback(fallback.unlocks);
+  const looksLikeLegacyFullUnlockSave = 'unlocks' in source
+    && getProgressionConfig().fallbackMode === 'initial'
+    && unlockStatesMatch(normalizedUnlocks, getAllUnlocks())
+    && runHistory.length === 0
+    && asNumber(source.totalRuns, 0) === 0
+    && Object.keys(asObject(source.demonArchive)).length === 0
+    && Object.keys(asObject(source.routeLog)).length === 0
+    && Object.keys(asObject(source.moeMemory)).length === 0;
+  const unlocks = looksLikeLegacyFullUnlockSave ? fallback.unlocks : normalizedUnlocks;
   return {
     version: 1,
     createdAt,

@@ -27,26 +27,126 @@ images:
     relaxed: "images/moe/MOE_Relaxed.png"
     hud: "images/moe/MOE_HUD.png"
   enemies:
-    whisper_broker: "images/devil/whisper_broker_idle.png"
-    roadside_phone: "images/devil/roadside_phone_idle.png"
+    whisper_broker:
+      idle: "images/devil/whisper_broker_idle.png"
+      moveFrames:
+        - "images/devil/whisper_broker_idle.png"
+        - "images/devil/whisper_broker_move_01.png"
+    roadside_phone:
+      idle: "images/devil/roadside_phone_idle.png"
+      moveFrames:
+        - "images/devil/roadside_phone_idle.png"
+        - "images/devil/roadside_phone_move_01.png"
     pixie_shibuya_glow:
       idle: "images/devil/pixie_idle.png"
       moveFrames:
         - "images/devil/pixie_idle.png"
         - "images/devil/pixie_move_01.png"
-    foxfire_navi: "images/devil/foxfire_navi_idle.png"
-    no_face_taxi_passenger: "images/devil/no_face_taxi_passenger_idle.png"
-    silent_shape: "images/devil/silent_shape_idle.png"
-    abandoned_ai_navi: "images/devil/abandoned_ai_navi_idle.png"
-    road_reaper: "images/devil/road_reaper_idle.png"
-    toll_gate_saint: "images/devil/toll_gate_saint_idle.png"
-    tunnel_rider: "images/devil/tunnel_rider_idle.png"
-    closure_ogre: "images/devil/closure_ogre_idle.png"
-    tow_collector: "images/devil/tow_collector_idle.png"
-    ghost_chaser: "images/devil/ghost_chaser_idle.png"
-    vending_spirit: "images/devil/vending_spirit_idle.png"
-    phantom_patrol: "images/devil/phantom_patrol_idle.png"
-    midnight_taxi: "images/devil/midnight_taxi_idle.png"
+    foxfire_navi:
+      idle: "images/devil/foxfire_navi_idle.png"
+      moveFrames:
+        - "images/devil/foxfire_navi_idle.png"
+        - "images/devil/foxfire_navi_move_01.png"
+    no_face_taxi_passenger:
+      idle: "images/devil/no_face_taxi_passenger_idle.png"
+      moveFrames:
+        - "images/devil/no_face_taxi_passenger_idle.png"
+        - "images/devil/no_face_taxi_passenger_move_01.png"
+    silent_shape:
+      idle: "images/devil/silent_shape_idle.png"
+      moveFrames:
+        - "images/devil/silent_shape_idle.png"
+        - "images/devil/silent_shape_move_01.png"
+    abandoned_ai_navi:
+      idle: "images/devil/abandoned_ai_navi_idle.png"
+      moveFrames:
+        - "images/devil/abandoned_ai_navi_idle.png"
+        - "images/devil/abandoned_ai_navi_move_01.png"
+    road_reaper:
+      idle: "images/devil/road_reaper_idle.png"
+      moveFrames:
+        - "images/devil/road_reaper_idle.png"
+        - "images/devil/road_reaper_move_01.png"
+    toll_gate_saint:
+      idle: "images/devil/toll_gate_saint_idle.png"
+      moveFrames:
+        - "images/devil/toll_gate_saint_idle.png"
+        - "images/devil/toll_gate_saint_move_01.png"
+    tunnel_rider:
+      idle: "images/devil/tunnel_rider_idle.png"
+      moveFrames:
+        - "images/devil/tunnel_rider_idle.png"
+        - "images/devil/tunnel_rider_move_01.png"
+    closure_ogre:
+      idle: "images/devil/closure_ogre_idle.png"
+      moveFrames:
+        - "images/devil/closure_ogre_idle.png"
+        - "images/devil/closure_ogre_move_01.png"
+    tow_collector:
+      idle: "images/devil/tow_collector_idle.png"
+      moveFrames:
+        - "images/devil/tow_collector_idle.png"
+        - "images/devil/tow_collector_move_01.png"
+    ghost_chaser:
+      idle: "images/devil/ghost_chaser_idle.png"
+      moveFrames:
+        - "images/devil/ghost_chaser_idle.png"
+        - "images/devil/ghost_chaser_move_01.png"
+    vending_spirit:
+      idle: "images/devil/vending_spirit_idle.png"
+      moveFrames:
+        - "images/devil/vending_spirit_idle.png"
+        - "images/devil/vending_spirit_move_01.png"
+    phantom_patrol:
+      idle: "images/devil/phantom_patrol_idle.png"
+      moveFrames:
+        - "images/devil/phantom_patrol_idle.png"
+        - "images/devil/phantom_patrol_move_01.png"
+    midnight_taxi:
+      idle: "images/devil/midnight_taxi_idle.png"
+      moveFrames:
+        - "images/devil/midnight_taxi_idle.png"
+        - "images/devil/midnight_taxi_move_01.png"
+    cone_swarm:
+      idle: "images/devil/cone_swarm_idle.png"
+      moveFrames:
+        - "images/devil/cone_swarm_idle.png"
+        - "images/devil/cone_swarm_move_01.png"
+    mirror_curve:
+      idle: "images/devil/mirror_curve_idle.png"
+      moveFrames:
+        - "images/devil/mirror_curve_idle.png"
+        - "images/devil/mirror_curve_move_01.png"
+    fuel_tanker_saint:
+      idle: "images/devil/fuel_tanker_saint_idle.png"
+      moveFrames:
+        - "images/devil/fuel_tanker_saint_idle.png"
+        - "images/devil/fuel_tanker_saint_move_01.png"
+    hearse_meridian:
+      idle: "images/devil/hearse_meridian_idle.png"
+      moveFrames:
+        - "images/devil/hearse_meridian_idle.png"
+        - "images/devil/hearse_meridian_move_01.png"
+    jackknife_trailer:
+      idle: "images/devil/jackknife_trailer_idle.png"
+      moveFrames:
+        - "images/devil/jackknife_trailer_idle.png"
+        - "images/devil/jackknife_trailer_move_01.png"
+    kuchisake_onna:
+      idle: "images/devil/kuchisake_onna_idle.png"
+      moveFrames:
+        - "images/devil/kuchisake_onna_idle.png"
+        - "images/devil/kuchisake_onna_move_01.png"
+    siren_ambulance:
+      idle: "images/devil/siren_ambulance_idle.png"
+      moveFrames:
+        - "images/devil/siren_ambulance_idle.png"
+        - "images/devil/siren_ambulance_move_01.png"
+    siren_ambulance_v2:
+      idle: "images/devil/siren_ambulance_v2_idle.png"
+      moveFrames:
+        - "images/devil/siren_ambulance_v2_idle.png"
+        - "images/devil/siren_ambulance_v2_move_01.png"
     unknown_sign: "images/devil/unknown_idle.png"
     unknown_mask_a: "images/devil/mirror_curve_idle.png"
     unknown_mask_b: "images/devil/cone_swarm_idle.png"

@@ -256,7 +256,32 @@ images:
 
 ---
 
-## 6) 今後の分割候補（次ステップ）
+## 6) 実装改善メモ（次に効く小さな整理）
+
+- MOE dialogue:
+  - 追加先は原則 `public/dialogue.yaml`
+  - helperは `src/game/moeDialogue.ts`
+  - `moe.run.*`, `moe.garage.*`, `moe.dynamic.battle.*` の番号付きpoolを使い、reducerへ文言を増やさない
+- Route graph:
+  - node選択/fallback/currentEvent解決/return checkpoint判定は `src/app/state/routeGraph.ts` と `routeReducer.ts` 側で扱う
+  - componentにはNAVI候補の表示に必要な短いview dataだけ渡す
+- Progression / unlock:
+  - 条件は `public/progression.yaml`
+  - 判定と購入処理は `src/game/progression.ts`
+  - Garage UIはlocked理由/購入可否を表示するだけに寄せる
+- YAML参照検証:
+  - stage/event/progression/balance/catalog のID参照ミスを検出する軽いvalidatorを今後追加候補にする
+  - unknown effect / unknown unlock target は落とさず警告できる設計を優先
+- AppRoot:
+  - props結線と画面構成に留める
+  - 派生値、MOE表情、runtime config、save/telemetry副作用はhook/view-modelへ継続移管する
+- GaragePanel:
+  - locked判定、購入可否、装備選択可否が増える場合はselector/helperへ逃がす
+  - UI側にprogression条件を直書きしない
+
+---
+
+## 7) 今後の分割候補（次ステップ）
 
 > すでに `CommandPanel / VehiclePanel / GaragePanel / UtilityPanels / EventPanels` は抽出済み。  
 > 今後は「内部責務の再分割」を候補にする。
@@ -270,7 +295,7 @@ images:
 
 ---
 
-## 7) Codex作業時の最小チェック
+## 8) Codex作業時の最小チェック
 
 1. 変更対象が UI / ロジック / データ のどれかを先に切り分ける
 2. 変更先が `AppRoot.tsx` で本当に妥当か確認する（多くは別ファイル）
