@@ -49,7 +49,6 @@ export const GarageStageSelect = ({
         {selectedStageProfile.subtitle}
       </small>
       <small>戦力判定: {selectedStageAdvisory}</small>
-      {stageCount < 4 && <small>最深層 `ABYSS LOOP` は Stage 3突破で解放。</small>}
     </div>
     <div className="command-window command-list">
       {!showGarageLaunchConfirm

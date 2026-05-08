@@ -40,13 +40,35 @@ export const getGarageStageAdvisory = (state: State, stage: number): string => {
   const survivabilityScore = preview.armor + preview.fuel + preview.signal + state.skillLevels.ram_control + state.skillLevels.scan_boost;
   const totalScore = firepowerScore + survivabilityScore;
   const recommended = profile.recommendedScore;
+  const stageNeeds: Record<number, {
+    focus: string;
+    fuel: number;
+    armor: number;
+    signal: number;
+    mainAmmo: number;
+    seAmmo: number;
+  }> = {
+    1: { focus: '入口ランプは接敵数が少なめ。Analyze/Talkで情報を取る余裕を作りたい。', fuel: 6, armor: 5, signal: 1, mainAmmo: 4, seAmmo: 0 },
+    2: { focus: '高架分岐はSignal妨害と装甲削りが増える。進路情報を失うと判断が荒れる。', fuel: 8, armor: 8, signal: 2, mainAmmo: 7, seAmmo: 2 },
+    3: { focus: '料金所外縁はToll Gate Saint封鎖へ近づく。主砲弾とS-Eを残して入りたい。', fuel: 10, armor: 10, signal: 3, mainAmmo: 9, seAmmo: 3 },
+    4: { focus: '環状封鎖域は帰還判断が重い。燃料、装甲、Signalのどれかを切らすと戻りにくい。', fuel: 12, armor: 12, signal: 4, mainAmmo: 10, seAmmo: 4 },
+  };
+  const need = stageNeeds[stage] ?? stageNeeds[4];
+  const shortages = [
+    preview.fuel < need.fuel ? `Fuel ${preview.fuel}/${need.fuel}` : '',
+    preview.armor < need.armor ? `Armor ${preview.armor}/${need.armor}` : '',
+    preview.signal < need.signal ? `Signal ${preview.signal}/${need.signal}` : '',
+    preview.mainAmmo < need.mainAmmo ? `Main ${preview.mainAmmo}/${need.mainAmmo}` : '',
+    preview.seAmmo < need.seAmmo ? `S-E ${preview.seAmmo}/${need.seAmmo}` : '',
+  ].filter(Boolean);
+  const shortageText = shortages.length > 0 ? `不足: ${shortages.join(' / ')}。` : '主要資源は基準内。';
   if (totalScore < recommended - 5) {
-    return `${profile.label}は今夜だと危険域。補給か改装を優先して、装備を一段上げよう。`;
+    return `危険域 ${totalScore}/${recommended}。${need.focus} ${shortageText}`;
   }
   if (totalScore < recommended) {
-    return `${profile.label}は接戦域。突入は可能、でも弾薬とSignalの配分はかなりシビア。`;
+    return `接戦域 ${totalScore}/${recommended}。${need.focus} ${shortageText}`;
   }
-  return `${profile.label}は突入可能域。今の構成なら深層反応にも届く。`;
+  return `突入可能 ${totalScore}/${recommended}。${need.focus} ${shortageText}`;
 };
 
 export const claimRunGrowthIfNeeded = (state: State): State => {
