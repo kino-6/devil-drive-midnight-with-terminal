@@ -5,7 +5,7 @@ profiles:
     threat: "MED"
     signal: "CONTRACT TRACE / VIOLET BAND"
     contractable: true
-    assetImage: "images/devil/WhisperBroker.png"
+    assetImage: "images/devil/whisper_broker_idle.png"
 
   roadside_phone:
     label: "ROADSIDE PHONE"
@@ -13,7 +13,7 @@ profiles:
     threat: "MED"
     signal: "VOICE CARRIER / AM 666.0"
     contractable: true
-    assetImage: "images/devil/RoadsidePhone.png"
+    assetImage: "images/devil/roadside_phone_idle.png"
 
   pixie_shibuya_glow:
     label: "PIXIE // SHIBUYA GLOW"
@@ -21,7 +21,7 @@ profiles:
     threat: "LOW"
     signal: "STREETLIGHT FRACTAL / SOFT CHIME"
     contractable: true
-    assetImage: "images/devil/Pixie.png"
+    assetImage: "images/devil/pixie_idle.png"
 
   foxfire_navi:
     label: "FOXFIRE NAVI"
@@ -29,7 +29,7 @@ profiles:
     threat: "MED"
     signal: "KITSUNEBI TRACE / ROUTE SPOOF"
     contractable: true
-    assetImage: "images/devil/FoxfireNavi.png"
+    assetImage: "images/devil/foxfire_navi_idle.png"
 
   no_face_taxi_passenger:
     label: "NO-FACE TAXI PASSENGER"
@@ -37,7 +37,7 @@ profiles:
     threat: "HIGH"
     signal: "METER DRIFT / BLANK ID"
     contractable: true
-    assetImage: "images/devil/No-FaceTaxi_ Passenger.png"
+    assetImage: "images/devil/no_face_taxi_passenger_idle.png"
 
   silent_shape:
     label: "SILENT SHAPE"
@@ -45,7 +45,7 @@ profiles:
     threat: "HIGH"
     signal: "AUDIO NULL / EDGE BLUR"
     contractable: true
-    assetImage: "images/devil/Silent_Shape.png"
+    assetImage: "images/devil/silent_shape_idle.png"
 
   abandoned_ai_navi:
     label: "ABANDONED AI NAVI"
@@ -53,7 +53,7 @@ profiles:
     threat: "LOW"
     signal: "LEGACY BUS / GHOST ARROW"
     contractable: true
-    assetImage: "images/devil/Abandoned_AI_Navi.png"
+    assetImage: "images/devil/abandoned_ai_navi_idle.png"
 
   road_reaper:
     label: "ROAD REAPER"
@@ -61,7 +61,7 @@ profiles:
     threat: "CRITICAL"
     signal: "HOSTILE SIGNAL / COLLISION VECTOR"
     contractable: false
-    assetImage: "images/devil/RoadReaper.png"
+    assetImage: "images/devil/road_reaper_idle.png"
 
   toll_gate_saint:
     label: "TOLL GATE SAINT"
@@ -69,7 +69,7 @@ profiles:
     threat: "CRITICAL"
     signal: "DEEP SIGNAL / TOLL DEMAND"
     contractable: true
-    assetImage: "images/devil/Toll_Gate_Saint.png"
+    assetImage: "images/devil/toll_gate_saint_idle.png"
 
   tunnel_rider:
     label: "TUNNEL RIDER"
@@ -77,7 +77,7 @@ profiles:
     threat: "HIGH"
     signal: "TUNNEL ECHO / SHADOW TRAIL"
     contractable: true
-    assetImage: "images/devil/TunnelRider.png"
+    assetImage: "images/devil/tunnel_rider_idle.png"
 
   closure_ogre:
     label: "CLOSURE OGRE"
@@ -85,7 +85,7 @@ profiles:
     threat: "CRITICAL"
     signal: "RAMP BLOCK / IMPACT RISK"
     contractable: false
-    assetImage: "images/devil/Closure_Ogre.png"
+    assetImage: "images/devil/closure_ogre_idle.png"
 
   tow_collector:
     label: "TOW COLLECTOR"
@@ -93,7 +93,7 @@ profiles:
     threat: "HIGH"
     signal: "TOW HOOK / DEBT TRACE"
     contractable: true
-    assetImage: "images/devil/TowCollector.png"
+    assetImage: "images/devil/tow_collector_idle.png"
 
   ghost_chaser:
     label: "GHOST CHASER"
@@ -101,7 +101,7 @@ profiles:
     threat: "HIGH"
     signal: "CHASE VECTOR / SIREN BLEED"
     contractable: false
-    assetImage: "images/devil/GhostChaser.png"
+    assetImage: "images/devil/ghost_chaser_idle.png"
 
   vending_spirit:
     label: "VENDING SPIRIT"
@@ -109,7 +109,7 @@ profiles:
     threat: "LOW"
     signal: "COIN LOOP / COLD STATIC"
     contractable: true
-    assetImage: "images/devil/VendingSpirit.png"
+    assetImage: "images/devil/vending_spirit_idle.png"
 
   phantom_patrol:
     label: "PHANTOM PATROL"
@@ -117,7 +117,7 @@ profiles:
     threat: "MED"
     signal: "PATROL BAND / BLIND SPOT"
     contractable: true
-    assetImage: "images/devil/PhantomPatrol.png"
+    assetImage: "images/devil/phantom_patrol_idle.png"
 
   midnight_taxi:
     label: "MIDNIGHT TAXI"
@@ -125,4 +125,4 @@ profiles:
     threat: "MED"
     signal: "METER PULSE / EMPTY CAB"
     contractable: true
-    assetImage: "images/devil/MidnightTaxi.png"
+    assetImage: "images/devil/midnight_taxi_idle.png"

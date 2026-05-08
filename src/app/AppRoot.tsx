@@ -161,11 +161,12 @@ export function App() {
   const isWindshieldFolded = state.gamePhase === 'garage';
   const speed = isBattlePhase ? 0 : isRoadMoving ? 122 : state.gamePhase === 'prologue' ? 64 : 8;
   const enemyAssetMap = assetManifest.images.enemies ?? {};
+  const defaultEnemyAssetMap = defaultAssetManifest.images.enemies ?? {};
   // Keep UNKNOWN SIGN strictly separated from mask/effect assets like MirrorCurve.
   // Do not fallback to generic `unknown` key to avoid accidental asset mix-ups.
   const unknownEnemyAsset =
     resolveAssetUrl(enemyAssetMap.unknown_sign)
-    ?? resolveAssetUrl('images/devil/UNKNOWN.png');
+    ?? resolveAssetUrl(defaultEnemyAssetMap.unknown_sign);
   const resolveUnknownEnemyAsset = (_index: number): string | undefined => unknownEnemyAsset;
   const playerAsset = resolveAssetUrl(assetManifest.images.player);
   const moeVariantMap = assetManifest.images.moeVariants ?? {};

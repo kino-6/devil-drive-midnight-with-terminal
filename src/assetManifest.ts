@@ -21,7 +21,11 @@ export type AssetManifest = {
 export const defaultAssetManifest: AssetManifest = {
   version: 'builtin',
   media: {},
-  images: {},
+  images: {
+    enemies: {
+      unknown_sign: 'images/devil/unknown_idle.png',
+    },
+  },
   ui: {},
 };
 
