@@ -248,6 +248,10 @@ export function BattleDevilSprite({
 }) {
   const profile = encounterProfiles[devil.profile];
   const hpPct = Math.max(0, (devil.hp / devil.maxHp) * 100);
+  const intelCurrent = Math.max(0, Math.floor(devil.intelProgress));
+  const intelMax = Math.max(1, Math.floor(devil.intelThreshold));
+  const intelPct = Math.max(0, Math.min(100, (intelCurrent / intelMax) * 100));
+  const showIntelProgress = revealState.showName || intelCurrent > 0;
   const animationFrames = imageFrames?.map((frame) => frame.trim()).filter(Boolean).slice(0, 2) ?? [];
   const canAnimate = animationFrames.length >= 2;
   const staticImageSrc = animationFrames[0] ?? imageSrc;
@@ -299,6 +303,10 @@ export function BattleDevilSprite({
       {revealState.showHp && <div className="battle-devil__hp">
         <span>HP {devil.hp}/{devil.maxHp}</span>
         <div><i style={{ width: `${hpPct}%` }} /></div>
+      </div>}
+      {showIntelProgress && <div className="battle-devil__intel">
+        <span>INTEL {intelCurrent}/{intelMax}</span>
+        <div><i style={{ width: `${intelPct}%` }} /></div>
       </div>}
       <div className="battle-devil__intent">
         <span className={`battle-devil__intent-icon intent--${devil.intent}`}>{intentIconMap[devil.intent]}</span>

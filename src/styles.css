@@ -1312,6 +1312,29 @@ body {
   background: linear-gradient(90deg, #b36862, #d09087);
 }
 
+.battle-devil__intel {
+  display: grid;
+  gap: 3px;
+}
+
+.battle-devil__intel span {
+  color: #8fc8d4;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+}
+
+.battle-devil__intel div {
+  height: 6px;
+  border: 1px solid #294452;
+  background: #0d141c;
+}
+
+.battle-devil__intel i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #4b8e97, #82d8e7);
+}
+
 .battle-devil__intent {
   display: inline-flex;
   align-items: center;
