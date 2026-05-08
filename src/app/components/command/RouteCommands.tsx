@@ -56,11 +56,11 @@ export const RouteCommands = ({
           <button
             key={`${candidate.nodeId}-${candidate.choiceId}`}
             className={candidate.choiceId === 'return_gate' ? 'command-button command-button--danger' : 'command-button command-button--route'}
-            onMouseEnter={() => setHoveredHint(candidate.body ?? `${candidate.title} / risk: ${candidate.risk} / reward: ${candidate.reward}`)}
+            onMouseEnter={() => setHoveredHint(candidate.body ?? `${candidate.title} / ${candidate.forecast.join(' > ')} / risk: ${candidate.risk} / reward: ${candidate.reward}`)}
             onMouseLeave={clearHoveredHint}
             onClick={() => onRouteChoice(candidate.choiceId)}
           >
-            {candidate.title} <span>{candidate.tags} / {candidate.risk} → {candidate.reward}</span>
+            {candidate.title} <span>{candidate.forecast.join(' > ')} / BOSS IN {candidate.bossSteps ?? '--'}</span>
           </button>
         ))}
       </div>;

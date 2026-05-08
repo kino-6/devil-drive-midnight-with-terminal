@@ -15,6 +15,8 @@ export type NaviRouteCandidate = {
   tags: string;
   risk: string;
   reward: string;
+  forecast: string[];
+  bossSteps?: number;
   effects?: string;
   eventId?: string;
   intelLevel: NaviIntelLevel;
@@ -141,6 +143,66 @@ const maskIntel = (
   return lowFallback;
 };
 
+const routeStepLabel = (node: StageRouteNode): string => {
+  if (node.type === 'encounter') return 'CONTACT';
+  if (node.type === 'salvage') return 'SUPPLY';
+  if (node.type === 'signal') return 'SIGNAL';
+  if (node.type === 'boss_preview') return 'BOSS GATE';
+  if (node.type === 'boss') return 'BOSS';
+  if (node.type === 'return_gate' || node.type === 'extract') return 'EXTRACT';
+  if (node.type === 'route_choice') return 'FORK';
+  if (node.type === 'return_checkpoint') return 'CHECKPOINT';
+  return node.label.toUpperCase();
+};
+
+const preferredNextNodeId = (node: StageRouteNode): string | undefined => {
+  if (node.next) return node.next;
+  if (!node.choices) return undefined;
+  return node.choices.challenge
+    ?? node.choices.push_forward
+    ?? node.choices.signal
+    ?? node.choices.salvage
+    ?? Object.entries(node.choices).find(([choice]) => choice !== 'return_gate')?.[1]
+    ?? Object.values(node.choices)[0];
+};
+
+const getRouteForecast = (route: StageDefinition, startNodeId: string, limit = 3): string[] => {
+  const out: string[] = [];
+  const visited = new Set<string>();
+  let nodeId: string | undefined = startNodeId;
+  while (nodeId && out.length < limit && !visited.has(nodeId)) {
+    visited.add(nodeId);
+    const node = route.nodes[nodeId];
+    if (!node) break;
+    out.push(routeStepLabel(node));
+    nodeId = preferredNextNodeId(node);
+  }
+  return out;
+};
+
+const getBossSteps = (route: StageDefinition, startNodeId: string): number | undefined => {
+  const queue: Array<{ nodeId: string; steps: number }> = [{ nodeId: startNodeId, steps: 1 }];
+  const visited = new Set<string>();
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current || visited.has(current.nodeId)) continue;
+    visited.add(current.nodeId);
+    const node = route.nodes[current.nodeId];
+    if (!node) continue;
+    if (node.type === 'boss') return current.steps;
+    const nextNodeIds = [
+      node.next,
+      ...Object.entries(node.choices ?? {})
+        .filter(([choice]) => choice !== 'return_gate')
+        .map(([, targetNodeId]) => targetNodeId),
+    ].filter((targetNodeId): targetNodeId is string => !!targetNodeId);
+    for (const nextNodeId of nextNodeIds) {
+      if (!visited.has(nextNodeId)) queue.push({ nodeId: nextNodeId, steps: current.steps + 1 });
+    }
+  }
+  return undefined;
+};
+
 export const getCurrentNaviRouteBriefing = (state: State): NaviRouteBriefing | undefined => {
   const currentEvent = getEventById(state.routeState?.currentEventId);
   if (!currentEvent) return undefined;
@@ -156,7 +218,9 @@ export const getCurrentNaviRouteBriefing = (state: State): NaviRouteBriefing | u
 
 export const getNaviRouteCandidates = (state: State): NaviRouteCandidate[] => {
   const currentNode = getStageRouteNode(state);
+  const route = getCurrentStageRoute(state);
   if (!currentNode?.choices) return [];
+  if (!route) return [];
 
   const intelLevel = getNaviIntelLevel(state);
   const events = currentNode.eventPool ? getEventsByPool(currentNode.eventPool) : [];
@@ -174,6 +238,8 @@ export const getNaviRouteCandidates = (state: State): NaviRouteCandidate[] => {
       tags: maskIntel(event.tags.join(' / '), intelLevel, 'medium', lowSignalRouteHints[choiceId].tags),
       risk: maskIntel(intel.riskTags, intelLevel, 'medium', lowSignalRouteHints[choiceId].risk),
       reward: maskIntel(intel.rewardTags, intelLevel, 'high', lowSignalRouteHints[choiceId].reward),
+      forecast: getRouteForecast(route, nodeId),
+      bossSteps: getBossSteps(route, nodeId),
       effects: intelLevel === 'high' ? event.effects : undefined,
       eventId: event.id,
       intelLevel,
@@ -196,6 +262,8 @@ export const getNaviRouteCandidates = (state: State): NaviRouteCandidate[] => {
         tags: maskIntel(intel.likelyEnemyTags, intelLevel, 'medium', lowSignalRouteHints[lane].tags),
         risk: maskIntel(intel.riskTags, intelLevel, 'medium', lowSignalRouteHints[lane].risk),
         reward: maskIntel(intel.rewardTags, intelLevel, 'high', lowSignalRouteHints[lane].reward),
+        forecast: getRouteForecast(route, nodeId),
+        bossSteps: getBossSteps(route, nodeId),
         intelLevel,
       };
     });

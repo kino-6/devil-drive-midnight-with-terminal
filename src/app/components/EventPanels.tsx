@@ -40,6 +40,7 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
               <span>◎</span>
               <strong>{candidate.title}</strong>
               <small>tags: {candidate.tags}</small>
+              <small>route: {candidate.forecast.join(' > ')} / boss: {candidate.bossSteps ?? '--'} steps</small>
               <small>risk: {candidate.risk} / reward: {candidate.reward}</small>
               {candidate.body && <small>{candidate.body}</small>}
               {candidate.effects && <small>effects: {candidate.effects}</small>}

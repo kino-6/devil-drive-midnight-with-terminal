@@ -123,6 +123,8 @@ export const BattleView = ({
             <span>{index === 0 ? 'LEFT' : index === 1 ? 'STRAIGHT' : 'RIGHT'}</span>
             <strong>{candidate.title}</strong>
             <small>{candidate.tags}</small>
+            <small>{candidate.forecast.join(' > ')}</small>
+            <small>BOSS IN {candidate.bossSteps ?? '--'}</small>
           </div>
         ))}
       </div>
