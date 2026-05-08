@@ -29,9 +29,33 @@ export type CommandId = 'main_gun' | 'sub_gun' | 'se_harpoon' | 'analyze' | 'tal
 export type AffinityType = 'ballistic' | 'suppressive' | 'impact' | 'signal' | 'talk';
 export type AffinityRating = 'weak' | 'normal' | 'resist';
 export type DevilAffinity = Record<AffinityType, AffinityRating>;
-export type MainGunId = 'rusted_cannon' | 'light_cannon' | 'heavy_cannon' | 'burst_cannon' | 'rail_cannon';
-export type SubGunId = 'hood_mg' | 'twin_mg' | 'suppression_mg' | 'road_sweeper' | 'counter_pod';
-export type SpecialEquipmentId = 'signal_harpoon' | 'micro_missile' | 'emp_flare' | 'jammer_pulse' | 'decoy_beacon';
+export type MainGunId =
+  | 'rusted_cannon'
+  | 'light_cannon'
+  | 'needle_cannon'
+  | 'heavy_cannon'
+  | 'siege_cannon'
+  | 'burst_cannon'
+  | 'rail_cannon'
+  | 'sigil_driver';
+export type SubGunId =
+  | 'hood_mg'
+  | 'twin_mg'
+  | 'intent_jammer'
+  | 'suppression_mg'
+  | 'road_sweeper'
+  | 'crowd_mg'
+  | 'counter_pod'
+  | 'mercy_pod';
+export type SpecialEquipmentId =
+  | 'signal_harpoon'
+  | 'scan_beacon'
+  | 'micro_missile'
+  | 'emp_flare'
+  | 'binding_flare'
+  | 'jammer_pulse'
+  | 'decoy_beacon'
+  | 'saint_anchor';
 export type ContractSupportId = 'none' | ContractId;
 export type Temperament = 'hungry' | 'proud' | 'lonely' | 'machine' | 'hostile' | 'curious';
 export type Intent = 'attack' | 'curse' | 'bargain' | 'guard' | 'flee';
@@ -58,9 +82,9 @@ export type RewardScope = 'post_enc1' | 'post_enc2';
 export type ContractModule = { id: ContractId; name: string; effect: string };
 export type ForecastMap = Record<string, Intent[]>;
 export type RewardOption = { id: string; label: string; detail: string; fuel?: number; armor?: number; signal?: number; mainAmmo?: number; seAmmo?: number };
-export type MainGun = { id: MainGunId; name: string; damage: number; ammo: number; description: string };
-export type SubGun = { id: SubGunId; name: string; damage: number; mode: 'all' | 'random_hits'; hits?: number; softenChance?: number; description: string };
-export type SpecialEquipment = { id: SpecialEquipmentId; name: string; damage: number; seAmmoCost: number; ammo: number; effect: 'interest' | 'all_damage' | 'emp'; description: string };
+export type MainGun = { id: MainGunId; name: string; damage: number; ammo: number; effect?: 'intel' | 'contract'; description: string };
+export type SubGun = { id: SubGunId; name: string; damage: number; mode: 'all' | 'random_hits'; hits?: number; softenChance?: number; pressureMode?: 'build' | 'cool'; description: string };
+export type SpecialEquipment = { id: SpecialEquipmentId; name: string; damage: number; seAmmoCost: number; ammo: number; effect: 'interest' | 'all_damage' | 'emp' | 'analyze_lock' | 'contract_window' | 'boss_breaker'; description: string };
 export type ContractSupport = { id: ContractSupportId; name: string; description: string };
 export type Loadout = {
   mainGunId: MainGunId;
@@ -234,7 +258,7 @@ export type StoryState = {
 export type ApproachKind = EncounterState['kind'];
 export type ApproachOption = 'preemptive_main_gun' | 'hit_and_run_ram' | 'silent_coast' | 'open_channel';
 export type UpgradeId = 'ram_control' | 'gunnery' | 'scan_boost' | 'translation_assist';
-export type VehicleUpgradeId = 'fuel_tank' | 'armor_plating' | 'ammo_rack' | 'se_rack';
+export type VehicleUpgradeId = 'fuel_tank' | 'armor_plating' | 'ammo_rack' | 'se_rack' | 'signal_antenna' | 'noise_filter' | 'daemon_bus';
 export type SkillLevels = Record<UpgradeId, number>;
 export type VehicleUpgradeLevels = Record<VehicleUpgradeId, number>;
 export type UnlockState = {

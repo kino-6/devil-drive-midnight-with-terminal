@@ -135,7 +135,7 @@ export function App() {
   const armorCriticalRatio = dashboardArmorMax > 0 ? state.armor / dashboardArmorMax : 1;
   const isArmorCritical = armorCriticalRatio <= 0.25;
   const skillOrder: UpgradeId[] = ['ram_control', 'gunnery', 'scan_boost', 'translation_assist'];
-  const vehicleUpgradeOrder: VehicleUpgradeId[] = ['fuel_tank', 'armor_plating', 'ammo_rack', 'se_rack'];
+  const vehicleUpgradeOrder: VehicleUpgradeId[] = ['fuel_tank', 'armor_plating', 'ammo_rack', 'se_rack', 'signal_antenna', 'noise_filter', 'daemon_bus'];
 
   const selectedEnemy = useMemo(() => getSelectedEnemy(state.encounter), [state.encounter]);
   const hoveredEnemy = useMemo(

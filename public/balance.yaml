@@ -44,6 +44,11 @@ approach:
   minChance: 0.6
   maxChance: 0.9
 
+vehicleUpgrades:
+  signalAntennaAnalyzeBonus: 12
+  noiseFilterPressureReduction: 1
+  daemonBusBacklashReduction: 0.08
+
 autoplay:
   defaultRuns: 1
   minRuns: 1
@@ -59,27 +64,49 @@ weapons:
     light_cannon:
       damage: 4
       ammo: 12
+    needle_cannon:
+      damage: 2
+      ammo: 16
     heavy_cannon:
       damage: 6
       ammo: 5
+    siege_cannon:
+      damage: 8
+      ammo: 3
     burst_cannon:
       damage: 5
       ammo: 9
+    sigil_driver:
+      damage: 3
+      ammo: 7
   subGun:
     hood_mg:
       damage: 2
     twin_mg:
       damage: 2
       hits: 2
+    intent_jammer:
+      damage: 1
+      softenChance: 0.65
     suppression_mg:
       damage: 2
       softenChance: 0.4
     road_sweeper:
       damage: 2
+    crowd_mg:
+      damage: 1
+      hits: 4
+    mercy_pod:
+      damage: 0
+      hits: 2
   specialEquipment:
     signal_harpoon:
       damage: 2
       ammo: 5
+      seAmmoCost: 1
+    scan_beacon:
+      damage: 0
+      ammo: 4
       seAmmoCost: 1
     micro_missile:
       damage: 3
@@ -89,7 +116,15 @@ weapons:
       damage: 1
       ammo: 4
       seAmmoCost: 1
+    binding_flare:
+      damage: 1
+      ammo: 3
+      seAmmoCost: 1
     jammer_pulse:
       damage: 2
       ammo: 5
       seAmmoCost: 1
+    saint_anchor:
+      damage: 2
+      ammo: 2
+      seAmmoCost: 2

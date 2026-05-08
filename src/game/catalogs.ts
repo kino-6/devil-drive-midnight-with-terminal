@@ -43,30 +43,39 @@ export const defaultLoadout = {
 export const mainGunCatalog: Record<MainGunId, MainGun> = {
   rusted_cannon: { id: 'rusted_cannon', name: 'Rusted Cannon', damage: 4, ammo: 8, description: '標準的な主砲。単体に安定した大ダメージ。' },
   light_cannon: { id: 'light_cannon', name: 'Light Cannon', damage: 3, ammo: 12, description: '火力は低いが弾数が多い。長期戦向き。' },
+  needle_cannon: { id: 'needle_cannon', name: 'Needle Cannon', damage: 2, ammo: 16, effect: 'intel', description: '低火力・多弾数の解析主砲。命中時のIntel蓄積が高い。' },
   heavy_cannon: { id: 'heavy_cannon', name: 'Heavy Cannon', damage: 6, ammo: 5, description: '高火力だが弾数が少ない。Boss向き。' },
+  siege_cannon: { id: 'siege_cannon', name: 'Siege Cannon', damage: 8, ammo: 3, description: '超高火力・低弾数。短期決着用の重量主砲。' },
   burst_cannon: { id: 'burst_cannon', name: 'Burst Cannon', damage: 5, ammo: 9, description: '中火力・中弾数の連射主砲。汎用性が高い。' },
   rail_cannon: { id: 'rail_cannon', name: 'Rail Cannon', damage: 7, ammo: 4, description: '貫通重視の高精度主砲。決定打向き。' },
+  sigil_driver: { id: 'sigil_driver', name: 'Sigil Driver', damage: 3, ammo: 7, effect: 'contract', description: '契約紋を撃ち込む特殊主砲。解析済み対象の契約窓を作りやすい。' },
 };
 
 export const subGunCatalog: Record<SubGunId, SubGun> = {
   hood_mg: { id: 'hood_mg', name: 'Hood MG', damage: 1, mode: 'all', description: '全体に小ダメージ。標準的な副砲。' },
   twin_mg: { id: 'twin_mg', name: 'Twin MG', damage: 1, mode: 'random_hits', hits: 2, description: 'ランダム対象に2回攻撃。少数戦向き。' },
+  intent_jammer: { id: 'intent_jammer', name: 'Intent Jammer', damage: 1, mode: 'all', softenChance: 0.65, description: '攻撃Intentを鈍らせる妨害副砲。被害軽減重視。' },
   suppression_mg: { id: 'suppression_mg', name: 'Suppression MG', damage: 1, mode: 'all', softenChance: 0.4, description: '牽制射撃。被害を抑えたい時に使う。' },
   road_sweeper: { id: 'road_sweeper', name: 'Road Sweeper', damage: 2, mode: 'all', description: '全体へ中威力散弾。契約より突破向き。' },
+  crowd_mg: { id: 'crowd_mg', name: 'Crowd MG', damage: 1, mode: 'random_hits', hits: 4, description: '複数敵に手数をばら撒く副砲。群れ相手の削り向き。' },
   counter_pod: { id: 'counter_pod', name: 'Counter Pod', damage: 2, mode: 'random_hits', hits: 3, description: '迎撃ポッド射出。手数で崩す。' },
+  mercy_pod: { id: 'mercy_pod', name: 'Mercy Pod', damage: 0, mode: 'random_hits', hits: 2, pressureMode: 'cool', description: '圧を抜いて会話へ戻す非殺傷ポッド。Talk再挑戦向き。' },
 };
 
 export const specialEquipmentCatalog: Record<SpecialEquipmentId, SpecialEquipment> = {
   signal_harpoon: { id: 'signal_harpoon', name: 'Signal Harpoon', damage: 2, seAmmoCost: 1, ammo: 4, effect: 'interest', description: '契約を狙うための特殊兵装。' },
+  scan_beacon: { id: 'scan_beacon', name: 'Scan Beacon', damage: 0, seAmmoCost: 1, ammo: 4, effect: 'analyze_lock', description: '敵シグネチャを照射し、Analyze蓄積と脆弱化を補助する。' },
   micro_missile: { id: 'micro_missile', name: 'Micro Missile', damage: 3, seAmmoCost: 1, ammo: 3, effect: 'all_damage', description: '全体攻撃。契約より撃破向き。' },
   emp_flare: { id: 'emp_flare', name: 'EMP Flare', damage: 1, seAmmoCost: 1, ammo: 4, effect: 'emp', description: '機械霊対策。AI系の行動を鈍らせる。' },
+  binding_flare: { id: 'binding_flare', name: 'Binding Flare', damage: 1, seAmmoCost: 1, ammo: 3, effect: 'contract_window', description: '契約窓を押し開く拘束信号。低ダメージの交渉補助S-E。' },
   jammer_pulse: { id: 'jammer_pulse', name: 'Jammer Pulse', damage: 2, seAmmoCost: 1, ammo: 5, effect: 'emp', description: '妨害寄りS-E。命中時に意図阻害しやすい。' },
   decoy_beacon: { id: 'decoy_beacon', name: 'Decoy Beacon', damage: 1, seAmmoCost: 1, ammo: 6, effect: 'interest', description: '疑似信号で注意を逸らし、交渉窓を作る。' },
+  saint_anchor: { id: 'saint_anchor', name: 'Saint Anchor', damage: 2, seAmmoCost: 2, ammo: 2, effect: 'boss_breaker', description: 'Boss級信号に強い固定杭。通常敵には重いが、料金所型に刺さる。' },
 };
 
-export const garageMainGunOrder: MainGunId[] = ['light_cannon', 'heavy_cannon', 'burst_cannon', 'rail_cannon', 'rusted_cannon'];
-export const garageSubGunOrder: SubGunId[] = ['hood_mg', 'twin_mg', 'suppression_mg', 'road_sweeper', 'counter_pod'];
-export const garageSEOrder: SpecialEquipmentId[] = ['signal_harpoon', 'micro_missile', 'emp_flare', 'jammer_pulse', 'decoy_beacon'];
+export const garageMainGunOrder: MainGunId[] = ['light_cannon', 'needle_cannon', 'heavy_cannon', 'siege_cannon', 'burst_cannon', 'rail_cannon', 'sigil_driver', 'rusted_cannon'];
+export const garageSubGunOrder: SubGunId[] = ['hood_mg', 'twin_mg', 'intent_jammer', 'suppression_mg', 'road_sweeper', 'crowd_mg', 'counter_pod', 'mercy_pod'];
+export const garageSEOrder: SpecialEquipmentId[] = ['signal_harpoon', 'scan_beacon', 'micro_missile', 'emp_flare', 'binding_flare', 'jammer_pulse', 'decoy_beacon', 'saint_anchor'];
 export const garageSupportOrder: ContractSupportId[] = ['none', 'radio_voice', 'silent_shape', 'abandoned_ai_navi'];
 
 export const contractSupportCatalog: Record<ContractSupportId, ContractSupport> = {
@@ -171,6 +180,9 @@ export const defaultVehicleUpgrades: VehicleUpgradeLevels = {
   armor_plating: 0,
   ammo_rack: 0,
   se_rack: 0,
+  signal_antenna: 0,
+  noise_filter: 0,
+  daemon_bus: 0,
 };
 
 export const skillLabels: Record<UpgradeId, string> = {
@@ -185,6 +197,9 @@ export const vehicleUpgradeLabels: Record<VehicleUpgradeId, string> = {
   armor_plating: 'Armor Plating',
   ammo_rack: 'Main Ammo Rack',
   se_rack: 'S-E Rack',
+  signal_antenna: 'Signal Antenna',
+  noise_filter: 'Noise Filter',
+  daemon_bus: 'Daemon Bus',
 };
 
 export const routeIntelCatalog: Record<'salvage' | 'signal' | 'push_forward' | 'return_gate', {

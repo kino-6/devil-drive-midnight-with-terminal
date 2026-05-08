@@ -1,6 +1,6 @@
-type MainGunId = 'rusted_cannon' | 'light_cannon' | 'heavy_cannon' | 'burst_cannon' | 'rail_cannon';
-type SubGunId = 'hood_mg' | 'twin_mg' | 'suppression_mg' | 'road_sweeper' | 'counter_pod';
-type SpecialEquipmentId = 'signal_harpoon' | 'micro_missile' | 'emp_flare' | 'jammer_pulse' | 'decoy_beacon';
+type MainGunId = 'rusted_cannon' | 'light_cannon' | 'needle_cannon' | 'heavy_cannon' | 'siege_cannon' | 'burst_cannon' | 'rail_cannon' | 'sigil_driver';
+type SubGunId = 'hood_mg' | 'twin_mg' | 'intent_jammer' | 'suppression_mg' | 'road_sweeper' | 'crowd_mg' | 'counter_pod' | 'mercy_pod';
+type SpecialEquipmentId = 'signal_harpoon' | 'scan_beacon' | 'micro_missile' | 'emp_flare' | 'binding_flare' | 'jammer_pulse' | 'decoy_beacon' | 'saint_anchor';
 
 export type BalanceConfig = {
   version: string;
@@ -46,6 +46,11 @@ export type BalanceConfig = {
     ramControlBonusPerLevel: number;
     minChance: number;
     maxChance: number;
+  };
+  vehicleUpgrades: {
+    signalAntennaAnalyzeBonus: number;
+    noiseFilterPressureReduction: number;
+    daemonBusBacklashReduction: number;
   };
   autoplay: {
     defaultRuns: number;
@@ -105,6 +110,11 @@ export const defaultBalanceConfig: BalanceConfig = {
     ramControlBonusPerLevel: 0.05,
     minChance: 0.6,
     maxChance: 0.9,
+  },
+  vehicleUpgrades: {
+    signalAntennaAnalyzeBonus: 12,
+    noiseFilterPressureReduction: 1,
+    daemonBusBacklashReduction: 0.08,
   },
   autoplay: {
     defaultRuns: 1,
@@ -175,6 +185,7 @@ const fromRecord = (raw: Record<string, unknown>): BalanceConfig => {
   const contract = asRecord(raw.contract);
   const escape = asRecord(raw.escape);
   const approach = asRecord(raw.approach);
+  const vehicleUpgrades = asRecord(raw.vehicleUpgrades);
   const autoplay = asRecord(raw.autoplay);
   const weapons = asRecord(raw.weapons);
   return {
@@ -221,6 +232,11 @@ const fromRecord = (raw: Record<string, unknown>): BalanceConfig => {
       ramControlBonusPerLevel: asNum(approach.ramControlBonusPerLevel, defaultBalanceConfig.approach.ramControlBonusPerLevel),
       minChance: asNum(approach.minChance, defaultBalanceConfig.approach.minChance),
       maxChance: asNum(approach.maxChance, defaultBalanceConfig.approach.maxChance),
+    },
+    vehicleUpgrades: {
+      signalAntennaAnalyzeBonus: asNum(vehicleUpgrades.signalAntennaAnalyzeBonus, defaultBalanceConfig.vehicleUpgrades.signalAntennaAnalyzeBonus),
+      noiseFilterPressureReduction: asNum(vehicleUpgrades.noiseFilterPressureReduction, defaultBalanceConfig.vehicleUpgrades.noiseFilterPressureReduction),
+      daemonBusBacklashReduction: asNum(vehicleUpgrades.daemonBusBacklashReduction, defaultBalanceConfig.vehicleUpgrades.daemonBusBacklashReduction),
     },
     autoplay: {
       defaultRuns: asNum(autoplay.defaultRuns, defaultBalanceConfig.autoplay.defaultRuns),

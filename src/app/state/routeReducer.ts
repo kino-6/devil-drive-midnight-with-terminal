@@ -3,6 +3,7 @@ import type { Action, ResultType, State } from '../../game/types';
 import { emergencyRewardCatalog, rewardCatalog } from '../../game/catalogs';
 import { appendSupportDaemonDisconnectLogs } from '../../game/runtimeHelpers';
 import { applyRunUnlockRewards } from '../../game/progression';
+import { getSupportBacklashChance } from '../../game/vehicleUpgrades';
 import { applyRewardOption, pickRewardChoices } from './stateRuntime';
 import { moveToApproach } from './approachReducer';
 import { appendRecoveredStoryLogLines, getRunGrowth, makePreviousRunSummary, resolveStoryFromRun } from './storyProgression';
@@ -56,7 +57,7 @@ export function reduceRoute(state: State, action: Action): State {
       const signalGain = state.selectedLoadout.contractSupportId === 'radio_voice' ? 2 : 1;
       const forecastGain = state.selectedLoadout.contractSupportId === 'radio_voice' ? 2 : 1;
       const signalLogs = [...state.logs, '> SIGNAL LANE SELECTED', `> SIGNAL +${signalGain}`];
-      if (state.selectedLoadout.contractSupportId === 'radio_voice' && Math.random() < 0.4) signalLogs.push('> WARNING: AM 666.0 FALSE CARRIER');
+      if (state.selectedLoadout.contractSupportId === 'radio_voice' && Math.random() < getSupportBacklashChance(0.4, state.vehicleUpgrades)) signalLogs.push('> WARNING: AM 666.0 FALSE CARRIER');
       return {
         ...state,
         gamePhase: 'signal',
@@ -68,7 +69,7 @@ export function reduceRoute(state: State, action: Action): State {
     }
     const logs = [...state.logs, '> PUSH FORWARD SELECTED', '> ENCOUNTER 2: FORWARD CONTACT'];
     let fuel = state.fuel;
-    if (state.selectedLoadout.contractSupportId === 'silent_shape' && Math.random() < 0.2) {
+    if (state.selectedLoadout.contractSupportId === 'silent_shape' && Math.random() < getSupportBacklashChance(0.2, state.vehicleUpgrades)) {
       fuel = Math.max(0, fuel - 1);
       logs.push('> SUPPORT BACKLASH: SILENT SHAPE / FUEL -1');
     }
@@ -90,7 +91,7 @@ export function reduceRoute(state: State, action: Action): State {
     const toBoss = state.rewardTarget === 'boss';
     const logs = [...state.logs, `> SALVAGE APPLIED: ${selected.label.toUpperCase()}`, `> ${toBoss ? 'BOSS CONTACT' : 'ENCOUNTER 2: SIGNAL CONTACT'}`];
     let fuel = patched.fuel;
-    if (state.selectedLoadout.contractSupportId === 'silent_shape' && Math.random() < 0.2) {
+    if (state.selectedLoadout.contractSupportId === 'silent_shape' && Math.random() < getSupportBacklashChance(0.2, state.vehicleUpgrades)) {
       fuel = Math.max(0, fuel - 1);
       logs.push('> SUPPORT BACKLASH: SILENT SHAPE / FUEL -1');
     }
@@ -150,7 +151,7 @@ export function reduceRoute(state: State, action: Action): State {
     }
 
     logs.push('> ENCOUNTER 2: SIGNAL CONTACT');
-    if (state.selectedLoadout.contractSupportId === 'silent_shape' && Math.random() < 0.2) {
+    if (state.selectedLoadout.contractSupportId === 'silent_shape' && Math.random() < getSupportBacklashChance(0.2, state.vehicleUpgrades)) {
       fuel = Math.max(0, fuel - 1);
       logs.push('> SUPPORT BACKLASH: SILENT SHAPE / FUEL -1');
     }
@@ -201,7 +202,7 @@ export function reduceRoute(state: State, action: Action): State {
     }
     const logs = [...state.logs, '> BOSS ENCOUNTER: TOLL GATE SAINT'];
     let fuel = state.fuel;
-    if (state.selectedLoadout.contractSupportId === 'silent_shape' && Math.random() < 0.2) {
+    if (state.selectedLoadout.contractSupportId === 'silent_shape' && Math.random() < getSupportBacklashChance(0.2, state.vehicleUpgrades)) {
       fuel = Math.max(0, fuel - 1);
       logs.push('> SUPPORT BACKLASH: SILENT SHAPE / FUEL -1');
     }

@@ -16,6 +16,7 @@ import {
   supportDaemonLinkFlavorLogs,
   supportDaemonMoeLinkLines,
 } from '../../game/runtimeHelpers';
+import { getVehicleUpgradeUtilityEffects } from '../../game/vehicleUpgrades';
 import type { Action, AffinityType, ConversationEffect, Devil, EncounterState, ResultType, State } from '../../game/types';
 
 export const resolveExecuteCommand = (state: State, action: Action, deps: any): State => {
@@ -74,6 +75,7 @@ let escaped = false;
 const selectedMainGun = getMainGunSpec(state.selectedLoadout.mainGunId);
 const selectedSubGun = getSubGunSpec(state.selectedLoadout.subGunId);
 const selectedSE = getSpecialEquipmentSpec(state.selectedLoadout.specialEquipmentId);
+const vehicleUtility = getVehicleUpgradeUtilityEffects(state.vehicleUpgrades);
 const getMoeTargetName = (enemy: Devil) =>
   isEnemyIdentityKnown(enemy, encounter.analyzedEnemyIds)
     ? enemy.name
@@ -172,6 +174,18 @@ if (command === 'main_gun' && selectedEnemy && mainAmmo > 0) {
     encounter.enemies[idx].guardStacks = Math.max(0, encounter.enemies[idx].guardStacks - 1);
     encounter.enemies[idx].pressure += 1;
     applyIntelGain(idx, 8, 'combat');
+    if (selectedMainGun.effect === 'intel') {
+      applyIntelGain(idx, 14, 'combat');
+      encounter.enemies[idx].analyzeVulnerableTurns = Math.max(1, encounter.enemies[idx].analyzeVulnerableTurns ?? 0);
+      logs.push('> NEEDLE TELEMETRY: INTEL LOCK DEEPENED');
+    }
+    if (selectedMainGun.effect === 'contract' && isEnemyIdentityKnown(encounter.enemies[idx], encounter.analyzedEnemyIds)) {
+      encounter.enemies[idx].interest += 1;
+      if (canOpenContractWindow(encounter.enemies[idx])) {
+        encounter.enemies[idx].contractWindow = true;
+        logs.push('> SIGIL DRIVER: CONTRACT WINDOW PARTIAL OPEN');
+      }
+    }
     if (affinity === 'resist') {
       encounter.enemies[idx].pressure += 1;
       encounter.enemies[idx].contractWindow = false;
@@ -213,7 +227,12 @@ if (command === 'sub_gun') {
     const damage = subRoll.damage;
     encounter.enemies[enemyIndex].hp = Math.max(0, encounter.enemies[enemyIndex].hp - damage);
     encounter.enemies[enemyIndex].guardStacks = Math.max(0, encounter.enemies[enemyIndex].guardStacks - 1);
-    encounter.enemies[enemyIndex].pressure += 1;
+    if (selectedSubGun.pressureMode === 'cool') {
+      encounter.enemies[enemyIndex].pressure = Math.max(0, encounter.enemies[enemyIndex].pressure - 1);
+      encounter.enemies[enemyIndex].interest += 1;
+    } else {
+      encounter.enemies[enemyIndex].pressure += 1;
+    }
     applyIntelGain(enemyIndex, 4, 'combat');
     if (affinity === 'weak') weakHits += 1;
     if (affinity === 'resist') {
@@ -305,7 +324,8 @@ if (command === 'se_harpoon' && selectedEnemy && seAmmo >= selectedSE.seAmmoCost
       const adjustedDamage = seRoll.damage;
       encounter.enemies[idx].hp = Math.max(0, encounter.enemies[idx].hp - adjustedDamage);
       encounter.enemies[idx].guardStacks = Math.max(0, encounter.enemies[idx].guardStacks - 1);
-      applyIntelGain(idx, 10, 'combat');
+      const intelGain = selectedSE.effect === 'analyze_lock' ? 38 : 10;
+      applyIntelGain(idx, intelGain, selectedSE.effect === 'analyze_lock' ? 'analyze' : 'combat');
       if (selectedSE.effect === 'interest') {
         encounter.enemies[idx].interest += 1 + (affinity === 'weak' ? 1 : 0);
         if (encounter.enemies[idx].temperament === 'machine' || encounter.enemies[idx].temperament === 'curious') encounter.enemies[idx].interest += 1;
@@ -323,6 +343,42 @@ if (command === 'se_harpoon' && selectedEnemy && seAmmo >= selectedSE.seAmmoCost
           : affinity === 'resist'
             ? getConversationLineWithVars('moe.dynamic.battle.se.interest.resist', { target: targetName })
             : getConversationLineWithVars('moe.dynamic.battle.se.interest.normal', { target: targetName });
+      } else if (selectedSE.effect === 'analyze_lock') {
+        encounter.enemies[idx].revealed = true;
+        encounter.enemies[idx].analyzeVulnerableTurns = Math.max(2, encounter.enemies[idx].analyzeVulnerableTurns ?? 0);
+        logs.push('> SCAN BEACON: SIGNATURE LOCK EXTENDED');
+        if (encounter.enemies[idx].affinityRevealed) logs.push('> SCAN BEACON: AFFINITY MAP STABILIZED');
+        moeLine = getConversationLineWithVars('moe.dynamic.battle.analyze.success', {
+          target: getMoeTargetName(encounter.enemies[idx]),
+        });
+      } else if (selectedSE.effect === 'contract_window') {
+        encounter.enemies[idx].interest += 2 + (affinity === 'weak' ? 1 : 0);
+        encounter.enemies[idx].trust += affinity === 'resist' ? 0 : 1;
+        if (affinity === 'resist') {
+          encounter.enemies[idx].pressure += 1;
+          encounter.enemies[idx].contractWindow = false;
+        } else {
+          encounter.enemies[idx].contractWindow = canOpenContractWindow(encounter.enemies[idx]);
+        }
+        logs.push('> BINDING FLARE: CONTRACT SEAL TEST');
+        if (encounter.enemies[idx].contractWindow) logs.push('> CONTRACT WINDOW: FORCED OPEN');
+        moeLine = getConversationLineWithVars('moe.dynamic.battle.se.interest.normal', {
+          target: getMoeTargetName(encounter.enemies[idx]),
+        });
+      } else if (selectedSE.effect === 'boss_breaker') {
+        if (encounter.enemies[idx].profile === 'toll_gate_saint') {
+          const anchorDamage = 2 + state.skillLevels.scan_boost;
+          encounter.enemies[idx].hp = Math.max(0, encounter.enemies[idx].hp - anchorDamage);
+          encounter.enemies[idx].empDisabledTurns = Math.max(encounter.enemies[idx].empDisabledTurns, 1);
+          logs.push(`> SAINT ANCHOR: BOSS SIGNAL DAMAGE +${anchorDamage}`);
+          logs.push('> SAINT ANCHOR: NEXT INTENT STAGGERED');
+        } else {
+          encounter.enemies[idx].interest += 1;
+          logs.push('> SAINT ANCHOR: SIGNAL PIN LIGHT RESPONSE');
+        }
+        moeLine = getConversationLineWithVars('moe.dynamic.battle.se.emp', {
+          target: getMoeTargetName(encounter.enemies[idx]),
+        });
       } else if (selectedSE.effect === 'emp') {
         if (encounter.enemies[idx].temperament === 'machine' || encounter.enemies[idx].profile === 'abandoned_ai_navi') {
           encounter.enemies[idx].empDisabledTurns = 1;
@@ -355,7 +411,7 @@ if (command === 'analyze' && selectedEnemy) {
     let analyzedTarget: Devil | undefined;
     const idx = encounter.enemies.findIndex((enemy) => enemy.id === selectedEnemy.id);
     if (idx >= 0) {
-      applyIntelGain(idx, 55, 'analyze');
+      applyIntelGain(idx, 55 + vehicleUtility.analyzeIntelBonus, 'analyze');
       analyzedTarget = encounter.enemies[idx];
       analyzedTarget.analyzeVulnerableTurns = Math.max(1, analyzedTarget.analyzeVulnerableTurns ?? 0);
       logs.push(`> ${getConversationLine('analyze.boon.damage_reduction.applied', '解析ロック成立。次の攻勢を1段鈍化できる。')}`);
@@ -796,6 +852,7 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
   let story = { ...state.story, recoveredLogs: [...state.story.recoveredLogs], recentRecoveredLogs: [...state.story.recentRecoveredLogs] };
   const negotiationRewards = [...state.negotiationRewards];
   const encounterPrep = { ...state.encounterPrep };
+  const vehicleUtility = getVehicleUpgradeUtilityEffects(state.vehicleUpgrades);
   let moeLine = state.moeLine;
 
   const finalizeTalkResolution = (): State | undefined => {
@@ -1001,7 +1058,9 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
   if (!hasCost()) {
     logs.push('> NEGOTIATION RESPONSE: COST DENIED');
     logs.push(`> ${choice.failText}`);
-    target.pressure += 1;
+    const pressureGain = Math.max(0, 1 - vehicleUtility.talkFailurePressureReduction);
+    target.pressure += pressureGain;
+    if (pressureGain === 0) logs.push('> NOISE FILTER: PRESSURE SPIKE DAMPED');
     moeLine = choice.failText;
     encounter.phase = 'command';
     encounterPrep.firstTalkPending = false;
@@ -1020,7 +1079,9 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
       logs.push('> NEGOTIATION RESPONSE: REJECTED');
       logs.push(`> ${choice.failText}`);
       applyEffects(choice.effectsOnFail, false);
-      target.pressure += 1;
+      const pressureGain = Math.max(0, 1 - vehicleUtility.talkFailurePressureReduction);
+      target.pressure += pressureGain;
+      if (pressureGain === 0) logs.push('> NOISE FILTER: PRESSURE SPIKE DAMPED');
       target.intent = target.temperament === 'hostile' ? 'attack' : 'curse';
       moeLine = choice.failText;
     }

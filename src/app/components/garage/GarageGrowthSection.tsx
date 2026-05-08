@@ -32,12 +32,21 @@ type GarageGrowthSectionProps = {
 };
 
 const skillOrder: UpgradeId[] = ['ram_control', 'gunnery', 'scan_boost', 'translation_assist'];
-const vehicleUpgradeOrder: VehicleUpgradeId[] = ['fuel_tank', 'armor_plating', 'ammo_rack', 'se_rack'];
+const vehicleUpgradeOrder: VehicleUpgradeId[] = ['fuel_tank', 'armor_plating', 'ammo_rack', 'se_rack', 'signal_antenna', 'noise_filter', 'daemon_bus'];
 const skillEffectText: Record<UpgradeId, string> = {
   ram_control: 'Approach ram stability',
   gunnery: 'Main Gun damage stability',
   scan_boost: 'NAVI scan chance',
   translation_assist: 'Talk success support',
+};
+const vehicleUpgradeEffectText: Record<VehicleUpgradeId, string> = {
+  fuel_tank: 'Start Fuel +1',
+  armor_plating: 'Start Armor +1',
+  ammo_rack: 'Start Main Ammo +1',
+  se_rack: 'Start S-E Ammo +1',
+  signal_antenna: 'Analyze Intel gain',
+  noise_filter: 'Talk failure pressure damp',
+  daemon_bus: 'Support daemon backlash reduction',
 };
 
 export const GarageGrowthSection = ({
@@ -143,7 +152,7 @@ export const GarageGrowthSection = ({
               className={`command-button command-button--route ${level > 0 ? 'is-selected' : ''}`}
               disabled={!canBuy}
               onClick={() => onPurchaseVehicleUpgrade(upgradeId)}
-              data-desc={`Lv${level} -> Lv${level + 1} / COST ${cost} CREDIT`}
+              data-desc={`${vehicleUpgradeEffectText[upgradeId]} / Lv${level} -> Lv${level + 1} / COST ${cost} CREDIT`}
             >
               {vehicleUpgradeLabels[upgradeId]} <span>Lv{level}</span>
             </button>;

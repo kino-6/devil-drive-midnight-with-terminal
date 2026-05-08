@@ -43,7 +43,7 @@ import {
   isAlive,
 } from '../../game/runtimeHelpers';
 import { assignTalkPersona } from '../../game/talkRules';
-import { getVehicleUpgradeResourceBonuses } from '../../game/vehicleUpgrades';
+import { getSupportBacklashChance, getVehicleUpgradeResourceBonuses } from '../../game/vehicleUpgrades';
 
 export const pickRewardChoices = (pool: RewardOption[], count = 3): RewardOption[] => {
   const shuffled = [...pool];
@@ -556,11 +556,11 @@ export const initRunWithLoadout = (state: State, logsPrefix: string[] = []): Sta
   } else {
     logs.push('> NAVI SCAN FAILED', '> AMBUSH WARNING');
   }
-  if (state.selectedLoadout.contractSupportId === 'silent_shape' && Math.random() < 0.2) {
+  if (state.selectedLoadout.contractSupportId === 'silent_shape' && Math.random() < getSupportBacklashChance(0.2, state.vehicleUpgrades)) {
     fuel = Math.max(0, fuel - 1);
     logs.push('> SUPPORT BACKLASH: SILENT SHAPE / FUEL -1');
   }
-  if (state.selectedLoadout.contractSupportId === 'radio_voice' && Math.random() < 0.35) logs.push('> WARNING: AM 666.0 CARRIER GHOST');
+  if (state.selectedLoadout.contractSupportId === 'radio_voice' && Math.random() < getSupportBacklashChance(0.35, state.vehicleUpgrades)) logs.push('> WARNING: AM 666.0 CARRIER GHOST');
   return {
     ...state,
     gamePhase: 'approach',

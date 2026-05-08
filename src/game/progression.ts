@@ -262,6 +262,12 @@ export const getRunUnlockRewardEvents = (state: State): UnlockRewardEvent[] => {
   if (state.resultType === 'Early Return' || state.resultType === 'Boss Avoided') events.push({ type: 'early_return' });
   for (const contract of state.contracts) events.push({ type: 'contract', id: contract.id });
   for (const logId of state.story.recentRecoveredLogs) events.push({ type: 'story_log', id: logId });
+  if (state.logs.some((line) => line.includes('SIGNAL TUNNEL CHOICE: ANALYZE TRACE'))) {
+    events.push({ type: 'rare_route', id: 'signal_trace' });
+  }
+  if (state.logs.some((line) => line.includes('SIGNAL TUNNEL CHOICE: OPEN RADIO CHANNEL'))) {
+    events.push({ type: 'rare_route', id: 'open_radio' });
+  }
   return events;
 };
 

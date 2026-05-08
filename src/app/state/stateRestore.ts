@@ -1,4 +1,4 @@
-import { contractModules } from '../../game/catalogs';
+import { contractModules, garageMainGunOrder, garageSEOrder, garageSubGunOrder } from '../../game/catalogs';
 import { normalizeUnlockState, sanitizeLoadoutForUnlocks } from '../../game/progression';
 import { limitStateLogs } from '../../runtimeLimits';
 import {
@@ -35,16 +35,16 @@ export const sanitizeRestoredStateWithDeps = (raw: unknown, fallback: State, dep
   const base = deps.initState();
 
   const normalizeMainGun = (id: unknown): MainGunId =>
-    id === 'light_cannon' || id === 'heavy_cannon' || id === 'burst_cannon' || id === 'rusted_cannon' || id === 'rail_cannon'
-      ? id
+    garageMainGunOrder.includes(id as MainGunId)
+      ? id as MainGunId
       : fallback.selectedLoadout.mainGunId;
   const normalizeSubGun = (id: unknown): SubGunId =>
-    id === 'hood_mg' || id === 'twin_mg' || id === 'suppression_mg' || id === 'road_sweeper' || id === 'counter_pod'
-      ? id
+    garageSubGunOrder.includes(id as SubGunId)
+      ? id as SubGunId
       : fallback.selectedLoadout.subGunId;
   const normalizeSE = (id: unknown): SpecialEquipmentId =>
-    id === 'signal_harpoon' || id === 'micro_missile' || id === 'emp_flare' || id === 'jammer_pulse' || id === 'decoy_beacon'
-      ? id
+    garageSEOrder.includes(id as SpecialEquipmentId)
+      ? id as SpecialEquipmentId
       : fallback.selectedLoadout.specialEquipmentId;
   const normalizeSupport = (id: unknown): ContractSupportId => {
     if (id === 'radio_voice' || id === 'silent_shape' || id === 'abandoned_ai_navi' || id === 'none') return id;
