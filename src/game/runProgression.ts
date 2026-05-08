@@ -1,5 +1,5 @@
 import { storyLogById } from './catalogs';
-import { applyRunUnlockRewards } from './progression';
+import { applyRunUnlockRewards, formatUnlockRewardLog } from './progression';
 import type { PreviousRunSummary, ResultType, State, StoryLogId, StoryState } from './types';
 
 export const makePreviousRunSummary = (state: State, resultType: ResultType): PreviousRunSummary => ({
@@ -28,7 +28,7 @@ export const claimRunGrowthIfNeeded = (state: State): State => {
   if (state.growthClaimed || !(state.gamePhase === 'result' || state.gamePhase === 'game_over')) return state;
   const growth = getRunGrowth(state);
   const unlockRewards = applyRunUnlockRewards(state);
-  const unlockLogs = unlockRewards.newlyUnlocked.map((item) => `> UNLOCK GRANTED: ${item.label.toUpperCase()} / ${item.reason.toUpperCase()}`);
+  const unlockLogs = unlockRewards.newlyUnlocked.map(formatUnlockRewardLog);
   return {
     ...state,
     driverXpBank: state.driverXpBank + growth.driverXp,

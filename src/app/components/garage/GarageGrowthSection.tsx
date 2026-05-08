@@ -1,5 +1,5 @@
 import { clamp } from '../../../game/runtimeHelpers';
-import { canPurchaseUnlock, getPurchasableUnlocks } from '../../../game/progression';
+import { canPurchaseUnlock, getPurchasableUnlocks, getUnlockReason, isEquipmentUnlocked } from '../../../game/progression';
 import {
   skillLabels,
   vehicleUpgradeLabels,
@@ -146,15 +146,20 @@ export const GarageGrowthSection = ({
           {vehicleUpgradeOrder.map((upgradeId) => {
             const level = state.vehicleUpgrades[upgradeId];
             const cost = getVehicleUpgradeCost(level);
-            const canBuy = state.creditBank >= cost;
+            const locked = !isEquipmentUnlocked(state.unlocks, 'vehicleUpgrades', upgradeId);
+            const canBuy = !locked && state.creditBank >= cost;
+            const desc = locked
+              ? getUnlockReason(state.unlocks, 'vehicleUpgrades', upgradeId)
+              : `${vehicleUpgradeEffectText[upgradeId]} / Lv${level} -> Lv${level + 1} / COST ${cost} CREDIT`;
             return <button
               key={upgradeId}
-              className={`command-button command-button--route ${level > 0 ? 'is-selected' : ''}`}
+              className={`command-button command-button--route ${level > 0 ? 'is-selected' : ''} ${locked ? 'is-locked' : ''}`}
               disabled={!canBuy}
               onClick={() => onPurchaseVehicleUpgrade(upgradeId)}
-              data-desc={`${vehicleUpgradeEffectText[upgradeId]} / Lv${level} -> Lv${level + 1} / COST ${cost} CREDIT`}
+              data-desc={desc}
+              title={desc}
             >
-              {vehicleUpgradeLabels[upgradeId]} <span>Lv{level}</span>
+              {vehicleUpgradeLabels[upgradeId]} <span>{locked ? desc : `Lv${level}`}</span>
             </button>;
           })}
         </div>

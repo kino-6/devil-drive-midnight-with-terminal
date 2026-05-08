@@ -123,6 +123,9 @@ export function reduceGarage(state: State, action: Action): State {
 
   if (action.type === 'PURCHASE_VEHICLE_UPGRADE') {
     if (state.gamePhase !== 'garage') return state;
+    if (!isEquipmentUnlocked(state.unlocks, 'vehicleUpgrades', action.id)) {
+      return { ...state, moeLine: getUnlockReason(state.unlocks, 'vehicleUpgrades', action.id) };
+    }
     const currentLevel = state.vehicleUpgrades[action.id];
     const cost = getVehicleUpgradeCost(currentLevel);
     if (state.creditBank < cost) return state;

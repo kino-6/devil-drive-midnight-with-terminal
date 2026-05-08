@@ -2,8 +2,9 @@ import { getDialogueLine } from '../../dialogueConfig';
 import type { Action, ResultType, State } from '../../game/types';
 import { emergencyRewardCatalog, rewardCatalog } from '../../game/catalogs';
 import { appendSupportDaemonDisconnectLogs } from '../../game/runtimeHelpers';
-import { applyRunUnlockRewards } from '../../game/progression';
+import { applyRunUnlockRewards, formatUnlockRewardLog } from '../../game/progression';
 import { getSupportBacklashChance } from '../../game/vehicleUpgrades';
+import { getRareSalvageLog, getRareSalvageMoeLine, isRareSalvageReward, maybeAddRareSalvageReward } from '../../game/rareEvents';
 import { applyRewardOption, pickRewardChoices } from './stateRuntime';
 import { moveToApproach } from './approachReducer';
 import { appendRecoveredStoryLogLines, getRunGrowth, makePreviousRunSummary, resolveStoryFromRun } from './storyProgression';
@@ -44,11 +45,12 @@ export function reduceRoute(state: State, action: Action): State {
       };
     }
     if (action.lane === 'salvage') {
+      const rewards = maybeAddRareSalvageReward(state, pickRewardChoices(rewardCatalog));
       return {
         ...state,
         gamePhase: 'salvage',
         rewardTarget: 'encounter2',
-        rewardOptions: pickRewardChoices(rewardCatalog),
+        rewardOptions: rewards,
         logs: [...state.logs, '> SALVAGE LANE SELECTED'],
         moeLine: getDialogueLine('moe.run.salvage_ready', '補給反応あり。ひとつだけ拾える。'),
       };
@@ -87,6 +89,19 @@ export function reduceRoute(state: State, action: Action): State {
     if (state.gamePhase !== 'salvage') return state;
     const selected = state.rewardOptions.find((reward) => reward.id === action.rewardId);
     if (!selected) return state;
+    if (isRareSalvageReward(selected.id)) {
+      const toBoss = state.rewardTarget === 'boss';
+      const logs = [...state.logs, `> ${getRareSalvageLog(selected.id)}`, `> ${toBoss ? 'BOSS CONTACT' : 'ENCOUNTER 2: SIGNAL CONTACT'}`];
+      return moveToApproach({
+        ...state,
+        rewardTarget: undefined,
+        tempForecastBoost: 0,
+        logs,
+        bossChallenged: toBoss ? true : state.bossChallenged,
+        encounterIndex: toBoss ? 2 : 1,
+        moeLine: getRareSalvageMoeLine(selected.id),
+      }, toBoss ? 'boss' : 'enc2');
+    }
     const patched = applyRewardOption(state, selected);
     const toBoss = state.rewardTarget === 'boss';
     const logs = [...state.logs, `> SALVAGE APPLIED: ${selected.label.toUpperCase()}`, `> ${toBoss ? 'BOSS CONTACT' : 'ENCOUNTER 2: SIGNAL CONTACT'}`];
@@ -224,27 +239,29 @@ export function reduceRoute(state: State, action: Action): State {
     const unlockedAbyssLoop = resultType === 'Boss Cleared' && state.stageCount < 4 && state.stage >= 3;
     if (resultType === 'Boss Cleared' && state.stage < state.stageCount) {
       const growth = getRunGrowth(state);
-      const unlockRewards = applyRunUnlockRewards({ ...state, resultType });
-      const unlockLogs = unlockRewards.newlyUnlocked.map((item) => `> UNLOCK GRANTED: ${item.label.toUpperCase()} / ${item.reason.toUpperCase()}`);
+      const story = resolveStoryFromRun(state, resultType);
+      const unlockRewards = applyRunUnlockRewards({ ...state, resultType, story });
+      const unlockLogs = unlockRewards.newlyUnlocked.map(formatUnlockRewardLog);
       const nextStage = state.stage + 1;
       return {
         ...state,
         gamePhase: 'garage',
         stage: nextStage,
         activeSupportDaemon: undefined,
+        story,
         previousRun: makePreviousRunSummary(state, resultType),
         driverXpBank: state.driverXpBank + growth.driverXp,
         moeSyncBank: state.moeSyncBank + growth.moeSync,
         creditBank: state.creditBank + growth.salvageCreditGain,
         unlocks: unlockRewards.unlocks,
         growthClaimed: true,
-        logs: [
+        logs: appendRecoveredStoryLogLines([
           ...disconnectLogs,
           ...unlockLogs,
           `> STAGE CLEAR: ${state.stage}/${state.stageCount}`,
           `> NEXT STAGE PREP: ${nextStage}/${state.stageCount}`,
           '> GARAGE: MIDNIGHT BAY ONLINE',
-        ],
+        ], story),
         moeLine: `ステージ${state.stage}突破。次は深くなる、装備を組み直そう。`,
       };
     }

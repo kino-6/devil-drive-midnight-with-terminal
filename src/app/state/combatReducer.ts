@@ -528,6 +528,8 @@ if (command === 'contract' && selectedEnemy) {
           logs.push(`> MODULE SLOT UPDATED: ${contractModules[target.targetModuleId].name.toUpperCase()}`);
         }
         logs.push(`> CONTRACT REGISTERED: ${target.name.toUpperCase()}`);
+        if (target.temperament === 'machine') logs.push(`> ${getDialogueLine('run.milestone.contract_machine', 'DEMON MILESTONE: MACHINE CONTRACT')}`);
+        if (target.temperament === 'lonely') logs.push(`> ${getDialogueLine('run.milestone.contract_lonely', 'DEMON MILESTONE: LONELY CONTRACT')}`);
         const contractSuccessLine = getScenarioLine(getEncounterScenario(target.profile)?.contract?.success);
         if (contractSuccessLine) logs.push(`> ${contractSuccessLine}`);
         applyContractBoon(target);

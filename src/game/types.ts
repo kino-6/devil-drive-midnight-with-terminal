@@ -266,6 +266,7 @@ export type UnlockState = {
   subGuns: SubGunId[];
   specialEquipment: SpecialEquipmentId[];
   support: ContractSupportId[];
+  vehicleUpgrades: VehicleUpgradeId[];
 };
 export type ApproachState = {
   pendingKind: ApproachKind;

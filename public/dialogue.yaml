@@ -56,6 +56,16 @@ lines:
   moe.run.salvage_to_boss: "主砲弾か装甲を足してから行ける。選んで。"
   # 利用場面: サルベージ選択後、次遭遇へ
   moe.run.salvage_done: "補給完了。次の区画へ。"
+  rare.salvage.blueprint_signal_antenna.label: "Signal Antenna Blueprint"
+  rare.salvage.blueprint_signal_antenna.detail: "Garage unlock material / Signal Antenna"
+  rare.salvage.blueprint_signal_antenna.log: "BLUEPRINT ACQUIRED: SIGNAL ANTENNA"
+  rare.salvage.blueprint_signal_antenna.moe: "設計図だ。持ち帰れたらSignal Antennaを組める。"
+  rare.salvage.strange_part_daemon_bus.label: "Strange Bus Part"
+  rare.salvage.strange_part_daemon_bus.detail: "Garage unlock material / Daemon Bus"
+  rare.salvage.strange_part_daemon_bus.log: "STRANGE PART ACQUIRED: DAEMON BUS"
+  rare.salvage.strange_part_daemon_bus.moe: "変なバス部品。契約daemonの揺れを抑えられるかも。"
+  run.milestone.contract_machine: "DEMON MILESTONE: MACHINE CONTRACT"
+  run.milestone.contract_lonely: "DEMON MILESTONE: LONELY CONTRACT"
 
   # 利用場面: ボスプレビュー表示
   moe.run.boss_preview: "料金所型の強い反応。無理なら引き返そ。"

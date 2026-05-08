@@ -10,6 +10,11 @@ initialUnlocks:
     - "signal_harpoon"
   support:
     - "none"
+  vehicleUpgrades:
+    - "fuel_tank"
+    - "armor_plating"
+    - "ammo_rack"
+    - "se_rack"
 
 unlockRules:
   needle_cannon:
@@ -77,11 +82,6 @@ unlockRules:
     type: "milestone"
     milestone: "clear_stage_2"
     reason: "Clear Stage 2"
-  mercy_pod:
-    category: "subGuns"
-    type: "contract"
-    contract: "silent_shape"
-    reason: "Contract Silent Shape"
   radio_voice:
     category: "support"
     type: "purchase"
@@ -103,17 +103,27 @@ unlockRules:
     type: "rare_route"
     route: "open_radio"
     reason: "Open Radio route"
-  jammer_pulse:
-    category: "specialEquipment"
-    type: "contract"
-    contract: "abandoned_ai_navi"
-    reason: "Contract AI Navi"
   decoy_beacon:
     category: "specialEquipment"
     type: "purchase"
     currency: "moeSync"
     cost: 2
     reason: "Sync 2"
+  signal_antenna:
+    category: "vehicleUpgrades"
+    type: "milestone"
+    milestone: "blueprint_signal_antenna"
+    reason: "Signal Antenna blueprint"
+  noise_filter:
+    category: "vehicleUpgrades"
+    type: "milestone"
+    milestone: "story_logs_2"
+    reason: "Recover 2 story logs"
+  daemon_bus:
+    category: "vehicleUpgrades"
+    type: "story_log"
+    storyLog: "LOG_04"
+    reason: "Recover LOG_04"
   micro_missile:
     category: "specialEquipment"
     type: "boss_clear"
@@ -133,3 +143,13 @@ unlockRules:
     type: "contract"
     contract: "abandoned_ai_navi"
     reason: "Contract AI Navi"
+  jammer_pulse:
+    category: "specialEquipment"
+    type: "milestone"
+    milestone: "contract_temperament_machine"
+    reason: "Contract a machine"
+  mercy_pod:
+    category: "subGuns"
+    type: "milestone"
+    milestone: "contract_temperament_lonely"
+    reason: "Contract a lonely demon"

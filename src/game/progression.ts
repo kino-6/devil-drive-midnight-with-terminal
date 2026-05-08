@@ -9,6 +9,7 @@ import {
   mainGunCatalog,
   specialEquipmentCatalog,
   subGunCatalog,
+  vehicleUpgradeLabels,
 } from './catalogs';
 import type {
   ContractSupportId,
@@ -18,6 +19,7 @@ import type {
   State,
   SubGunId,
   UnlockState,
+  VehicleUpgradeId,
 } from './types';
 
 type UnlockRewardEvent =
@@ -43,6 +45,7 @@ const idsByCategory: Record<UnlockCategory, string[]> = {
   subGuns: garageSubGunOrder,
   specialEquipment: garageSEOrder,
   support: garageSupportOrder,
+  vehicleUpgrades: Object.keys(vehicleUpgradeLabels),
 };
 
 const categoryLabels: Record<UnlockCategory, string> = {
@@ -50,6 +53,7 @@ const categoryLabels: Record<UnlockCategory, string> = {
   subGuns: 'Sub Gun',
   specialEquipment: 'S-E',
   support: 'Support',
+  vehicleUpgrades: 'Vehicle Upgrade',
 };
 
 const currencyLabels: Record<UnlockCurrency, string> = {
@@ -63,6 +67,7 @@ const emptyUnlocks = (): UnlockState => ({
   subGuns: [],
   specialEquipment: [],
   support: [],
+  vehicleUpgrades: [],
 });
 
 const uniqueKnown = <T extends string>(values: unknown, known: readonly T[], fallback: readonly T[]): T[] => {
@@ -79,6 +84,7 @@ export const getAllUnlocks = (): UnlockState => ({
   subGuns: [...garageSubGunOrder],
   specialEquipment: [...garageSEOrder],
   support: [...garageSupportOrder],
+  vehicleUpgrades: Object.keys(vehicleUpgradeLabels) as VehicleUpgradeId[],
 });
 
 export const getInitialUnlocks = (): UnlockState => {
@@ -88,6 +94,7 @@ export const getInitialUnlocks = (): UnlockState => {
     subGuns: uniqueKnown(initial.subGuns, garageSubGunOrder, [defaultLoadout.subGunId]),
     specialEquipment: uniqueKnown(initial.specialEquipment, garageSEOrder, [defaultLoadout.specialEquipmentId]),
     support: uniqueKnown(initial.support, garageSupportOrder, [defaultLoadout.contractSupportId]),
+    vehicleUpgrades: uniqueKnown(initial.vehicleUpgrades, Object.keys(vehicleUpgradeLabels) as VehicleUpgradeId[], ['fuel_tank', 'armor_plating', 'ammo_rack', 'se_rack']),
   };
 };
 
@@ -98,6 +105,7 @@ export const normalizeUnlockState = (value: unknown, fallback: UnlockState = get
     subGuns: uniqueKnown(raw.subGuns, garageSubGunOrder, fallback.subGuns),
     specialEquipment: uniqueKnown(raw.specialEquipment, garageSEOrder, fallback.specialEquipment),
     support: uniqueKnown(raw.support, garageSupportOrder, fallback.support),
+    vehicleUpgrades: uniqueKnown(raw.vehicleUpgrades, Object.keys(vehicleUpgradeLabels) as VehicleUpgradeId[], fallback.vehicleUpgrades),
   };
 };
 
@@ -106,6 +114,7 @@ export const mergeUnlocks = (...states: UnlockState[]): UnlockState => normalize
   subGuns: states.flatMap((state) => state.subGuns),
   specialEquipment: states.flatMap((state) => state.specialEquipment),
   support: states.flatMap((state) => state.support),
+  vehicleUpgrades: states.flatMap((state) => state.vehicleUpgrades),
 }, emptyUnlocks());
 
 const addUnlock = (state: UnlockState, category: UnlockCategory, id: string): UnlockState =>
@@ -174,6 +183,7 @@ const getItemLabel = (category: UnlockCategory, id: string): string => {
   if (category === 'subGuns' && id in subGunCatalog) return subGunCatalog[id as SubGunId].name;
   if (category === 'specialEquipment' && id in specialEquipmentCatalog) return specialEquipmentCatalog[id as SpecialEquipmentId].name;
   if (category === 'support' && id in contractSupportCatalog) return contractSupportCatalog[id as ContractSupportId].name;
+  if (category === 'vehicleUpgrades' && id in vehicleUpgradeLabels) return vehicleUpgradeLabels[id as VehicleUpgradeId];
   return id;
 };
 
@@ -253,6 +263,12 @@ export const applyUnlockRewardEvents = (unlocks: UnlockState, events: UnlockRewa
   return { unlocks: next, newlyUnlocked };
 };
 
+export const formatUnlockRewardLog = (item: PurchasableUnlock): string => {
+  const label = item.label.replace(/^[^:]+:\s*/, '').toUpperCase();
+  if (item.category === 'vehicleUpgrades') return `> GARAGE UNLOCKED: ${label}`;
+  return `> UNLOCK GRANTED: ${item.label.toUpperCase()} / ${item.reason.toUpperCase()}`;
+};
+
 export const getRunUnlockRewardEvents = (state: State): UnlockRewardEvent[] => {
   const events: UnlockRewardEvent[] = [];
   if (state.resultType === 'Boss Cleared') {
@@ -262,6 +278,17 @@ export const getRunUnlockRewardEvents = (state: State): UnlockRewardEvent[] => {
   if (state.resultType === 'Early Return' || state.resultType === 'Boss Avoided') events.push({ type: 'early_return' });
   for (const contract of state.contracts) events.push({ type: 'contract', id: contract.id });
   for (const logId of state.story.recentRecoveredLogs) events.push({ type: 'story_log', id: logId });
+  if (state.story.recoveredLogs.length >= 2) events.push({ type: 'milestone', id: 'story_logs_2' });
+  if (state.story.recoveredLogs.includes('LOG_04')) events.push({ type: 'story_log', id: 'LOG_04' });
+  if (state.resultType !== 'Vehicle Disabled' && state.logs.some((line) => line.includes('BLUEPRINT ACQUIRED: SIGNAL ANTENNA'))) {
+    events.push({ type: 'milestone', id: 'blueprint_signal_antenna' });
+  }
+  if (state.logs.some((line) => line.includes('DEMON MILESTONE: MACHINE CONTRACT'))) {
+    events.push({ type: 'milestone', id: 'contract_temperament_machine' });
+  }
+  if (state.logs.some((line) => line.includes('DEMON MILESTONE: LONELY CONTRACT'))) {
+    events.push({ type: 'milestone', id: 'contract_temperament_lonely' });
+  }
   if (state.logs.some((line) => line.includes('SIGNAL TUNNEL CHOICE: ANALYZE TRACE'))) {
     events.push({ type: 'rare_route', id: 'signal_trace' });
   }

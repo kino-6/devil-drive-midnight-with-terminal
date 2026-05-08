@@ -41,6 +41,7 @@ export const defaultProgressionConfig: ProgressionConfig = {
     subGuns: ['hood_mg'],
     specialEquipment: ['signal_harpoon'],
     support: ['none'],
+    vehicleUpgrades: ['fuel_tank', 'armor_plating', 'ammo_rack', 'se_rack'],
   },
   unlockRules: {
     needle_cannon: {
@@ -134,13 +135,6 @@ export const defaultProgressionConfig: ProgressionConfig = {
       milestone: 'clear_stage_2',
       reason: 'Clear Stage 2',
     },
-    mercy_pod: {
-      id: 'mercy_pod',
-      category: 'subGuns',
-      type: 'contract',
-      contract: 'silent_shape',
-      reason: 'Contract Silent Shape',
-    },
     radio_voice: {
       id: 'radio_voice',
       category: 'support',
@@ -170,13 +164,6 @@ export const defaultProgressionConfig: ProgressionConfig = {
       route: 'open_radio',
       reason: 'Open Radio route',
     },
-    jammer_pulse: {
-      id: 'jammer_pulse',
-      category: 'specialEquipment',
-      type: 'contract',
-      contract: 'abandoned_ai_navi',
-      reason: 'Contract AI Navi',
-    },
     decoy_beacon: {
       id: 'decoy_beacon',
       category: 'specialEquipment',
@@ -184,6 +171,27 @@ export const defaultProgressionConfig: ProgressionConfig = {
       currency: 'moeSync',
       cost: 2,
       reason: 'Sync 2',
+    },
+    signal_antenna: {
+      id: 'signal_antenna',
+      category: 'vehicleUpgrades',
+      type: 'milestone',
+      milestone: 'blueprint_signal_antenna',
+      reason: 'Signal Antenna blueprint',
+    },
+    noise_filter: {
+      id: 'noise_filter',
+      category: 'vehicleUpgrades',
+      type: 'milestone',
+      milestone: 'story_logs_2',
+      reason: 'Recover 2 story logs',
+    },
+    daemon_bus: {
+      id: 'daemon_bus',
+      category: 'vehicleUpgrades',
+      type: 'story_log',
+      storyLog: 'LOG_04',
+      reason: 'Recover LOG_04',
     },
     micro_missile: {
       id: 'micro_missile',
@@ -211,6 +219,20 @@ export const defaultProgressionConfig: ProgressionConfig = {
       type: 'contract',
       contract: 'abandoned_ai_navi',
       reason: 'Contract AI Navi',
+    },
+    jammer_pulse: {
+      id: 'jammer_pulse',
+      category: 'specialEquipment',
+      type: 'milestone',
+      milestone: 'contract_temperament_machine',
+      reason: 'Contract a machine',
+    },
+    mercy_pod: {
+      id: 'mercy_pod',
+      category: 'subGuns',
+      type: 'milestone',
+      milestone: 'contract_temperament_lonely',
+      reason: 'Contract a lonely demon',
     },
   },
 };
@@ -294,6 +316,7 @@ const normalizeCategory = (value: unknown): UnlockCategory | undefined => {
   if (value === 'subGuns' || value === 'subGun') return 'subGuns';
   if (value === 'specialEquipment' || value === 'special' || value === 'se') return 'specialEquipment';
   if (value === 'support' || value === 'contractSupport') return 'support';
+  if (value === 'vehicleUpgrades' || value === 'vehicleUpgrade' || value === 'garageUpgrade') return 'vehicleUpgrades';
   return undefined;
 };
 
@@ -348,6 +371,7 @@ const toProgressionConfig = (raw: Record<string, unknown>): ProgressionConfig =>
       subGuns: asStringArray(initial.subGuns) as UnlockState['subGuns'],
       specialEquipment: asStringArray(initial.specialEquipment) as UnlockState['specialEquipment'],
       support: asStringArray(initial.support) as UnlockState['support'],
+      vehicleUpgrades: asStringArray(initial.vehicleUpgrades) as UnlockState['vehicleUpgrades'],
     },
     unlockRules: Object.keys(unlockRules).length > 0 ? unlockRules : defaultProgressionConfig.unlockRules,
   };
