@@ -172,6 +172,45 @@ export function AssetFigure({
   />;
 }
 
+function DevilAnimationFigure({
+  frames,
+  alt,
+  className,
+  fallback,
+}: {
+  frames: string[];
+  alt: string;
+  className?: string;
+  fallback: JSX.Element;
+}) {
+  const [idleFrame, moveFrame] = frames;
+  if (!idleFrame || !moveFrame) return fallback;
+  const idleClassName = `${className ?? ''} battle-devil__frame battle-devil__frame--idle`.trim();
+  const moveClassName = `${className ?? ''} battle-devil__frame battle-devil__frame--move`.trim();
+  return <div className="battle-devil__frames" role="img" aria-label={alt}>
+    <AssetFigure
+      src={idleFrame}
+      alt=""
+      className={idleClassName}
+      fallback={fallback}
+      transparencyMode="auto-corner"
+    />
+    <AssetFigure
+      src={moveFrame}
+      alt=""
+      className={moveClassName}
+      fallback={<AssetFigure
+        src={idleFrame}
+        alt=""
+        className={moveClassName}
+        fallback={<span />}
+        transparencyMode="auto-corner"
+      />}
+      transparencyMode="auto-corner"
+    />
+  </div>;
+}
+
 type EncounterProfile = { label: string; threat: 'LOW' | 'MED' | 'HIGH' | 'CRITICAL'; signal: string; contractable: boolean };
 
 const intentIconMap: Record<Devil['intent'], string> = {
@@ -190,6 +229,7 @@ export function BattleDevilSprite({
   onSelect,
   onHoverEnemy,
   imageSrc,
+  imageFrames,
   hitFx,
   encounterProfiles,
 }: {
@@ -200,11 +240,15 @@ export function BattleDevilSprite({
   onSelect: () => void;
   onHoverEnemy?: (enemyId: string | null) => void;
   imageSrc?: string;
+  imageFrames?: string[];
   hitFx?: HitFxTone;
   encounterProfiles: Record<EncounterId, EncounterProfile>;
 }) {
   const profile = encounterProfiles[devil.profile];
   const hpPct = Math.max(0, (devil.hp / devil.maxHp) * 100);
+  const animationFrames = imageFrames?.map((frame) => frame.trim()).filter(Boolean).slice(0, 2) ?? [];
+  const canAnimate = animationFrames.length >= 2;
+  const staticImageSrc = animationFrames[0] ?? imageSrc;
   return <article
     className={`battle-devil battle-devil--${lane} ${focused ? 'is-focused' : ''} ${profile.contractable ? 'is-contractable' : 'is-hostile'} ${devil.hp <= 0 ? 'is-defeated' : ''} ${hitFx ? `is-hitfx-${hitFx}` : ''}`}
     onClick={onSelect}
@@ -224,13 +268,20 @@ export function BattleDevilSprite({
     <div className="battle-devil__body">
       <div className="battle-devil__art">
         {revealState.showName
-          ? <AssetFigure
-            src={imageSrc}
-            alt={`${profile.label} visual`}
-            className="battle-devil__asset"
-            fallback={renderDevilArt(devil.profile)}
-            transparencyMode="auto-corner"
-          />
+          ? canAnimate
+            ? <DevilAnimationFigure
+              frames={animationFrames}
+              alt={`${profile.label} visual`}
+              className="battle-devil__asset"
+              fallback={renderDevilArt(devil.profile)}
+            />
+            : <AssetFigure
+              src={staticImageSrc}
+              alt={`${profile.label} visual`}
+              className="battle-devil__asset"
+              fallback={renderDevilArt(devil.profile)}
+              transparencyMode="auto-corner"
+            />
           : <AssetFigure
             src={imageSrc}
             alt="Unknown signal visual"

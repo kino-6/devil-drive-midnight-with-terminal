@@ -112,6 +112,23 @@
 ### アセット
 - `public/assets/manifest.yaml`
 - resolver: `src/assetManifest.ts`
+- enemy image resolver: `src/game/runtimeHelpers.ts`
+- enemy sprite display: `src/components/EncounterVisuals.tsx`
+- battle wiring: `src/app/components/BattleView.tsx`
+
+悪魔画像は `public/assets/images/devil/` に置き、React側へ画像パスを直書きしない。命名は `<devil_id>_idle.png`, `<devil_id>_move_01.png` を基本にする。`images.enemies` は後方互換の string 指定と、`{ idle, moveFrames }` の新形式を受け付ける。
+
+```yaml
+images:
+  enemies:
+    pixie_shibuya_glow:
+      idle: "images/devil/pixie_idle.png"
+      moveFrames:
+        - "images/devil/pixie_idle.png"
+        - "images/devil/pixie_move_01.png"
+```
+
+`moveFrames` が2枚以上ある revealed/analyzed 済みの敵だけ2フレーム表示になる。1枚だけ、または string 指定の敵は単一画像のまま動く。`UNKNOWN SIGN` は単一画像運用でよい。
 
 ### ローカル調査データ（Git管理外）
 - `.local/repro-logs/`
@@ -125,6 +142,7 @@
 
 - **AppRoot.tsx に新しいゲームデータ・長文文言・数値・敵定義を足さない。**
 - 追加データは必ず YAML/JSON + loader 経由へ寄せる。
+- 新しい画像パスは `manifest.yaml` / `profiles.yaml` 経由にし、Reactコンポーネントへ直書きしない。
 - ロジックは `stateReducer.ts` / `combatReducer.ts`、表示は `components/*` に分離する。
 - UIの固定ラベル以外の大量文言は config 側へ置く。
 

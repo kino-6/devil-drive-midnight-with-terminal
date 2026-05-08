@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { defaultAssetManifest, resolveAssetUrl, type AssetManifest } from '../assetManifest';
+import {
+  defaultAssetManifest,
+  resolveAssetUrl,
+  resolveEnemyAssetEntryUrl,
+  type AssetManifest,
+} from '../assetManifest';
 import { defaultBalanceConfig, getBalanceConfig, type BalanceConfig } from '../balanceConfig';
 import { getDialogueConfig, getDialogueLine } from '../dialogueConfig';
 import {
@@ -35,6 +40,7 @@ import {
   getSubGunSpec,
   getEnemyRevealState,
   isAlive,
+  resolveEnemyAnimationFrames,
   resolveEnemyAsset,
   UNKNOWN_SIGN_LABEL,
 } from '../game/runtimeHelpers';
@@ -165,8 +171,8 @@ export function App() {
   // Keep UNKNOWN SIGN strictly separated from mask/effect assets like MirrorCurve.
   // Do not fallback to generic `unknown` key to avoid accidental asset mix-ups.
   const unknownEnemyAsset =
-    resolveAssetUrl(enemyAssetMap.unknown_sign)
-    ?? resolveAssetUrl(defaultEnemyAssetMap.unknown_sign);
+    resolveEnemyAssetEntryUrl(enemyAssetMap.unknown_sign)
+    ?? resolveEnemyAssetEntryUrl(defaultEnemyAssetMap.unknown_sign);
   const resolveUnknownEnemyAsset = (_index: number): string | undefined => unknownEnemyAsset;
   const playerAsset = resolveAssetUrl(assetManifest.images.player);
   const moeVariantMap = assetManifest.images.moeVariants ?? {};
@@ -544,6 +550,7 @@ const tacticalLinesCompact = tacticalLines
           isBossProfile={isBossProfile}
           resolveUnknownEnemyAsset={resolveUnknownEnemyAsset}
           resolveEnemyAsset={(profile) => resolveEnemyAsset(profile, enemyAssetMap)}
+          resolveEnemyAnimationFrames={(profile) => resolveEnemyAnimationFrames(profile, enemyAssetMap)}
           resolveEnemyLane={resolveEnemyLane}
           getLikelyWeaknessSummary={getLikelyWeaknessSummary}
           onSelectEnemy={(enemyId) => dispatch({ type: 'SELECT_ENEMY', enemyId })}

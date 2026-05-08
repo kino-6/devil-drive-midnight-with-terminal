@@ -1139,6 +1139,27 @@ body {
   object-fit: contain;
 }
 
+.battle-devil__frames {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.battle-devil__frame {
+  position: absolute;
+  inset: 0;
+}
+
+.battle-devil__frame--idle {
+  opacity: 1;
+  animation: devil-two-frame 820ms steps(1, end) infinite reverse;
+}
+
+.battle-devil__frame--move {
+  opacity: 0;
+  animation: devil-two-frame 820ms steps(1, end) infinite;
+}
+
 .battle-devil__asset.is-silhouette {
   filter: grayscale(1) contrast(1.35) brightness(0.42);
   opacity: 0.92;
@@ -2724,6 +2745,15 @@ body {
   }
 }
 
+@keyframes devil-two-frame {
+  0%, 49% {
+    opacity: 0;
+  }
+  50%, 100% {
+    opacity: 1;
+  }
+}
+
 @keyframes stingerIn {
   from {
     opacity: 0;
@@ -2732,6 +2762,21 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .battle-devil__frame--idle,
+  .battle-devil__frame--move {
+    animation: none;
+  }
+
+  .battle-devil__frame--idle {
+    opacity: 1;
+  }
+
+  .battle-devil__frame--move {
+    opacity: 0;
   }
 }
 

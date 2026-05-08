@@ -29,7 +29,11 @@ images:
   enemies:
     whisper_broker: "images/devil/whisper_broker_idle.png"
     roadside_phone: "images/devil/roadside_phone_idle.png"
-    pixie_shibuya_glow: "images/devil/pixie_idle.png"
+    pixie_shibuya_glow:
+      idle: "images/devil/pixie_idle.png"
+      moveFrames:
+        - "images/devil/pixie_idle.png"
+        - "images/devil/pixie_move_01.png"
     foxfire_navi: "images/devil/foxfire_navi_idle.png"
     no_face_taxi_passenger: "images/devil/no_face_taxi_passenger_idle.png"
     silent_shape: "images/devil/silent_shape_idle.png"

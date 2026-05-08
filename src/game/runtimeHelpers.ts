@@ -2,7 +2,12 @@ import { getDialogueLine } from '../dialogueConfig';
 import { getEncounterScenario, getMoeLine, getScenarioLine } from '../scenario/scenarioLoader';
 import { getBalanceConfig } from '../balanceConfig';
 import { getDevilConfig } from '../devilConfig';
-import { resolveAssetUrl } from '../assetManifest';
+import {
+  resolveAssetUrl,
+  resolveEnemyAssetEntryFrameUrls,
+  resolveEnemyAssetEntryUrl,
+  type EnemyAssetEntry,
+} from '../assetManifest';
 import {
   commandDescriptions,
   mainGunCatalog,
@@ -218,8 +223,18 @@ export const getProfileAssetPath = (profile: EncounterId): string | undefined =>
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
 };
 
-export const resolveEnemyAsset = (profile: EncounterId, manifestMap: Record<string, string>): string | undefined =>
-  resolveAssetUrl(manifestMap[profile]) ?? resolveAssetUrl(getProfileAssetPath(profile));
+export const resolveEnemyAsset = (profile: EncounterId, manifestMap: Record<string, EnemyAssetEntry>): string | undefined =>
+  resolveEnemyAssetEntryUrl(manifestMap[profile]) ?? resolveAssetUrl(getProfileAssetPath(profile));
+
+export const resolveEnemyAnimationFrames = (
+  profile: EncounterId,
+  manifestMap: Record<string, EnemyAssetEntry>,
+): string[] => {
+  const resolved = resolveEnemyAssetEntryFrameUrls(manifestMap[profile]);
+  if (resolved.length > 0) return resolved;
+  const profileAsset = resolveAssetUrl(getProfileAssetPath(profile));
+  return profileAsset ? [profileAsset] : [];
+};
 
 const supportDaemonStabilityByTemperament: Record<Temperament, 'STABLE' | 'NOISY' | 'HUNGRY' | 'UNKNOWN'> = {
   hungry: 'HUNGRY',

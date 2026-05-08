@@ -34,6 +34,7 @@ type BattleViewProps = {
   isBossProfile: (profile: EncounterId) => boolean;
   resolveUnknownEnemyAsset: (index: number) => string | undefined;
   resolveEnemyAsset: (profile: EncounterId) => string | undefined;
+  resolveEnemyAnimationFrames: (profile: EncounterId) => string[];
   resolveEnemyLane: (index: number, total: number, isBoss: boolean) => 'left' | 'center' | 'right';
   getLikelyWeaknessSummary: (profile: EncounterId) => string;
   onSelectEnemy: (enemyId: string) => void;
@@ -66,6 +67,7 @@ export const BattleView = ({
   isBossProfile,
   resolveUnknownEnemyAsset,
   resolveEnemyAsset,
+  resolveEnemyAnimationFrames,
   resolveEnemyLane,
   getLikelyWeaknessSummary,
   onSelectEnemy,
@@ -132,6 +134,9 @@ export const BattleView = ({
             : showBossSilhouette
               ? resolveEnemyAsset(enemy.profile)
               : resolveUnknownEnemyAsset(index);
+          const imageFrames = reveal.showName
+            ? resolveEnemyAnimationFrames(enemy.profile)
+            : [];
           return (
             <BattleDevilSprite
               key={enemy.id}
@@ -140,6 +145,7 @@ export const BattleView = ({
               focused={enemy.id === selectedEnemyId}
               revealState={reveal}
               imageSrc={imageSrc}
+              imageFrames={imageFrames}
               hitFx={enemy.id === selectedEnemyId ? hitFxTone ?? undefined : undefined}
               onSelect={() => onSelectEnemy(enemy.id)}
               onHoverEnemy={onHoverEnemy}
