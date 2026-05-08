@@ -304,6 +304,10 @@ const parseScalar = (raw: string): unknown => {
   if (value === 'true') return true;
   if (value === 'false') return false;
   if (value === 'null' || value === '~') return null;
+  if (value.startsWith('[') && value.endsWith(']')) {
+    const inner = value.slice(1, -1).trim();
+    return inner ? inner.split(',').map((item) => parseScalar(item)) : [];
+  }
   if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) return value.slice(1, -1);
   if (/^-?\d+(\.\d+)?$/.test(value)) return Number(value);
   return value;
@@ -334,21 +338,23 @@ const parseYamlLikeObject = (text: string): Record<string, unknown> => {
   return root;
 };
 
-const parseCsvIds = (value: unknown, fallback: EncounterId[]): EncounterId[] => {
-  if (typeof value !== 'string') return fallback;
-  const parsed = value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(isEncounterId);
+const parseStringList = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter(Boolean);
+  }
+  if (typeof value !== 'string') return [];
+  return value.split(',').map((item) => item.trim()).filter(Boolean);
+};
+
+const parseLineupIds = (value: unknown, fallback: EncounterId[]): EncounterId[] => {
+  const parsed = parseStringList(value).filter(isEncounterId);
   return parsed.length ? parsed : fallback;
 };
 
-const parseCsvPaths = (value: unknown): string[] => {
-  if (typeof value !== 'string') return [];
-  return value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
+const parseIncludePaths = (value: unknown): string[] => {
+  return parseStringList(value);
 };
 
 const parseAffinityMap = (value: unknown, fallback: DevilTemplate['affinities']): DevilTemplate['affinities'] => {
@@ -448,9 +454,9 @@ const fromRecord = (raw: Record<string, unknown>): DevilConfig => {
     encounterProfiles,
     devilTemplates,
     lineups: {
-      enc1: parseCsvIds(lineupsRaw.enc1, defaultDevilConfig.lineups.enc1),
-      enc2: parseCsvIds(lineupsRaw.enc2, defaultDevilConfig.lineups.enc2),
-      boss: parseCsvIds(lineupsRaw.boss, defaultDevilConfig.lineups.boss),
+      enc1: parseLineupIds(lineupsRaw.enc1, defaultDevilConfig.lineups.enc1),
+      enc2: parseLineupIds(lineupsRaw.enc2, defaultDevilConfig.lineups.enc2),
+      boss: parseLineupIds(lineupsRaw.boss, defaultDevilConfig.lineups.boss),
     },
     support: {
       effects: supportEffects,
@@ -522,7 +528,7 @@ const loadSplitConfigFromIndex = async (): Promise<DevilConfig | null> => {
       const includeRaw = indexRaw.includes;
       const includePaths = Array.isArray(includeRaw)
         ? includeRaw.filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
-        : parseCsvPaths(includeRaw);
+        : parseIncludePaths(includeRaw);
 
       let merged = mergeRecords({}, indexRaw);
       delete merged.includes;

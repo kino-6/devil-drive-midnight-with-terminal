@@ -33,11 +33,16 @@ const nestedSectionIds = (text: string, parent: string, child: string): string[]
   return [...childSection.matchAll(/^    ([a-z0-9_]+):/gm)].map((match) => match[1]);
 };
 
-const quotedCsvIds = (text: string): string[] =>
-  [...text.matchAll(/: "([^"]+)"/g)]
+const listValueIds = (text: string): string[] => [
+  ...[...text.matchAll(/: "([^"]+)"/g)]
     .flatMap((match) => match[1].split(','))
     .map((item) => item.trim())
-    .filter(Boolean);
+    .filter(Boolean),
+  ...[...text.matchAll(/:\s*\[([^\]]*)\]/g)]
+    .flatMap((match) => match[1].split(','))
+    .map((item) => item.trim().replace(/^['"]|['"]$/g, ''))
+    .filter(Boolean),
+];
 
 const runtimeEncounterIds = (text: string): string[] => {
   const start = text.indexOf('export const ENCOUNTER_IDS = [');
@@ -115,7 +120,7 @@ const main = async () => {
   const templateIds = sectionIds(templatesYaml, 'templates');
   const supportEffectIds = nestedSectionIds(supportYaml, 'support', 'effects');
   const supportLinkIds = nestedSectionIds(supportYaml, 'support', 'linkLogs');
-  const lineupIds = quotedCsvIds(lineupsYaml);
+  const lineupIds = listValueIds(lineupsYaml);
   const configEncounterIds = runtimeEncounterIds(devilConfigTs);
   const assetFiles = new Set(await readdir(path.resolve(rootDir, 'public/assets/images/devil')));
   const errors: string[] = [];
