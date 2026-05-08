@@ -1,4 +1,5 @@
 node_modules/
+tsconfig.app.tsbuildinfo
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
