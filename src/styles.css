@@ -2489,10 +2489,6 @@ body {
   gap: 3px;
 }
 
-.resource-meter--signal .resource-meter__blocks {
-  grid-template-columns: repeat(10, 1fr);
-}
-
 .resource-meter__blocks span {
   height: 6px;
   background: #232a33;
