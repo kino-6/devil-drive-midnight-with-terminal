@@ -11,6 +11,20 @@ import { getRouteChoiceTargetNodeId, getRouteNextNodeId, getStageRouteNode, move
 import { appendRecoveredStoryLogLines, getRunGrowth, makePreviousRunSummary, resolveStoryFromRun } from './storyProgression';
 
 type ApproachRouteKind = State['encounter']['kind'];
+type RouteLaneChoice = Extract<Action, { type: 'ROUTE_CHOICE' }>['lane'];
+type BossPreviewChoice = Extract<Action, { type: 'BOSS_PREVIEW_CHOICE' }>['choice'];
+
+const isRouteLaneChoice = (value: string | undefined): value is RouteLaneChoice =>
+  value === 'salvage' || value === 'signal' || value === 'push_forward' || value === 'return_gate';
+
+const isBossPreviewChoice = (value: string | undefined): value is BossPreviewChoice =>
+  value === 'challenge' || value === 'emergency_salvage' || value === 'return_gate';
+
+const getCurrentChoiceIdForTargetNode = (state: State, nodeId: string): string | undefined => {
+  const choices = getStageRouteNode(state)?.choices;
+  if (!choices) return undefined;
+  return Object.entries(choices).find(([, targetNodeId]) => targetNodeId === nodeId)?.[0];
+};
 
 const applySilentShapeBacklash = (
   state: State,
@@ -117,6 +131,13 @@ const enterRouteNode = (state: State, nodeId: string): State => {
 
 export function reduceRoute(state: State, action: Action): State {
   if (action.type === 'ROUTE_NODE_CHOOSE') {
+    const choiceId = getCurrentChoiceIdForTargetNode(state, action.nodeId);
+    if (state.gamePhase === 'route_choice' && isRouteLaneChoice(choiceId)) {
+      return reduceRoute(state, { type: 'ROUTE_CHOICE', lane: choiceId });
+    }
+    if (state.gamePhase === 'boss_preview' && isBossPreviewChoice(choiceId)) {
+      return reduceRoute(state, { type: 'BOSS_PREVIEW_CHOICE', choice: choiceId });
+    }
     return enterRouteNode(state, action.nodeId);
   }
 

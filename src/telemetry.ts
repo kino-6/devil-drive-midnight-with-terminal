@@ -16,6 +16,7 @@ export type TelemetryEventName =
   | 'reward_selected'
   | 'route_choice_shown'
   | 'route_choice_selected'
+  | 'route_node_selected'
   | 'boss_preview_seen'
   | 'boss_challenged'
   | 'boss_cleared'

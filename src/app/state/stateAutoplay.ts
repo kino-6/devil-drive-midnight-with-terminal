@@ -2,6 +2,7 @@ import { getBalanceConfig } from '../../balanceConfig';
 import { getMainGunSpec, getSpecialEquipmentSpec, isAlive } from '../../game/runtimeHelpers';
 import { canPayConversationChoiceCost } from '../../game/talkRules';
 import type { Action, ApproachOption, AutoPlayReport, AutoPlayStrategy, CommandId, Loadout, ResultType, RewardOption, State } from '../../game/types';
+import { getRouteChoiceTargetNodeId } from './routeGraph';
 
 export type AutoplayReducerDeps = {
   initState: () => State;
@@ -165,14 +166,22 @@ export const runAutoplayBatchWithDeps = (loadout: Loadout, runs: number, strateg
       } else if (s.gamePhase === 'reward') {
         s = deps.reducer(s, { type: 'REWARD_CONTINUE' });
       } else if (s.gamePhase === 'route_choice') {
-        s = deps.reducer(s, { type: 'ROUTE_CHOICE', lane: chooseAutoplayRoute(s, strategy) });
+        const lane = chooseAutoplayRoute(s, strategy);
+        const nodeId = getRouteChoiceTargetNodeId(s, lane);
+        s = nodeId
+          ? deps.reducer(s, { type: 'ROUTE_NODE_CHOOSE', nodeId })
+          : deps.reducer(s, { type: 'ROUTE_CHOICE', lane });
       } else if (s.gamePhase === 'salvage') {
         const reward = chooseAutoplayReward(s);
         s = deps.reducer(s, { type: 'SALVAGE_PICK', rewardId: reward.id });
       } else if (s.gamePhase === 'signal') {
         s = deps.reducer(s, { type: 'SIGNAL_ROUTE_CHOICE', choiceId: 'analyze_trace' });
       } else if (s.gamePhase === 'boss_preview') {
-        s = deps.reducer(s, { type: 'BOSS_PREVIEW_CHOICE', choice: chooseAutoplayBossPreview(s, strategy) });
+        const choice = chooseAutoplayBossPreview(s, strategy);
+        const nodeId = getRouteChoiceTargetNodeId(s, choice);
+        s = nodeId
+          ? deps.reducer(s, { type: 'ROUTE_NODE_CHOOSE', nodeId })
+          : deps.reducer(s, { type: 'BOSS_PREVIEW_CHOICE', choice });
       } else if (s.gamePhase === 'return_gate') {
         s = deps.reducer(s, { type: 'RETURN_TO_SURFACE' });
       } else if (s.gamePhase === 'garage') {

@@ -1,4 +1,4 @@
-import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
+import { useEffect, useRef, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
 import {
   touchDemonArchive,
   touchRouteLog,
@@ -42,6 +42,8 @@ export const useTelemetryEffects = ({
   refreshDebugHeaders,
   autoSaveNow,
 }: UseTelemetryEffectsParams) => {
+  const routeNodeSignatureRef = useRef<string | undefined>(undefined);
+
   const buildTelemetryContext = (): Record<string, unknown> => ({
     gamePhase: state.gamePhase,
     runIndex: runIndexRef.current,
@@ -62,6 +64,13 @@ export const useTelemetryEffects = ({
       specialEquipmentId: state.selectedLoadout.specialEquipmentId,
       contractSupportId: state.selectedLoadout.contractSupportId,
     },
+    routeState: state.routeState
+      ? {
+        stageRouteId: state.routeState.stageRouteId,
+        currentNodeId: state.routeState.currentNodeId,
+        currentEventId: state.routeState.currentEventId,
+      }
+      : undefined,
   });
 
   const emitTelemetry = (name: TelemetryEventName, payload: Record<string, unknown> = {}) => {
@@ -132,6 +141,26 @@ export const useTelemetryEffects = ({
       phaseRef.current = state.gamePhase;
     }
   }, [state.gamePhase, state.encounter, state.resultType, finalizeRunRecord]);
+
+  useEffect(() => {
+    const routeState = state.routeState;
+    if (!routeState?.currentNodeId) {
+      routeNodeSignatureRef.current = undefined;
+      return;
+    }
+    const signature = `${routeState.stageRouteId}:${routeState.currentNodeId}:${routeState.currentEventId ?? ''}`;
+    if (routeNodeSignatureRef.current === undefined) {
+      routeNodeSignatureRef.current = signature;
+      return;
+    }
+    if (routeNodeSignatureRef.current === signature) return;
+    routeNodeSignatureRef.current = signature;
+    emitTelemetry('route_node_selected', {
+      stageRouteId: routeState.stageRouteId,
+      nodeId: routeState.currentNodeId,
+      eventId: routeState.currentEventId,
+    });
+  }, [state.routeState?.stageRouteId, state.routeState?.currentNodeId, state.routeState?.currentEventId]);
 
   useEffect(() => {
     if (!bossChallengedRef.current && state.bossChallenged) emitTelemetry('boss_challenged');

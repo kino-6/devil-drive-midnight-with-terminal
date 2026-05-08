@@ -1,6 +1,7 @@
 import { contractModules, garageMainGunOrder, garageSEOrder, garageSubGunOrder } from '../../game/catalogs';
 import { normalizeUnlockState, sanitizeLoadoutForUnlocks } from '../../game/progression';
 import { limitStateLogs } from '../../runtimeLimits';
+import { getStageConfig, isStageConfigRuntimeLoaded } from '../../stageConfig';
 import {
   asNum,
   asRec,
@@ -135,13 +136,18 @@ export const sanitizeRestoredStateWithDeps = (raw: unknown, fallback: State, dep
     const stageRouteId = asStr(raw.stageRouteId, '');
     const currentNodeId = asStr(raw.currentNodeId, '');
     if (!stageRouteId || !currentNodeId) return fallback.routeState;
+    const route = isStageConfigRuntimeLoaded() ? getStageConfig().stages[stageRouteId] : undefined;
+    if (isStageConfigRuntimeLoaded() && !route?.nodes[currentNodeId]) return fallback.routeState;
     const visitedNodeIds = Array.isArray(raw.visitedNodeIds)
       ? raw.visitedNodeIds.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
       : fallback.routeState?.visitedNodeIds ?? [];
+    const validVisitedNodeIds = route
+      ? visitedNodeIds.filter((nodeId) => !!route.nodes[nodeId])
+      : visitedNodeIds;
     return {
       stageRouteId,
       currentNodeId,
-      visitedNodeIds: visitedNodeIds.length > 0 ? visitedNodeIds : [currentNodeId],
+      visitedNodeIds: validVisitedNodeIds.length > 0 ? validVisitedNodeIds : [currentNodeId],
       currentEventId: asStr(raw.currentEventId, undefined as unknown as string) || undefined,
     };
   };
