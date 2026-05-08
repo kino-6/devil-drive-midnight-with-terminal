@@ -785,27 +785,6 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
     analyzedEnemyIds: [...state.encounter.analyzedEnemyIds],
   };
   const logs = [...state.logs];
-  const conversation = state.activeConversation;
-  const targetIndex = encounter.enemies.findIndex((enemy) => enemy.id === conversation.enemyId && isAlive(enemy));
-  if (targetIndex < 0) {
-    encounter.phase = 'command';
-    return {
-      ...state,
-      activeConversation: undefined,
-      encounter,
-    };
-  }
-  const target = encounter.enemies[targetIndex];
-  const choice = conversation.choices.find((entry) => entry.id === action.choiceId) ?? conversation.choices[0];
-  if (!choice) {
-    encounter.phase = 'command';
-    return {
-      ...state,
-      activeConversation: undefined,
-      encounter,
-    };
-  }
-
   let fuel = state.fuel;
   let armor = state.armor;
   let signal = state.signal;
@@ -818,6 +797,86 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
   const negotiationRewards = [...state.negotiationRewards];
   const encounterPrep = { ...state.encounterPrep };
   let moeLine = state.moeLine;
+
+  const finalizeTalkResolution = (): State | undefined => {
+    const cleared = encounter.enemies.every((enemy) => !isAlive(enemy));
+    if (!cleared) return undefined;
+
+    const report = makeEncounterReport(state.encounterIndex + 1, encounter.enemies, false);
+    const summary = accumulateSummary(state.runSummary, report);
+    const logsWithClear = [...logs, '> ENCOUNTER CLEARED'];
+
+    if (state.gamePhase === 'boss_encounter') {
+      return {
+        ...state,
+        gamePhase: 'return_gate',
+        fuel,
+        armor,
+        signal,
+        mainAmmo,
+        seAmmo,
+        encounter: { ...encounter, phase: 'finished' },
+        encounterPrep,
+        logs: [...logsWithClear, '> RETURN GATE ROUTE OPEN'],
+        activeConversation: undefined,
+        negotiationRewards,
+        story,
+        moeLine,
+        moeSyncBank: newMoeSyncBank,
+        salvageCredits,
+        lastReport: report,
+        runSummary: summary,
+        resultType: 'Boss Cleared',
+      };
+    }
+
+    return {
+      ...state,
+      gamePhase: 'reward',
+      fuel,
+      armor,
+      signal,
+      mainAmmo,
+      seAmmo,
+      encounter: { ...encounter, phase: 'finished' },
+      encounterPrep,
+      logs: [...logsWithClear, '> SALVAGE RESULT READY'],
+      activeConversation: undefined,
+      negotiationRewards,
+      story,
+      moeLine,
+      moeSyncBank: newMoeSyncBank,
+      salvageCredits,
+      lastReport: report,
+      runSummary: summary,
+      rewardScope: state.encounter.kind === 'enc1' ? 'post_enc1' : 'post_enc2',
+    };
+  };
+
+  const conversation = state.activeConversation;
+  const targetIndex = encounter.enemies.findIndex((enemy) => enemy.id === conversation.enemyId && isAlive(enemy));
+  if (targetIndex < 0) {
+    encounter.phase = 'command';
+    const finalized = finalizeTalkResolution();
+    if (finalized) return finalized;
+    return {
+      ...state,
+      activeConversation: undefined,
+      encounter,
+    };
+  }
+  const target = encounter.enemies[targetIndex];
+  const choice = conversation.choices.find((entry) => entry.id === action.choiceId) ?? conversation.choices[0];
+  if (!choice) {
+    encounter.phase = 'command';
+    const finalized = finalizeTalkResolution();
+    if (finalized) return finalized;
+    return {
+      ...state,
+      activeConversation: undefined,
+      encounter,
+    };
+  }
 
   const translationBonus = state.skillLevels.translation_assist > 0 ? 0.05 : 0;
   const analyzed = isEnemyIdentityKnown(target, encounter.analyzedEnemyIds);
@@ -974,58 +1033,8 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
     encounter.selectedEnemyId = alive[0].id;
   }
 
-  const cleared = encounter.enemies.every((enemy) => !isAlive(enemy));
-  if (cleared) {
-    const report = makeEncounterReport(state.encounterIndex + 1, encounter.enemies, false);
-    const summary = accumulateSummary(state.runSummary, report);
-    const logsWithClear = [...logs, '> ENCOUNTER CLEARED'];
-
-    if (state.gamePhase === 'boss_encounter') {
-      return {
-        ...state,
-        gamePhase: 'return_gate',
-        fuel,
-        armor,
-        signal,
-        mainAmmo,
-        seAmmo,
-        encounter: { ...encounter, phase: 'finished' },
-        encounterPrep,
-        logs: [...logsWithClear, '> RETURN GATE ROUTE OPEN'],
-        activeConversation: undefined,
-        negotiationRewards,
-        story,
-        moeLine,
-        moeSyncBank: newMoeSyncBank,
-        salvageCredits,
-        lastReport: report,
-        runSummary: summary,
-        resultType: 'Boss Cleared',
-      };
-    }
-
-    return {
-      ...state,
-      gamePhase: 'reward',
-      fuel,
-      armor,
-      signal,
-      mainAmmo,
-      seAmmo,
-      encounter: { ...encounter, phase: 'finished' },
-      encounterPrep,
-      logs: [...logsWithClear, '> SALVAGE RESULT READY'],
-      activeConversation: undefined,
-      negotiationRewards,
-      story,
-      moeLine,
-      moeSyncBank: newMoeSyncBank,
-      salvageCredits,
-      lastReport: report,
-      runSummary: summary,
-      rewardScope: state.encounter.kind === 'enc1' ? 'post_enc1' : 'post_enc2',
-    };
-  }
+  const finalized = finalizeTalkResolution();
+  if (finalized) return finalized;
 
   const { forecast, unstable } = buildForecast(
     encounter.enemies,
@@ -1036,6 +1045,7 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
   );
   encounter.forecast = forecast;
   encounter.forecastUnstable = unstable;
+  encounter.phase = 'command';
   logs.push('> NAVI FORECAST UPDATED');
 
   return {

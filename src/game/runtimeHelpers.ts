@@ -17,161 +17,71 @@ import {
   defaultLoadout,
   defaultSkillLevels,
   rewardCatalog,
-  storyLogById,
 } from './catalogs';
+import {
+  buildEncounter,
+  getRunStartResources,
+  getScanChance,
+  pickEncounterLineup,
+} from './encounterFactory';
+
+export {
+  UNKNOWN_SIGN_LABEL,
+  getEnemyRevealState,
+  isEnemyIdentityKnown,
+  type EnemyRevealStage,
+  type EnemyRevealState,
+} from './enemyReveal';
+export {
+  buildDevil,
+  buildEncounter,
+  buildForecast,
+  getRunStartResources,
+  getScanChance,
+  nextIntent,
+  pickEncounterLineup,
+} from './encounterFactory';
+export {
+  computeAffinityDamage,
+  damageVarianceByCommand,
+  getAffinityTag,
+  getRollBounds,
+  resolveDamageRoll,
+} from './combatMath';
+export { classifyLog, getLogBadge, getPseudoTimecode, pickSfxCueFromLog } from './logPresentation';
+export {
+  appendRecoveredStoryLogLines,
+  claimRunGrowthIfNeeded,
+  getRunGrowth,
+  makePreviousRunSummary,
+  resolveStoryFromRun,
+} from './runProgression';
 import type {
   AutoPlayStrategy,
   ActiveSupportDaemon,
-  AffinityRating,
   AffinityType,
-  ApproachKind,
   CommandId,
   ContractModule,
-  ContractSupportId,
   Devil,
   EncounterId,
   EncounterPrep,
   EncounterReport,
   EncounterState,
-  ForecastMap,
-  GamePhase,
-  Intent,
-  Loadout,
   MainGun,
   MainGunId,
   RewardOption,
   RunSummary,
-  SfxCue,
   SpecialEquipment,
   SpecialEquipmentId,
   State,
   StoryState,
-  StoryLogId,
   SubGun,
   SubGunId,
   Temperament,
-  TerminalLogKind,
-  PreviousRunSummary,
-  ResultType,
-  VehicleUpgradeLevels,
 } from './types';
 
 export const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 export const isAlive = (d: Devil) => d.hp > 0 && !d.exit;
-export const UNKNOWN_SIGN_LABEL = 'UNKNOWN SIGN';
-export const isEnemyIdentityKnown = (
-  enemy: Devil,
-  analyzedEnemyIds: string[] = [],
-  alwaysReveal = false,
-) => alwaysReveal || enemy.revealed || !!enemy.affinityRevealed || analyzedEnemyIds.includes(enemy.id);
-
-export type EnemyRevealStage = 'unknown' | 'silhouette' | 'name' | 'intent' | 'affinity' | 'hint';
-export type EnemyRevealState = {
-  stage: EnemyRevealStage;
-  showSilhouette: boolean;
-  showName: boolean;
-  showIntent: boolean;
-  showHp: boolean;
-  showAffinity: boolean;
-  showHint: boolean;
-  label: string;
-};
-
-type EnemyRevealOptions = {
-  alwaysReveal?: boolean;
-  forceUnknown?: boolean;
-  bossProfile?: EncounterId;
-};
-
-export const getEnemyRevealState = (
-  enemy: Devil,
-  analyzedEnemyIds: string[] = [],
-  options: EnemyRevealOptions = {},
-): EnemyRevealState => {
-  const alwaysReveal = !!options.alwaysReveal;
-  const forceUnknown = !!options.forceUnknown;
-  const bossProfile = options.bossProfile ?? 'toll_gate_saint';
-
-  if (forceUnknown) {
-    return {
-      stage: 'unknown',
-      showSilhouette: false,
-      showName: false,
-      showIntent: false,
-      showHp: false,
-      showAffinity: false,
-      showHint: false,
-      label: UNKNOWN_SIGN_LABEL,
-    };
-  }
-
-  if (alwaysReveal) {
-    return {
-      stage: 'hint',
-      showSilhouette: false,
-      showName: true,
-      showIntent: true,
-      showHp: true,
-      showAffinity: true,
-      showHint: true,
-      label: enemy.name.toUpperCase(),
-    };
-  }
-
-  if (enemy.profile === bossProfile) {
-    const intelRatio = clamp(enemy.intelThreshold > 0 ? enemy.intelProgress / enemy.intelThreshold : 1, 0, 1);
-    const stage: EnemyRevealStage = intelRatio < 0.2
-      ? 'silhouette'
-      : intelRatio < 0.45
-        ? 'name'
-        : intelRatio < 0.7
-          ? 'intent'
-          : intelRatio < 0.9
-            ? 'affinity'
-            : 'hint';
-    const showName = stage !== 'silhouette';
-    const showIntent = stage === 'intent' || stage === 'affinity' || stage === 'hint';
-    const showAffinity = stage === 'affinity' || stage === 'hint';
-    const showHint = stage === 'hint';
-    return {
-      stage,
-      showSilhouette: stage === 'silhouette',
-      showName,
-      showIntent,
-      showHp: showName,
-      showAffinity,
-      showHint,
-      label: showName ? enemy.name.toUpperCase() : UNKNOWN_SIGN_LABEL,
-    };
-  }
-
-  const known = isEnemyIdentityKnown(enemy, analyzedEnemyIds, false);
-  if (!known) {
-    return {
-      stage: 'unknown',
-      showSilhouette: false,
-      showName: false,
-      showIntent: false,
-      showHp: false,
-      showAffinity: false,
-      showHint: false,
-      label: UNKNOWN_SIGN_LABEL,
-    };
-  }
-
-  const showAffinity = !!enemy.affinityRevealed;
-  const showHint = enemy.intelProgress >= enemy.intelThreshold;
-  return {
-    stage: showHint ? 'hint' : showAffinity ? 'affinity' : 'intent',
-    showSilhouette: false,
-    showName: true,
-    showIntent: true,
-    showHp: true,
-    showAffinity,
-    showHint,
-    label: enemy.name.toUpperCase(),
-  };
-};
 export const asRec = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 export const asNum = (value: unknown, fallback: number) => (typeof value === 'number' && Number.isFinite(value) ? value : fallback);
@@ -294,44 +204,6 @@ export const createInitialStoryState = (): StoryState => ({
 
 export const hasAiNaviContract = (contracts: ContractModule[]) => contracts.some((module) => module.id === 'abandoned_ai_navi');
 
-export const getRunStartResources = (loadout: Loadout, vehicleUpgrades: VehicleUpgradeLevels = defaultVehicleUpgrades) => ({
-  fuel: getBalanceConfig().resources.baseFuel + vehicleUpgrades.fuel_tank,
-  armor: getBalanceConfig().resources.baseArmor + vehicleUpgrades.armor_plating,
-  signal: getBalanceConfig().resources.baseSignal,
-  mainAmmo: getMainGunSpec(loadout.mainGunId).ammo + vehicleUpgrades.ammo_rack,
-  maxMainAmmo: getMainGunSpec(loadout.mainGunId).ammo + vehicleUpgrades.ammo_rack,
-  seAmmo: getSpecialEquipmentSpec(loadout.specialEquipmentId).ammo + vehicleUpgrades.se_rack,
-  maxSeAmmo: getSpecialEquipmentSpec(loadout.specialEquipmentId).ammo + vehicleUpgrades.se_rack,
-});
-
-export const lineupByKind = (kind: ApproachKind): EncounterId[] =>
-  kind === 'enc1'
-    ? [...getDevilConfig().lineups.enc1]
-    : kind === 'enc2'
-      ? [...getDevilConfig().lineups.enc2]
-      : [...getDevilConfig().lineups.boss];
-
-export const pickEncounterEnemyCount = (kind: EncounterState['kind'], stage: number, available: number): number => {
-  if (kind === 'boss') return Math.min(1, available);
-  if (available <= 1) return available;
-  if (stage <= 1) return Math.random() < 0.55 ? 1 : Math.min(2, available);
-  if (stage === 2) return Math.random() < 0.35 ? 2 : Math.min(3, available);
-  if (stage === 3) return Math.random() < 0.2 ? 2 : Math.min(3, available);
-  return Math.random() < 0.1 ? 2 : Math.min(3, available);
-};
-
-export const pickEncounterLineup = (kind: EncounterState['kind'], stage: number): EncounterId[] => {
-  const pool = lineupByKind(kind);
-  if (pool.length <= 1) return pool;
-  const shuffled = [...pool];
-  for (let i = shuffled.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  const count = pickEncounterEnemyCount(kind, stage, shuffled.length);
-  return shuffled.slice(0, Math.max(1, count));
-};
-
 export const createEmptyEncounterPrep = (): EncounterPrep => ({
   firstStrike: false,
   ambushed: false,
@@ -340,121 +212,6 @@ export const createEmptyEncounterPrep = (): EncounterPrep => ({
   firstTalkBonus: 0,
   firstTalkPending: false,
 });
-
-export const getScanChance = (state: State, kind: ApproachKind, lineup: EncounterId[]): number => {
-  const scan = getBalanceConfig().scan;
-  let chance = scan.baseChance;
-  if (state.selectedLoadout.contractSupportId === 'abandoned_ai_navi') chance += scan.aiSupportBonus;
-  if (state.signal >= scan.highSignalThreshold) chance += scan.highSignalBonus;
-  if (kind === 'boss') chance -= scan.bossPenalty;
-  if (lineup.includes('silent_shape')) chance -= scan.stealthPenalty;
-  chance += state.skillLevels.scan_boost * scan.scanBoostPerLevel;
-  return clamp(chance, 15, 95);
-};
-
-export const nextIntent = (profile?: EncounterId): Intent => {
-  const roll = Math.random();
-  if (profile === 'toll_gate_saint') {
-    if (roll < 0.25) return 'attack';
-    if (roll < 0.55) return 'bargain';
-    if (roll < 0.85) return 'guard';
-    return 'curse';
-  }
-  if (roll < 0.4) return 'attack';
-  if (roll < 0.62) return 'curse';
-  if (roll < 0.8) return 'bargain';
-  if (roll < 0.95) return 'guard';
-  return 'flee';
-};
-
-export const buildDevil = (kind: EncounterId, index: number, stage = 1): Devil => {
-  const t = devilTemplates()[kind];
-  const stageHpBonus = t.profile === 'toll_gate_saint'
-    ? (stage - 1) * 5
-    : (stage - 1) * 2;
-  const scaledMaxHp = t.maxHp + stageHpBonus;
-  const intelThreshold = t.profile === 'toll_gate_saint' ? 170 : 100;
-  return {
-    id: `${kind}-${index}`,
-    name: t.name,
-    maxHp: scaledMaxHp,
-    hp: scaledMaxHp,
-    temperament: t.temperament,
-    intent: nextIntent(t.profile),
-    contractable: t.contractable,
-    revealed: t.profile === 'toll_gate_saint',
-    targetModuleId: t.targetModuleId,
-    trust: 0,
-    pressure: 0,
-    interest: 0,
-    guardStacks: 0,
-    contractWindow: false,
-    armored: t.armored,
-    affinities: { ...t.affinities },
-    affinityRevealed: false,
-    intelProgress: t.profile === 'toll_gate_saint' ? 40 : 0,
-    intelThreshold,
-    profile: t.profile,
-    empDisabledTurns: 0,
-  };
-};
-
-export const buildForecast = (
-  enemies: Devil[],
-  hasAiNaviModule: boolean,
-  supportId: ContractSupportId,
-  activeSupportProfile: EncounterId | undefined,
-  extraTurns = 0,
-): { forecast: ForecastMap; unstable: boolean } => {
-  const supportTurns = supportId === 'abandoned_ai_navi' ? 1 : 0;
-  const daemonTurns = activeSupportProfile === 'abandoned_ai_navi' ? 1 : 0;
-  const horizon = 1 + extraTurns + (hasAiNaviModule ? 2 : 0) + supportTurns;
-  const horizonWithDaemon = horizon + daemonTurns;
-  const forecast: ForecastMap = {};
-  for (const enemy of enemies.filter(isAlive)) {
-    forecast[enemy.id] = Array.from({ length: horizonWithDaemon }, () => nextIntent(enemy.profile));
-  }
-  const unstableSource = hasAiNaviModule || supportId === 'abandoned_ai_navi' || activeSupportProfile === 'abandoned_ai_navi';
-  const unstable = unstableSource && Math.random() < (activeSupportProfile === 'abandoned_ai_navi' ? 0.1 : 0.2);
-  if (unstable) {
-    const ids = Object.keys(forecast);
-    if (ids.length > 0) {
-      const id = ids[Math.floor(Math.random() * ids.length)];
-      const idx = Math.floor(Math.random() * forecast[id].length);
-      const intents: Intent[] = ['attack', 'curse', 'bargain', 'guard', 'flee'];
-      const alt = intents.filter((it) => it !== forecast[id][idx]);
-      forecast[id][idx] = alt[Math.floor(Math.random() * alt.length)];
-    }
-  }
-  return { forecast, unstable };
-};
-
-export const buildEncounter = (
-  kind: EncounterState['kind'],
-  contracts: ContractModule[],
-  supportId: ContractSupportId,
-  activeSupportProfile: EncounterId | undefined,
-  extraForecast = 0,
-  stage = 1,
-  lineupOverride?: EncounterId[],
-): EncounterState => {
-  const lineup = lineupOverride && lineupOverride.length > 0 ? lineupOverride : pickEncounterLineup(kind, stage);
-  const enemies = lineup.map((id, i) => buildDevil(id, i, stage));
-  const { forecast, unstable } = buildForecast(enemies, hasAiNaviContract(contracts), supportId, activeSupportProfile, extraForecast);
-  return {
-    kind,
-    enemies,
-    selectedEnemyId: enemies[0]?.id ?? '',
-    selectedCommand: 'analyze',
-    turn: 1,
-    phase: 'command',
-    guardActive: false,
-    analyzedEnemyIds: [],
-    forecast,
-    forecastUnstable: unstable,
-    supportArmorGuardReady: supportId === 'silent_shape' || activeSupportProfile === 'silent_shape',
-  };
-};
 
 export const getSelectedEnemy = (encounter: EncounterState): Devil | undefined =>
   encounter.enemies.find((enemy) => enemy.id === encounter.selectedEnemyId && isAlive(enemy)) ?? encounter.enemies.find(isAlive);
@@ -473,20 +230,6 @@ export const getContractHint = (enemy: Devil): string => {
   if (enemy.temperament === 'proud') return 'Hint: trust + pressure';
   if (enemy.temperament === 'curious') return 'Hint: interest + trust mix';
   return 'Hint: weaken then force contract window';
-};
-
-export const computeAffinityDamage = (baseDamage: number, rating: AffinityRating) => {
-  const affinity = getBalanceConfig().affinity;
-  if (baseDamage <= 0) return 0;
-  if (rating === 'weak') return Math.max(1, Math.floor(baseDamage * affinity.weakMultiplier));
-  if (rating === 'resist') return Math.max(1, Math.floor(baseDamage * affinity.resistMultiplier));
-  return baseDamage;
-};
-
-export const getAffinityTag = (rating: AffinityRating) => {
-  if (rating === 'weak') return 'WEAK';
-  if (rating === 'resist') return 'RESIST';
-  return 'NORMAL';
 };
 
 const affinityToCommandLabel: Record<AffinityType, string> = {
@@ -571,44 +314,6 @@ export const accumulateSummary = (summary: RunSummary, report: EncounterReport):
   escaped: summary.escaped + (report.escaped ? 1 : 0),
 });
 
-export const classifyLog = (log: string): TerminalLogKind => {
-  if (log.includes('CONTRACT') || log.includes('MODULE')) return 'contract';
-  if (log.includes('ARMOR -') || log.includes('FUEL -') || log.includes('IMPACT') || log.includes('DAMAGE') || log.includes('DISABLED')) return 'damage';
-  if (log.includes('WARNING') || log.includes('CURSE') || log.includes('ANOMALY')) return 'warning';
-  if (log.includes('RUN START') || log.includes('ENCOUNTER') || log.includes('REWARD') || log.includes('RETURN GATE') || log.includes('FORECAST')) return 'route';
-  return 'system';
-};
-
-export const getLogBadge = (kind: TerminalLogKind) => {
-  if (kind === 'warning') return 'WARN';
-  if (kind === 'contract') return 'CNTR';
-  if (kind === 'damage') return 'DMG';
-  if (kind === 'route') return 'ROUTE';
-  return 'SYS';
-};
-
-export const getPseudoTimecode = (index: number, total: number, wave: number, turn: number) => {
-  const recentStart = Math.max(0, total - 14);
-  const localOrder = Math.max(0, index - recentStart);
-  const elapsedSec = wave * 22 + Math.max(0, turn - 1) * 3 + localOrder * 0.6;
-  return `+${elapsedSec.toFixed(1)}s`;
-};
-
-export const pickSfxCueFromLog = (log: string, phase: GamePhase): SfxCue | undefined => {
-  if (phase === 'garage') return 'garage_enter';
-  if (phase === 'game_over') return 'game_over';
-  if (log.includes('RUN START')) return 'run_start';
-  if (log.includes('APPROACH WINDOW OPEN') || log.includes('CONTACT DETECTED')) return 'scan_ok';
-  if (log.includes('NAVI SCAN FAILED') || log.includes('AMBUSH')) return 'scan_fail';
-  if (log.includes('CONTRACT REGISTERED') || log.includes('MODULE SLOT UPDATED')) return 'contract';
-  if (log.includes('IMPACT CONFIRMED') || log.includes('MULTI TARGET HIT')) return 'hit';
-  if (log.includes('WARNING')) return 'warning';
-  if (log.includes('SALVAGE RESULT READY') || log.includes('REWARD APPLIED') || log.includes('SALVAGE APPLIED')) return 'reward';
-  if (log.includes('RUN COMPLETE') || log.includes('RETURN GATE ROUTE OPEN')) return 'result';
-  if (log.includes('COMMAND:') || log.includes('MAIN GUN:') || log.includes('SUB GUN:') || log.includes('S-E:') || log.includes('DRIVE COMMAND')) return 'command';
-  return undefined;
-};
-
 export const applyRewardOption = (state: State, option: RewardOption) => ({
   fuel: state.fuel + (option.fuel ?? 0),
   armor: state.armor + (option.armor ?? 0),
@@ -663,71 +368,9 @@ export const initState = (): State => {
   };
 };
 
-export const makePreviousRunSummary = (state: State, resultType: ResultType): PreviousRunSummary => ({
-  stage: state.stage,
-  resultType,
-  encountersCleared: state.runSummary.cleared,
-  bossChallenged: state.bossChallenged,
-  contractsAcquired: state.runSummary.contracted,
-  salvageGained: state.salvageCredits,
-  fuel: state.fuel,
-  armor: state.armor,
-  signal: state.signal,
-  mainAmmo: state.mainAmmo,
-  seAmmo: state.seAmmo,
-});
-
-export const getRunGrowth = (state: State) => {
-  const isReturned = state.gamePhase === 'result';
-  const driverXp = state.runSummary.cleared + ((state.resultType ?? 'Early Return') === 'Boss Cleared' ? 2 : 0);
-  const moeSync = state.runSummary.contracted + state.analyzeSuccessCount;
-  const salvageCreditGain = state.salvageCredits + (isReturned ? 1 : 0);
-  return { driverXp, moeSync, salvageCreditGain };
-};
-
-export const claimRunGrowthIfNeeded = (state: State): State => {
-  if (state.growthClaimed || !(state.gamePhase === 'result' || state.gamePhase === 'game_over')) return state;
-  const growth = getRunGrowth(state);
-  return {
-    ...state,
-    driverXpBank: state.driverXpBank + growth.driverXp,
-    moeSyncBank: state.moeSyncBank + growth.moeSync,
-    creditBank: state.creditBank + growth.salvageCreditGain,
-    growthClaimed: true,
-  };
-};
-
 export const getSkillCost = (currentLevel: number) => currentLevel + 1;
 export const getVehicleUpgradeCost = (currentLevel: number) => 2 + currentLevel;
 
-export const resolveStoryFromRun = (state: State, resultType: ResultType): StoryState => {
-  const recovered = [...state.story.recoveredLogs];
-  const newly: StoryLogId[] = [];
-  const unlock = (id: StoryLogId) => {
-    if (!recovered.includes(id)) {
-      recovered.push(id);
-      newly.push(id);
-    }
-  };
-
-  if (resultType !== 'Vehicle Disabled') unlock('LOG_00');
-  if (state.bossChallenged) unlock('LOG_01');
-  if (state.bossChallenged && resultType !== 'Vehicle Disabled') unlock('LOG_02');
-  if (state.contracts.some((module) => module.id === 'radio_voice')) unlock('LOG_03');
-  if (state.contracts.some((module) => module.id === 'abandoned_ai_navi')) unlock('LOG_04');
-
-  const chapter = recovered.length >= 4 ? 3 : recovered.length >= 2 ? 2 : 1;
-  const clueBonus = newly.filter((id) => id === 'LOG_00' || id === 'LOG_01' || id === 'LOG_02').length;
-  const memoryBonus = newly.filter((id) => id === 'LOG_04').length * 2 + newly.length;
-
-  return {
-    chapter,
-    recoveredLogs: recovered,
-    moeMemory: state.story.moeMemory + memoryBonus,
-    previousDriverClues: state.story.previousDriverClues + clueBonus,
-    recentRecoveredLogs: newly,
-  };
-};
 
 export const getNarrativeMoeLine = (state: State): string => {
   if (state.gamePhase === 'prologue') {
@@ -751,14 +394,6 @@ export const getNarrativeMoeLine = (state: State): string => {
   return state.moeLine;
 };
 
-export const appendRecoveredStoryLogLines = (logs: string[], story: StoryState): string[] => {
-  if (story.recentRecoveredLogs.length === 0) return logs;
-  const out = [...logs, '> STORY LOG RECOVERED'];
-  for (const id of story.recentRecoveredLogs) {
-    out.push(`> ${id}: ${storyLogById[id].title.toUpperCase()}`);
-  }
-  return out;
-};
 
 export const initRunWithLoadout = (state: State, logsPrefix: string[] = []): State => {
   const start = getRunStartResources(state.selectedLoadout, state.vehicleUpgrades);
