@@ -5,6 +5,7 @@ import {
   loadSaveData,
   recordRunResult,
   saveAutoSaveSnapshot,
+  saveUnlockState,
   unlockMoeMemory,
   updateSaveData,
   type RunRecord,
@@ -39,6 +40,7 @@ export const useSaveRuntime = ({ state, narrativeMoeLine }: UseSaveRuntimeParams
 
   const saveSnapshot = useMemo(() => loadSaveData(), [saveRefresh]);
   const autoSaveSnapshot = useMemo(() => loadAutoSaveSnapshot<AppRuntimeSaveSnapshot>(), [saveRefresh]);
+  const unlockHash = useMemo(() => JSON.stringify(state.unlocks), [state.unlocks]);
 
   const refreshSaveSnapshot = () => setSaveRefresh((value) => value + 1);
   const refreshDebugHeaders = () => setDebugSaveHeaders(listDebugSaveHeaders());
@@ -137,6 +139,11 @@ export const useSaveRuntime = ({ state, narrativeMoeLine }: UseSaveRuntimeParams
   useEffect(() => {
     latestStateRef.current = state;
   }, [state]);
+
+  useEffect(() => {
+    saveUnlockState(state.unlocks);
+    refreshSaveSnapshot();
+  }, [unlockHash]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {

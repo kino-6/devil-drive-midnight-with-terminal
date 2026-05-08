@@ -24,6 +24,7 @@ import {
   getScanChance,
   pickEncounterLineup,
 } from './encounterFactory';
+import { getInitialUnlocks, sanitizeLoadoutForUnlocks } from './progression';
 
 export {
   UNKNOWN_SIGN_LABEL,
@@ -323,7 +324,9 @@ export const applyRewardOption = (state: State, option: RewardOption) => ({
 });
 
 export const initState = (): State => {
-  const start = getRunStartResources(defaultLoadout, defaultVehicleUpgrades);
+  const unlocks = getInitialUnlocks();
+  const selectedLoadout = sanitizeLoadoutForUnlocks(defaultLoadout, unlocks);
+  const start = getRunStartResources(selectedLoadout, defaultVehicleUpgrades);
   return {
     stage: 1,
     stageCount: 3,
@@ -339,7 +342,7 @@ export const initState = (): State => {
     logs: ['> DEVIL TERMINAL: ONLINE'],
     salvageCredits: 0,
     encounterIndex: 0,
-    encounter: buildEncounter('enc1', [], defaultLoadout.contractSupportId, undefined, 0, 1),
+    encounter: buildEncounter('enc1', [], selectedLoadout.contractSupportId, undefined, 0, 1),
     rewardOptions: pickRewardChoices(rewardCatalog),
     rewardTarget: undefined,
     rewardScope: undefined,
@@ -351,7 +354,7 @@ export const initState = (): State => {
     resultType: undefined,
     bossChallenged: false,
     moeLine: getDialogueLine('moe.prologue.open', '午前0時。夜環、開いたよ。'),
-    selectedLoadout: defaultLoadout,
+    selectedLoadout,
     activeSupportDaemon: undefined,
     activeConversation: undefined,
     previousRun: undefined,
@@ -359,6 +362,7 @@ export const initState = (): State => {
     encounterPrep: createEmptyEncounterPrep(),
     skillLevels: { ...defaultSkillLevels },
     vehicleUpgrades: { ...defaultVehicleUpgrades },
+    unlocks,
     driverXpBank: 1,
     moeSyncBank: 0,
     creditBank: 0,

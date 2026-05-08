@@ -19,6 +19,7 @@ export function reduceRunLifecycle(state: State, action: Action): State {
       story: claimed.story,
       skillLevels: claimed.skillLevels,
       vehicleUpgrades: claimed.vehicleUpgrades,
+      unlocks: claimed.unlocks,
       driverXpBank: claimed.driverXpBank,
       moeSyncBank: claimed.moeSyncBank,
       creditBank: claimed.creditBank,

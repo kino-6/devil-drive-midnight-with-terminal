@@ -14,6 +14,7 @@ import type {
 } from './types';
 import { defaultVehicleUpgrades, mainGunCatalog, specialEquipmentCatalog } from './catalogs';
 import { assignTalkPersona } from './talkRules';
+import { getVehicleUpgradeResourceBonuses } from './vehicleUpgrades';
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 const isAlive = (d: Devil) => d.hp > 0 && !d.exit;
@@ -184,11 +185,12 @@ export const getRunStartResources = (
   loadout: Loadout,
   vehicleUpgrades: VehicleUpgradeLevels = defaultVehicleUpgrades,
 ) => {
-  const mainAmmo = getMainGunAmmo(loadout.mainGunId) + vehicleUpgrades.ammo_rack;
-  const seAmmo = getSpecialEquipmentAmmo(loadout.specialEquipmentId) + vehicleUpgrades.se_rack;
+  const upgradeBonuses = getVehicleUpgradeResourceBonuses(vehicleUpgrades);
+  const mainAmmo = getMainGunAmmo(loadout.mainGunId) + upgradeBonuses.mainAmmo;
+  const seAmmo = getSpecialEquipmentAmmo(loadout.specialEquipmentId) + upgradeBonuses.seAmmo;
   return {
-    fuel: getBalanceConfig().resources.baseFuel + vehicleUpgrades.fuel_tank,
-    armor: getBalanceConfig().resources.baseArmor + vehicleUpgrades.armor_plating,
+    fuel: getBalanceConfig().resources.baseFuel + upgradeBonuses.fuel,
+    armor: getBalanceConfig().resources.baseArmor + upgradeBonuses.armor,
     signal: getBalanceConfig().resources.baseSignal,
     mainAmmo,
     maxMainAmmo: mainAmmo,

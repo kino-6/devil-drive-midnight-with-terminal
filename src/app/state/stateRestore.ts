@@ -1,4 +1,5 @@
 import { contractModules } from '../../game/catalogs';
+import { normalizeUnlockState, sanitizeLoadoutForUnlocks } from '../../game/progression';
 import { limitStateLogs } from '../../runtimeLimits';
 import {
   asNum,
@@ -108,13 +109,14 @@ export const sanitizeRestoredStateWithDeps = (raw: unknown, fallback: State, dep
       ? value
       : 'curious';
 
+  const unlocks = normalizeUnlockState(source.unlocks, fallback.unlocks);
   const selectedLoadoutRaw = asRec(source.selectedLoadout);
-  const selectedLoadout: Loadout = {
+  const selectedLoadout: Loadout = sanitizeLoadoutForUnlocks({
     mainGunId: normalizeMainGun(selectedLoadoutRaw.mainGunId),
     subGunId: normalizeSubGun(selectedLoadoutRaw.subGunId),
     specialEquipmentId: normalizeSE(selectedLoadoutRaw.specialEquipmentId),
     contractSupportId: normalizeSupport(selectedLoadoutRaw.contractSupportId),
-  };
+  }, unlocks);
   const activeSupportRaw = asRec(source.activeSupportDaemon);
   const activeSupportProfile = normalizeEncounterId(activeSupportRaw.profile);
   const activeSupportDaemon: ActiveSupportDaemon | undefined = activeSupportProfile
@@ -148,6 +150,7 @@ export const sanitizeRestoredStateWithDeps = (raw: unknown, fallback: State, dep
       ? limitStateLogs(source.logs.filter((line): line is string => typeof line === 'string'))
       : fallback.logs,
     selectedLoadout,
+    unlocks,
     activeSupportDaemon,
     activeConversation: undefined,
     negotiationRewards: Array.isArray(source.negotiationRewards)

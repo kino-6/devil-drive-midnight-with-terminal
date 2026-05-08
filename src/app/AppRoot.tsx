@@ -709,6 +709,7 @@ const tacticalLinesCompact = tacticalLines
             onSetSupport: (id) => dispatch({ type: 'GARAGE_SET_SUPPORT', id }),
             onPurchaseSkill: (upgrade) => dispatch({ type: 'PURCHASE_SKILL', upgrade }),
             onPurchaseVehicleUpgrade: (id) => dispatch({ type: 'PURCHASE_VEHICLE_UPGRADE', id }),
+            onPurchaseUnlock: (id) => dispatch({ type: 'PURCHASE_UNLOCK', id }),
             onSetAutoplayRuns: setAutoplayRuns,
             onSetAutoplayStrategy: setAutoplayStrategy,
             onRunAutoplay: runAutoplay,

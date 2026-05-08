@@ -4,6 +4,7 @@ import { limitStateLogs } from '../../runtimeLimits';
 import { getEncounterScenario, getScenarioLine } from '../../scenario/scenarioLoader';
 import { getDevilConfig } from '../../devilConfig';
 import { loadSaveData } from '../../saveSystem';
+import { sanitizeLoadoutForUnlocks } from '../../game/progression';
 import type {
   AffinityRating,
   AffinityType,
@@ -42,6 +43,7 @@ import {
   isAlive,
 } from '../../game/runtimeHelpers';
 import { assignTalkPersona } from '../../game/talkRules';
+import { getVehicleUpgradeResourceBonuses } from '../../game/vehicleUpgrades';
 
 export const pickRewardChoices = (pool: RewardOption[], count = 3): RewardOption[] => {
   const shuffled = [...pool];
@@ -62,15 +64,20 @@ const createInitialStoryState = (): StoryState => ({
 
 export const hasAiNaviContract = (contracts: ContractModule[]) => contracts.some((module) => module.id === 'abandoned_ai_navi');
 
-export const getRunStartResources = (loadout: Loadout, vehicleUpgrades: VehicleUpgradeLevels = defaultVehicleUpgrades) => ({
-  fuel: getBalanceConfig().resources.baseFuel + vehicleUpgrades.fuel_tank,
-  armor: getBalanceConfig().resources.baseArmor + vehicleUpgrades.armor_plating,
-  signal: getBalanceConfig().resources.baseSignal,
-  mainAmmo: getMainGunSpec(loadout.mainGunId).ammo + vehicleUpgrades.ammo_rack,
-  maxMainAmmo: getMainGunSpec(loadout.mainGunId).ammo + vehicleUpgrades.ammo_rack,
-  seAmmo: getSpecialEquipmentSpec(loadout.specialEquipmentId).ammo + vehicleUpgrades.se_rack,
-  maxSeAmmo: getSpecialEquipmentSpec(loadout.specialEquipmentId).ammo + vehicleUpgrades.se_rack,
-});
+export const getRunStartResources = (loadout: Loadout, vehicleUpgrades: VehicleUpgradeLevels = defaultVehicleUpgrades) => {
+  const upgradeBonuses = getVehicleUpgradeResourceBonuses(vehicleUpgrades);
+  const mainAmmo = getMainGunSpec(loadout.mainGunId).ammo + upgradeBonuses.mainAmmo;
+  const seAmmo = getSpecialEquipmentSpec(loadout.specialEquipmentId).ammo + upgradeBonuses.seAmmo;
+  return {
+    fuel: getBalanceConfig().resources.baseFuel + upgradeBonuses.fuel,
+    armor: getBalanceConfig().resources.baseArmor + upgradeBonuses.armor,
+    signal: getBalanceConfig().resources.baseSignal,
+    mainAmmo,
+    maxMainAmmo: mainAmmo,
+    seAmmo,
+    maxSeAmmo: seAmmo,
+  };
+};
 
 const lineupByKind = (kind: ApproachKind): EncounterId[] =>
   kind === 'enc1'
@@ -480,7 +487,10 @@ export const pickSfxCueFromLog = (log: string, phase: GamePhase): SfxCue | undef
 };
 
 export const initState = (): State => {
-  const start = getRunStartResources(defaultLoadout, defaultVehicleUpgrades);
+  const saved = loadSaveData();
+  const unlocks = saved.unlocks;
+  const selectedLoadout = sanitizeLoadoutForUnlocks(defaultLoadout, unlocks);
+  const start = getRunStartResources(selectedLoadout, defaultVehicleUpgrades);
   return {
     stage: 1,
     stageCount: 3,
@@ -496,7 +506,7 @@ export const initState = (): State => {
     logs: ['> DEVIL TERMINAL: ONLINE'],
     salvageCredits: 0,
     encounterIndex: 0,
-    encounter: buildEncounter('enc1', [], defaultLoadout.contractSupportId, undefined, 0, 1),
+    encounter: buildEncounter('enc1', [], selectedLoadout.contractSupportId, undefined, 0, 1),
     rewardOptions: pickRewardChoices(rewardCatalog),
     rewardTarget: undefined,
     rewardScope: undefined,
@@ -508,13 +518,14 @@ export const initState = (): State => {
     resultType: undefined,
     bossChallenged: false,
     moeLine: getDialogueLine('moe.prologue.open', '午前0時。夜環、開いたよ。'),
-    selectedLoadout: defaultLoadout,
+    selectedLoadout,
     activeSupportDaemon: undefined,
     previousRun: undefined,
     approach: undefined,
     encounterPrep: createEmptyEncounterPrep(),
     skillLevels: { ...defaultSkillLevels },
     vehicleUpgrades: { ...defaultVehicleUpgrades },
+    unlocks,
     driverXpBank: 1,
     moeSyncBank: 0,
     creditBank: 0,

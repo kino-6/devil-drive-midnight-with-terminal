@@ -8,8 +8,10 @@ import {
   specialEquipmentCatalog,
   subGunCatalog,
 } from '../../../game/catalogs';
+import { getUnlockReason, isEquipmentUnlocked } from '../../../game/progression';
 import { getMainGunSpec, getSpecialEquipmentSpec, getSubGunSpec } from '../../../game/runtimeHelpers';
 import type { ContractSupportId, MainGunId, SpecialEquipmentId, State, SubGunId } from '../../../game/types';
+import type { UnlockCategory } from '../../../progressionConfig';
 
 type GarageLoadoutSectionProps = {
   state: State;
@@ -25,21 +27,30 @@ export const GarageLoadoutSection = ({
   onSetSubGun,
   onSetSpecial,
   onSetSupport,
-}: GarageLoadoutSectionProps) => (
-  <div className="garage-block">
+}: GarageLoadoutSectionProps) => {
+  const lockLabel = (category: UnlockCategory, id: string) =>
+    isEquipmentUnlocked(state.unlocks, category, id) ? undefined : getUnlockReason(state.unlocks, category, id);
+
+  return <div className="garage-block">
     <h3>Loadout</h3>
     <details className="garage-fold" open>
       <summary>MAIN GUN</summary>
       <div className="garage-fold__body">
         <div className="garage-select-grid">
-          {garageMainGunOrder.map((id) => <button
-            key={id}
-            className={`command-button command-button--danger ${state.selectedLoadout.mainGunId === id ? 'is-selected' : ''}`}
-            onClick={() => onSetMainGun(id)}
-            data-desc={`DMG ${getMainGunSpec(id).damage} / AMMO ${getMainGunSpec(id).ammo} / ${mainGunCatalog[id].description}`}
-          >
-            {mainGunCatalog[id].name}
-          </button>)}
+          {garageMainGunOrder.map((id) => {
+            const locked = lockLabel('mainGuns', id);
+            const desc = locked ?? `DMG ${getMainGunSpec(id).damage} / AMMO ${getMainGunSpec(id).ammo} / ${mainGunCatalog[id].description}`;
+            return <button
+              key={id}
+              className={`command-button command-button--danger ${state.selectedLoadout.mainGunId === id ? 'is-selected' : ''} ${locked ? 'is-locked' : ''}`}
+              disabled={!!locked}
+              onClick={() => onSetMainGun(id)}
+              data-desc={desc}
+              title={desc}
+            >
+              {mainGunCatalog[id].name} {locked && <span>{locked}</span>}
+            </button>;
+          })}
         </div>
       </div>
     </details>
@@ -48,14 +59,20 @@ export const GarageLoadoutSection = ({
       <summary>SUB GUN</summary>
       <div className="garage-fold__body">
         <div className="garage-select-grid">
-          {garageSubGunOrder.map((id) => <button
-            key={id}
-            className={`command-button command-button--route ${state.selectedLoadout.subGunId === id ? 'is-selected' : ''}`}
-            onClick={() => onSetSubGun(id)}
-            data-desc={`DMG ${getSubGunSpec(id).damage}${getSubGunSpec(id).hits ? ` / HITS ${getSubGunSpec(id).hits}` : ''} / ${subGunCatalog[id].description}`}
-          >
-            {subGunCatalog[id].name}
-          </button>)}
+          {garageSubGunOrder.map((id) => {
+            const locked = lockLabel('subGuns', id);
+            const desc = locked ?? `DMG ${getSubGunSpec(id).damage}${getSubGunSpec(id).hits ? ` / HITS ${getSubGunSpec(id).hits}` : ''} / ${subGunCatalog[id].description}`;
+            return <button
+              key={id}
+              className={`command-button command-button--route ${state.selectedLoadout.subGunId === id ? 'is-selected' : ''} ${locked ? 'is-locked' : ''}`}
+              disabled={!!locked}
+              onClick={() => onSetSubGun(id)}
+              data-desc={desc}
+              title={desc}
+            >
+              {subGunCatalog[id].name} {locked && <span>{locked}</span>}
+            </button>;
+          })}
         </div>
       </div>
     </details>
@@ -64,14 +81,20 @@ export const GarageLoadoutSection = ({
       <summary>S-E</summary>
       <div className="garage-fold__body">
         <div className="garage-select-grid">
-          {garageSEOrder.map((id) => <button
-            key={id}
-            className={`command-button command-button--contract ${state.selectedLoadout.specialEquipmentId === id ? 'is-selected' : ''}`}
-            onClick={() => onSetSpecial(id)}
-            data-desc={`DMG ${getSpecialEquipmentSpec(id).damage} / COST ${getSpecialEquipmentSpec(id).seAmmoCost} / AMMO ${getSpecialEquipmentSpec(id).ammo} / ${specialEquipmentCatalog[id].description}`}
-          >
-            {specialEquipmentCatalog[id].name}
-          </button>)}
+          {garageSEOrder.map((id) => {
+            const locked = lockLabel('specialEquipment', id);
+            const desc = locked ?? `DMG ${getSpecialEquipmentSpec(id).damage} / COST ${getSpecialEquipmentSpec(id).seAmmoCost} / AMMO ${getSpecialEquipmentSpec(id).ammo} / ${specialEquipmentCatalog[id].description}`;
+            return <button
+              key={id}
+              className={`command-button command-button--contract ${state.selectedLoadout.specialEquipmentId === id ? 'is-selected' : ''} ${locked ? 'is-locked' : ''}`}
+              disabled={!!locked}
+              onClick={() => onSetSpecial(id)}
+              data-desc={desc}
+              title={desc}
+            >
+              {specialEquipmentCatalog[id].name} {locked && <span>{locked}</span>}
+            </button>;
+          })}
         </div>
       </div>
     </details>
@@ -80,16 +103,22 @@ export const GarageLoadoutSection = ({
       <summary>SUPPORT SLOT</summary>
       <div className="garage-fold__body">
         <div className="garage-select-grid">
-          {garageSupportOrder.map((id) => <button
-            key={id}
-            className={`command-button ${state.selectedLoadout.contractSupportId === id ? 'is-selected' : ''}`}
-            onClick={() => onSetSupport(id)}
-            data-desc={contractSupportCatalog[id].description}
-          >
-            {id === 'none' ? 'Support: None' : `Support: ${contractSupportCatalog[id].name}`}
-          </button>)}
+          {garageSupportOrder.map((id) => {
+            const locked = lockLabel('support', id);
+            const desc = locked ?? contractSupportCatalog[id].description;
+            return <button
+              key={id}
+              className={`command-button ${state.selectedLoadout.contractSupportId === id ? 'is-selected' : ''} ${locked ? 'is-locked' : ''}`}
+              disabled={!!locked}
+              onClick={() => onSetSupport(id)}
+              data-desc={desc}
+              title={desc}
+            >
+              {id === 'none' ? 'Support: None' : `Support: ${contractSupportCatalog[id].name}`} {locked && <span>{locked}</span>}
+            </button>;
+          })}
         </div>
       </div>
     </details>
-  </div>
-);
+  </div>;
+};

@@ -1,4 +1,5 @@
 import { clamp } from '../../../game/runtimeHelpers';
+import { canPurchaseUnlock, getPurchasableUnlocks } from '../../../game/progression';
 import {
   skillLabels,
   vehicleUpgradeLabels,
@@ -24,6 +25,7 @@ type GarageGrowthSectionProps = {
   autoplayMaxRuns: number;
   onPurchaseSkill: (upgrade: UpgradeId) => void;
   onPurchaseVehicleUpgrade: (id: VehicleUpgradeId) => void;
+  onPurchaseUnlock: (id: string) => void;
   onSetAutoplayRuns: (runs: number) => void;
   onSetAutoplayStrategy: (strategy: AutoPlayStrategy) => void;
   onRunAutoplay: () => void;
@@ -31,6 +33,12 @@ type GarageGrowthSectionProps = {
 
 const skillOrder: UpgradeId[] = ['ram_control', 'gunnery', 'scan_boost', 'translation_assist'];
 const vehicleUpgradeOrder: VehicleUpgradeId[] = ['fuel_tank', 'armor_plating', 'ammo_rack', 'se_rack'];
+const skillEffectText: Record<UpgradeId, string> = {
+  ram_control: 'Approach ram stability',
+  gunnery: 'Main Gun damage stability',
+  scan_boost: 'NAVI scan chance',
+  translation_assist: 'Talk success support',
+};
 
 export const GarageGrowthSection = ({
   state,
@@ -44,11 +52,14 @@ export const GarageGrowthSection = ({
   autoplayMaxRuns,
   onPurchaseSkill,
   onPurchaseVehicleUpgrade,
+  onPurchaseUnlock,
   onSetAutoplayRuns,
   onSetAutoplayStrategy,
   onRunAutoplay,
-}: GarageGrowthSectionProps) => (
-  <div className="garage-block">
+}: GarageGrowthSectionProps) => {
+  const unlockOffers = getPurchasableUnlocks(state.unlocks);
+
+  return <div className="garage-block">
     <h3>Growth Resources</h3>
     <div className="negotiation-grid">
       <p><span>Driver XP</span><strong>{state.driverXpBank}</strong></p>
@@ -68,7 +79,7 @@ export const GarageGrowthSection = ({
               className={`command-button ${level > 0 ? 'is-selected' : ''}`}
               disabled={!canBuy}
               onClick={() => onPurchaseSkill(skillId)}
-              data-desc={`Lv${level} -> Lv${level + 1} / COST ${cost} XP`}
+              data-desc={`${skillEffectText[skillId]} / Lv${level} -> Lv${level + 1} / COST ${cost} XP`}
             >
               {skillLabels[skillId]} <span>Lv{level}</span>
             </button>;
@@ -76,6 +87,27 @@ export const GarageGrowthSection = ({
         </div>
       </div>
     </details>
+
+    <details className="garage-fold">
+      <summary>{`UNLOCK SHOP (HOOK)${unlockOffers.some((offer) => canPurchaseUnlock(state, offer.id).ok) ? ' / UPDATE READY' : ''}`}</summary>
+      <div className="garage-fold__body">
+        {unlockOffers.length === 0 ? <p>All current purchase unlocks are open.</p> : <div className="garage-select-grid">
+          {unlockOffers.map((offer) => {
+            const status = canPurchaseUnlock(state, offer.id);
+            return <button
+              key={offer.id}
+              className="command-button command-button--system"
+              disabled={!status.ok}
+              onClick={() => onPurchaseUnlock(offer.id)}
+              data-desc={`${offer.reason} / COST ${offer.cost} ${offer.currency}`}
+            >
+              {offer.label} <span>{offer.cost} {offer.currency}</span>
+            </button>;
+          })}
+        </div>}
+      </div>
+    </details>
+
     <details className="garage-fold">
       <summary>{`M.O.E. SKILL (SYNC)${canUpdateMoeSkill ? ' / UPDATE READY' : ''}`}</summary>
       <div className="garage-fold__body">
@@ -89,7 +121,7 @@ export const GarageGrowthSection = ({
               className={`command-button ${level > 0 ? 'is-selected' : ''}`}
               disabled={!canBuy}
               onClick={() => onPurchaseSkill(skillId)}
-              data-desc={`Lv${level} -> Lv${level + 1} / COST ${cost} SYNC`}
+              data-desc={`${skillEffectText[skillId]} / Lv${level} -> Lv${level + 1} / COST ${cost} SYNC`}
             >
               {skillLabels[skillId]} <span>Lv{level}</span>
             </button>;
@@ -169,5 +201,5 @@ export const GarageGrowthSection = ({
         </div>}
       </div>
     </details>
-  </div>
-);
+  </div>;
+};

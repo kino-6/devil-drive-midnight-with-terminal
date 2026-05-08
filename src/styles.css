@@ -2077,6 +2077,13 @@ body {
   filter: grayscale(0.35);
 }
 
+.command-button.is-locked span {
+  color: #d0a063;
+  font-size: 0.62rem;
+  line-height: 1.2;
+  text-align: right;
+}
+
 .command-button[data-desc]:hover::after,
 .command-button[data-desc]:focus-visible::after {
   content: attr(data-desc);

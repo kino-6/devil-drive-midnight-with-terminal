@@ -1,4 +1,6 @@
 import { MAX_DEBUG_SAVE_ENTRIES, limitStateLogs } from './runtimeLimits';
+import { getAllUnlocks, getInitialUnlocks, mergeUnlocks, normalizeUnlockState } from './game/progression';
+import type { UnlockState } from './game/types';
 
 export type SaveVersion = 1;
 
@@ -68,6 +70,7 @@ export type SaveData = {
   demonArchive: Record<string, DemonArchiveEntry>;
   routeLog: Record<string, RouteLogEntry>;
   moeMemory: Record<string, MoeMemoryEntry>;
+  unlocks: UnlockState;
   settings: {
     audioMuted?: boolean;
     reducedMotion?: boolean;
@@ -125,6 +128,7 @@ export const createInitialSaveData = (): SaveData => {
     demonArchive: {},
     routeLog: {},
     moeMemory: {},
+    unlocks: getInitialUnlocks(),
     settings: {},
   };
 };
@@ -239,6 +243,9 @@ export const sanitizeSaveData = (raw: unknown): SaveData => {
   const runHistory = runHistoryRaw.map(normalizeRunRecord).filter((value): value is RunRecord => !!value);
   const createdAt = asNumber(source.createdAt, fallback.createdAt);
   const updatedAt = asNumber(source.updatedAt, createdAt);
+  const unlocks = 'unlocks' in source
+    ? normalizeUnlockState(source.unlocks, fallback.unlocks)
+    : getAllUnlocks();
   return {
     version: 1,
     createdAt,
@@ -249,6 +256,7 @@ export const sanitizeSaveData = (raw: unknown): SaveData => {
     demonArchive: normalizeDemonArchive(source.demonArchive),
     routeLog: normalizeRouteLog(source.routeLog),
     moeMemory: normalizeMoeMemory(source.moeMemory),
+    unlocks,
     settings: {
       audioMuted: settingsRaw.audioMuted === undefined ? undefined : asBool(settingsRaw.audioMuted),
       reducedMotion: settingsRaw.reducedMotion === undefined ? undefined : asBool(settingsRaw.reducedMotion),
@@ -322,6 +330,12 @@ export const updateSaveData = (updater: (current: SaveData) => SaveData): SaveDa
   const updated = updater(current);
   return saveSaveData(updated);
 };
+
+export const saveUnlockState = (unlocks: UnlockState): SaveData =>
+  updateSaveData((current) => ({
+    ...current,
+    unlocks: mergeUnlocks(current.unlocks, unlocks),
+  }));
 
 const safeJsonClone = <T>(value: T): T | null => {
   try {

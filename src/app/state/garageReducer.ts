@@ -4,6 +4,13 @@ import { clamp } from '../../game/runtimeHelpers';
 import { contractSupportCatalog } from '../../game/catalogs';
 import { getMainGunSpec, getSpecialEquipmentSpec, getSubGunSpec } from '../../game/runtimeHelpers';
 import {
+  getLoadoutLockReason,
+  getUnlockReason,
+  isEquipmentUnlocked,
+  isLoadoutUnlocked,
+  purchaseUnlock,
+} from '../../game/progression';
+import {
   getSkillCost,
   getVehicleUpgradeCost,
   initRunWithLoadout,
@@ -13,6 +20,9 @@ import { getGarageStageAdvisory } from './storyProgression';
 export function reduceGarage(state: State, action: Action): State {
   if (action.type === 'GARAGE_SET_MAIN_GUN') {
     if (state.gamePhase !== 'garage') return state;
+    if (!isEquipmentUnlocked(state.unlocks, 'mainGuns', action.id)) {
+      return { ...state, moeLine: getUnlockReason(state.unlocks, 'mainGuns', action.id) };
+    }
     return {
       ...state,
       selectedLoadout: { ...state.selectedLoadout, mainGunId: action.id },
@@ -22,6 +32,9 @@ export function reduceGarage(state: State, action: Action): State {
 
   if (action.type === 'GARAGE_SET_SUB_GUN') {
     if (state.gamePhase !== 'garage') return state;
+    if (!isEquipmentUnlocked(state.unlocks, 'subGuns', action.id)) {
+      return { ...state, moeLine: getUnlockReason(state.unlocks, 'subGuns', action.id) };
+    }
     return {
       ...state,
       selectedLoadout: { ...state.selectedLoadout, subGunId: action.id },
@@ -31,6 +44,9 @@ export function reduceGarage(state: State, action: Action): State {
 
   if (action.type === 'GARAGE_SET_SPECIAL') {
     if (state.gamePhase !== 'garage') return state;
+    if (!isEquipmentUnlocked(state.unlocks, 'specialEquipment', action.id)) {
+      return { ...state, moeLine: getUnlockReason(state.unlocks, 'specialEquipment', action.id) };
+    }
     return {
       ...state,
       selectedLoadout: { ...state.selectedLoadout, specialEquipmentId: action.id },
@@ -40,6 +56,9 @@ export function reduceGarage(state: State, action: Action): State {
 
   if (action.type === 'GARAGE_SET_SUPPORT') {
     if (state.gamePhase !== 'garage') return state;
+    if (!isEquipmentUnlocked(state.unlocks, 'support', action.id)) {
+      return { ...state, moeLine: getUnlockReason(state.unlocks, 'support', action.id) };
+    }
     return {
       ...state,
       selectedLoadout: { ...state.selectedLoadout, contractSupportId: action.id },
@@ -59,6 +78,14 @@ export function reduceGarage(state: State, action: Action): State {
 
   if (action.type === 'GARAGE_ENTER_RUN') {
     if (state.gamePhase !== 'garage') return state;
+    if (!isLoadoutUnlocked(state.selectedLoadout, state.unlocks)) {
+      const reason = getLoadoutLockReason(state.selectedLoadout, state.unlocks) ?? 'Locked loadout';
+      return {
+        ...state,
+        logs: [...state.logs, `> SORTIE BLOCKED: ${reason.toUpperCase()}`],
+        moeLine: reason,
+      };
+    }
     return initRunWithLoadout(state, [
       '> GARAGE: MIDNIGHT BAY ONLINE',
       `> MAIN GUN SELECTED: ${getMainGunSpec(state.selectedLoadout.mainGunId).name.toUpperCase()}`,
@@ -105,6 +132,16 @@ export function reduceGarage(state: State, action: Action): State {
       vehicleUpgrades: { ...state.vehicleUpgrades, [action.id]: currentLevel + 1 },
       logs: [...state.logs, `> VEHICLE TUNE: ${action.id.toUpperCase()} Lv${currentLevel + 1}`],
       moeLine: getDialogueLine('moe.garage.vehicle_tune', '改装完了。車体側の余裕が増える。'),
+    };
+  }
+
+  if (action.type === 'PURCHASE_UNLOCK') {
+    if (state.gamePhase !== 'garage') return state;
+    const next = purchaseUnlock(state, action.id);
+    if (next === state) return state;
+    return {
+      ...next,
+      moeLine: getDialogueLine('moe.garage.unlock_purchase', 'アンロック完了。選択肢が増えたよ。'),
     };
   }
 

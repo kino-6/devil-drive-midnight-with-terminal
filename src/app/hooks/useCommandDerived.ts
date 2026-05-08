@@ -58,7 +58,7 @@ export const useCommandDerived = ({
     const shield = target?.guardStacks && target.guardStacks > 0 ? 1 : 0;
     if (commandId === 'main_gun') {
       const roll = resolveDamageRoll({
-        baseDamage: selectedMainGun.damage,
+        baseDamage: selectedMainGun.damage + state.skillLevels.gunnery,
         affinity: getAffinityFor('ballistic'),
         variance: damageVarianceByCommand.main_gun,
         flatReduction: shield,

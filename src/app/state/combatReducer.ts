@@ -162,7 +162,7 @@ if (command === 'main_gun' && selectedEnemy && mainAmmo > 0) {
     const shield = encounter.enemies[idx].guardStacks > 0 ? 1 : 0;
     const affinity = logAffinityReaction(encounter.enemies[idx], 'ballistic');
     const gunRoll = resolveDamageRoll({
-      baseDamage: selectedMainGun.damage,
+      baseDamage: selectedMainGun.damage + state.skillLevels.gunnery,
       affinity,
       variance: damageVarianceByCommand.main_gun,
       flatReduction: shield,

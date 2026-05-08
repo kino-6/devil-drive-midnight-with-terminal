@@ -1,0 +1,51 @@
+version: "progression-v1"
+fallbackMode: "initial"
+
+initialUnlocks:
+  mainGuns:
+    - "light_cannon"
+  subGuns:
+    - "hood_mg"
+  specialEquipment:
+    - "signal_harpoon"
+  support:
+    - "none"
+
+unlockRules:
+  heavy_cannon:
+    category: "mainGuns"
+    type: "purchase"
+    currency: "credits"
+    cost: 2
+    reason: "Buy with 2 Credits"
+  twin_mg:
+    category: "subGuns"
+    type: "purchase"
+    currency: "credits"
+    cost: 1
+    reason: "Buy with 1 Credit"
+  radio_voice:
+    category: "support"
+    type: "purchase"
+    currency: "moeSync"
+    cost: 1
+    reason: "Sync 1"
+  emp_flare:
+    category: "specialEquipment"
+    type: "milestone"
+    milestone: "clear_stage_1"
+    reason: "Clear Stage 1"
+  micro_missile:
+    category: "specialEquipment"
+    type: "boss_clear"
+    reason: "Boss clear"
+  silent_shape:
+    category: "support"
+    type: "contract"
+    contract: "silent_shape"
+    reason: "Contract Silent Shape"
+  abandoned_ai_navi:
+    category: "support"
+    type: "contract"
+    contract: "abandoned_ai_navi"
+    reason: "Contract AI Navi"

@@ -3,6 +3,7 @@ import { getMoeLine } from '../../scenario/scenarioLoader';
 import { storyLogById } from '../../game/catalogs';
 import type { PreviousRunSummary, ResultType, State, StoryLogId, StoryState } from '../../game/types';
 import { getMainGunSpec, getSpecialEquipmentSpec, getSubGunSpec } from '../../game/runtimeHelpers';
+import { applyRunUnlockRewards } from '../../game/progression';
 import { getRunStartResources, getStageProfile } from './stateRuntime';
 
 export const makePreviousRunSummary = (state: State, resultType: ResultType): PreviousRunSummary => ({
@@ -49,11 +50,15 @@ export const getGarageStageAdvisory = (state: State, stage: number): string => {
 export const claimRunGrowthIfNeeded = (state: State): State => {
   if (state.growthClaimed || !(state.gamePhase === 'result' || state.gamePhase === 'game_over')) return state;
   const growth = getRunGrowth(state);
+  const unlockRewards = applyRunUnlockRewards(state);
+  const unlockLogs = unlockRewards.newlyUnlocked.map((item) => `> UNLOCK GRANTED: ${item.label.toUpperCase()} / ${item.reason.toUpperCase()}`);
   return {
     ...state,
     driverXpBank: state.driverXpBank + growth.driverXp,
     moeSyncBank: state.moeSyncBank + growth.moeSync,
     creditBank: state.creditBank + growth.salvageCreditGain,
+    unlocks: unlockRewards.unlocks,
+    logs: unlockLogs.length > 0 ? [...state.logs, ...unlockLogs] : state.logs,
     growthClaimed: true,
   };
 };

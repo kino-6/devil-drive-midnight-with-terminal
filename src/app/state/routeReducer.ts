@@ -2,6 +2,7 @@ import { getDialogueLine } from '../../dialogueConfig';
 import type { Action, ResultType, State } from '../../game/types';
 import { emergencyRewardCatalog, rewardCatalog } from '../../game/catalogs';
 import { appendSupportDaemonDisconnectLogs } from '../../game/runtimeHelpers';
+import { applyRunUnlockRewards } from '../../game/progression';
 import { applyRewardOption, pickRewardChoices } from './stateRuntime';
 import { moveToApproach } from './approachReducer';
 import { appendRecoveredStoryLogLines, getRunGrowth, makePreviousRunSummary, resolveStoryFromRun } from './storyProgression';
@@ -222,6 +223,8 @@ export function reduceRoute(state: State, action: Action): State {
     const unlockedAbyssLoop = resultType === 'Boss Cleared' && state.stageCount < 4 && state.stage >= 3;
     if (resultType === 'Boss Cleared' && state.stage < state.stageCount) {
       const growth = getRunGrowth(state);
+      const unlockRewards = applyRunUnlockRewards({ ...state, resultType });
+      const unlockLogs = unlockRewards.newlyUnlocked.map((item) => `> UNLOCK GRANTED: ${item.label.toUpperCase()} / ${item.reason.toUpperCase()}`);
       const nextStage = state.stage + 1;
       return {
         ...state,
@@ -232,9 +235,11 @@ export function reduceRoute(state: State, action: Action): State {
         driverXpBank: state.driverXpBank + growth.driverXp,
         moeSyncBank: state.moeSyncBank + growth.moeSync,
         creditBank: state.creditBank + growth.salvageCreditGain,
+        unlocks: unlockRewards.unlocks,
         growthClaimed: true,
         logs: [
           ...disconnectLogs,
+          ...unlockLogs,
           `> STAGE CLEAR: ${state.stage}/${state.stageCount}`,
           `> NEXT STAGE PREP: ${nextStage}/${state.stageCount}`,
           '> GARAGE: MIDNIGHT BAY ONLINE',

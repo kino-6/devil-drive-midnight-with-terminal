@@ -237,6 +237,12 @@ export type UpgradeId = 'ram_control' | 'gunnery' | 'scan_boost' | 'translation_
 export type VehicleUpgradeId = 'fuel_tank' | 'armor_plating' | 'ammo_rack' | 'se_rack';
 export type SkillLevels = Record<UpgradeId, number>;
 export type VehicleUpgradeLevels = Record<VehicleUpgradeId, number>;
+export type UnlockState = {
+  mainGuns: MainGunId[];
+  subGuns: SubGunId[];
+  specialEquipment: SpecialEquipmentId[];
+  support: ContractSupportId[];
+};
 export type ApproachState = {
   pendingKind: ApproachKind;
   scanSuccess: boolean;
@@ -298,6 +304,7 @@ export type State = {
   encounterPrep: EncounterPrep;
   skillLevels: SkillLevels;
   vehicleUpgrades: VehicleUpgradeLevels;
+  unlocks: UnlockState;
   driverXpBank: number;
   moeSyncBank: number;
   creditBank: number;
@@ -313,6 +320,7 @@ export type Action =
   | { type: 'APPROACH_CONTINUE' }
   | { type: 'PURCHASE_SKILL'; upgrade: UpgradeId }
   | { type: 'PURCHASE_VEHICLE_UPGRADE'; id: VehicleUpgradeId }
+  | { type: 'PURCHASE_UNLOCK'; id: string }
   | { type: 'SELECT_ENEMY'; enemyId: string }
   | { type: 'SELECT_COMMAND'; command: CommandId }
   | { type: 'TALK_CHOOSE'; choiceId: string }

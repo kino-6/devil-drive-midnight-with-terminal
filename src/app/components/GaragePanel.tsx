@@ -52,6 +52,7 @@ type GaragePanelProps = {
   onSetSupport: (id: ContractSupportId) => void;
   onPurchaseSkill: (upgrade: UpgradeId) => void;
   onPurchaseVehicleUpgrade: (id: VehicleUpgradeId) => void;
+  onPurchaseUnlock: (id: string) => void;
   onSetAutoplayRuns: (runs: number) => void;
   onSetAutoplayStrategy: (strategy: AutoPlayStrategy) => void;
   onRunAutoplay: () => void;
@@ -92,6 +93,7 @@ export const GaragePanel = ({
   onSetSupport,
   onPurchaseSkill,
   onPurchaseVehicleUpgrade,
+  onPurchaseUnlock,
   onSetAutoplayRuns,
   onSetAutoplayStrategy,
   onRunAutoplay,
@@ -165,6 +167,7 @@ export const GaragePanel = ({
           autoplayMaxRuns={autoplayMaxRuns}
           onPurchaseSkill={onPurchaseSkill}
           onPurchaseVehicleUpgrade={onPurchaseVehicleUpgrade}
+          onPurchaseUnlock={onPurchaseUnlock}
           onSetAutoplayRuns={onSetAutoplayRuns}
           onSetAutoplayStrategy={onSetAutoplayStrategy}
           onRunAutoplay={onRunAutoplay}

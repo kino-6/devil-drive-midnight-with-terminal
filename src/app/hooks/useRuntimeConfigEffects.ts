@@ -4,6 +4,7 @@ import { defaultBalanceConfig, type BalanceConfig, loadBalanceConfig } from '../
 import { loadConversationConfig } from '../../conversationConfig';
 import { loadDevilConfig } from '../../devilConfig';
 import { getDialogueConfig, loadDialogueConfig } from '../../dialogueConfig';
+import { loadProgressionConfig } from '../../progressionConfig';
 import { loadScenarioPack } from '../../scenario/scenarioLoader';
 
 type UseRuntimeConfigEffectsParams = {
@@ -85,6 +86,10 @@ export const useRuntimeConfigEffects = ({
 
   useEffect(() => {
     void loadConversationConfig();
+  }, []);
+
+  useEffect(() => {
+    void loadProgressionConfig();
   }, []);
 
   useEffect(() => {
