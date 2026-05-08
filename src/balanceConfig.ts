@@ -58,6 +58,16 @@ export type BalanceConfig = {
     maxRuns: number;
     pushForwardChance: number;
     talkProbeChance: number;
+    rewardArmorPriority: number;
+    rewardFuelPriority: number;
+    rewardSignalPriority: number;
+    bossReturnArmor: number;
+    bossReturnFuel: number;
+    bossPrepArmor: number;
+    bossPrepFuel: number;
+    bossPrepSignal: number;
+    bossPrepMainAmmo: number;
+    bossPrepSeAmmo: number;
   };
   weapons: {
     mainGun: Partial<Record<MainGunId, { damage?: number; ammo?: number }>>;
@@ -122,6 +132,16 @@ export const defaultBalanceConfig: BalanceConfig = {
     maxRuns: 1000,
     pushForwardChance: 0.35,
     talkProbeChance: 0.35,
+    rewardArmorPriority: 7,
+    rewardFuelPriority: 3,
+    rewardSignalPriority: 2,
+    bossReturnArmor: 5,
+    bossReturnFuel: 2,
+    bossPrepArmor: 7,
+    bossPrepFuel: 3,
+    bossPrepSignal: 2,
+    bossPrepMainAmmo: 2,
+    bossPrepSeAmmo: 1,
   },
   weapons: {
     mainGun: {},
@@ -244,6 +264,16 @@ const fromRecord = (raw: Record<string, unknown>): BalanceConfig => {
       maxRuns: asNum(autoplay.maxRuns, defaultBalanceConfig.autoplay.maxRuns),
       pushForwardChance: asNum(autoplay.pushForwardChance, defaultBalanceConfig.autoplay.pushForwardChance),
       talkProbeChance: asNum(autoplay.talkProbeChance, defaultBalanceConfig.autoplay.talkProbeChance),
+      rewardArmorPriority: asNum(autoplay.rewardArmorPriority, defaultBalanceConfig.autoplay.rewardArmorPriority),
+      rewardFuelPriority: asNum(autoplay.rewardFuelPriority, defaultBalanceConfig.autoplay.rewardFuelPriority),
+      rewardSignalPriority: asNum(autoplay.rewardSignalPriority, defaultBalanceConfig.autoplay.rewardSignalPriority),
+      bossReturnArmor: asNum(autoplay.bossReturnArmor, defaultBalanceConfig.autoplay.bossReturnArmor),
+      bossReturnFuel: asNum(autoplay.bossReturnFuel, defaultBalanceConfig.autoplay.bossReturnFuel),
+      bossPrepArmor: asNum(autoplay.bossPrepArmor, defaultBalanceConfig.autoplay.bossPrepArmor),
+      bossPrepFuel: asNum(autoplay.bossPrepFuel, defaultBalanceConfig.autoplay.bossPrepFuel),
+      bossPrepSignal: asNum(autoplay.bossPrepSignal, defaultBalanceConfig.autoplay.bossPrepSignal),
+      bossPrepMainAmmo: asNum(autoplay.bossPrepMainAmmo, defaultBalanceConfig.autoplay.bossPrepMainAmmo),
+      bossPrepSeAmmo: asNum(autoplay.bossPrepSeAmmo, defaultBalanceConfig.autoplay.bossPrepSeAmmo),
     },
     weapons: {
       mainGun: asRecord(weapons.mainGun) as BalanceConfig['weapons']['mainGun'],

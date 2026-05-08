@@ -13,10 +13,11 @@ const getSelectedEnemy = (state: State) =>
   ?? state.encounter.enemies.find(isAlive);
 
 const chooseAutoplayReward = (state: State): RewardOption => {
+  const auto = getBalanceConfig().autoplay;
   const options = state.rewardOptions;
-  const lowArmor = state.armor <= 5;
-  const lowFuel = state.fuel <= 3;
-  const lowSignal = state.signal <= 2;
+  const lowArmor = state.armor <= auto.rewardArmorPriority;
+  const lowFuel = state.fuel <= auto.rewardFuelPriority;
+  const lowSignal = state.signal <= auto.rewardSignalPriority;
   const lowAmmo = state.mainAmmo <= 1;
   const lowSeAmmo = state.seAmmo <= 1;
   if (lowArmor) return options.find((r) => r.armor) ?? options[0];
@@ -39,9 +40,16 @@ const chooseAutoplayRoute = (state: State, strategy: AutoPlayStrategy): 'salvage
 };
 
 const chooseAutoplayBossPreview = (state: State, strategy: AutoPlayStrategy): 'challenge' | 'emergency_salvage' | 'return_gate' => {
-  if (strategy === 'safe' && (state.armor <= 4 || state.fuel <= 2)) return 'return_gate';
-  if (state.mainAmmo <= 0 || state.seAmmo <= 0 || state.armor <= 4 || state.signal <= 1) return 'emergency_salvage';
-  if (strategy === 'contract' && state.signal <= 2) return 'emergency_salvage';
+  const auto = getBalanceConfig().autoplay;
+  if (state.armor <= auto.bossReturnArmor || state.fuel <= auto.bossReturnFuel) return 'return_gate';
+  if (
+    state.mainAmmo <= auto.bossPrepMainAmmo
+    || state.seAmmo <= auto.bossPrepSeAmmo
+    || state.armor <= auto.bossPrepArmor
+    || state.fuel <= auto.bossPrepFuel
+    || state.signal <= auto.bossPrepSignal
+  ) return 'emergency_salvage';
+  if (strategy === 'contract' && state.signal <= auto.bossPrepSignal) return 'emergency_salvage';
   return 'challenge';
 };
 

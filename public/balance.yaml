@@ -55,6 +55,16 @@ autoplay:
   maxRuns: 1000
   pushForwardChance: 0.35
   talkProbeChance: 0.35
+  rewardArmorPriority: 7
+  rewardFuelPriority: 3
+  rewardSignalPriority: 2
+  bossReturnArmor: 5
+  bossReturnFuel: 2
+  bossPrepArmor: 7
+  bossPrepFuel: 3
+  bossPrepSignal: 2
+  bossPrepMainAmmo: 2
+  bossPrepSeAmmo: 1
 
 weapons:
   mainGun:
