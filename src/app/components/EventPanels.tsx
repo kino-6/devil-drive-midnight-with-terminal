@@ -3,6 +3,7 @@ import { bossIntel, routeIntelCatalog, routeScenarioIdMap, storyLogById } from '
 import { hasAiNaviContract } from '../state/stateReducer';
 import { isAlive } from '../../game/runtimeHelpers';
 import { getRouteEventScenario } from '../../scenario/scenarioLoader';
+import { getCurrentNaviRouteBriefing, getNaviRouteCandidates } from '../state/routeGraph';
 import type { State } from '../../game/types';
 
 type RunGrowth = {
@@ -18,6 +19,8 @@ type EventPanelsProps = {
 
 export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
   const aliveEnemies = state.encounter.enemies.filter(isAlive);
+  const naviRouteBriefing = state.gamePhase === 'route_choice' ? getCurrentNaviRouteBriefing(state) : undefined;
+  const naviRouteCandidates = state.gamePhase === 'route_choice' ? getNaviRouteCandidates(state) : [];
 
   return (
     <>
@@ -26,19 +29,35 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
           <div className="event-kicker">NIGHT LOOP ROUTE</div>
           <span className="event-chip event-chip--route">CHOOSE NEXT LANE</span>
         </div>
-        <div className="next-node-list">
-          {(['salvage', 'signal', 'push_forward', 'return_gate'] as const).map((lane) => {
-            const scenario = routeScenarioIdMap[lane] ? getRouteEventScenario(routeScenarioIdMap[lane] ?? '') : undefined;
-            return <div key={lane} className="next-node">
+        {naviRouteBriefing && <div className="command-window">
+          <strong>{naviRouteBriefing.title}</strong>
+          <p>{naviRouteBriefing.body ?? 'NAVI signal is noisy. Details partially masked.'}</p>
+          {naviRouteBriefing.effects && <p>{naviRouteBriefing.effects}</p>}
+        </div>}
+        {naviRouteCandidates.length > 0
+          ? <div className="next-node-list">
+            {naviRouteCandidates.map((candidate) => <div key={`${candidate.nodeId}-${candidate.choiceId}`} className="next-node">
               <span>◎</span>
-              <strong>{routeIntelCatalog[lane].label}</strong>
-              <small>likely: {routeIntelCatalog[lane].likelyEnemyTags}</small>
-              <small>suggested: {routeIntelCatalog[lane].likelyWeaknesses}</small>
-              <small>risk: {routeIntelCatalog[lane].riskTags} / reward: {routeIntelCatalog[lane].rewardTags}</small>
-              {scenario?.body && <small>{scenario.body}</small>}
-            </div>;
-          })}
-        </div>
+              <strong>{candidate.title}</strong>
+              <small>tags: {candidate.tags}</small>
+              <small>risk: {candidate.risk} / reward: {candidate.reward}</small>
+              {candidate.body && <small>{candidate.body}</small>}
+              {candidate.effects && <small>effects: {candidate.effects}</small>}
+            </div>)}
+          </div>
+          : <div className="next-node-list">
+            {(['salvage', 'signal', 'push_forward', 'return_gate'] as const).map((lane) => {
+              const scenario = routeScenarioIdMap[lane] ? getRouteEventScenario(routeScenarioIdMap[lane] ?? '') : undefined;
+              return <div key={lane} className="next-node">
+                <span>◎</span>
+                <strong>{routeIntelCatalog[lane].label}</strong>
+                <small>likely: {routeIntelCatalog[lane].likelyEnemyTags}</small>
+                <small>suggested: {routeIntelCatalog[lane].likelyWeaknesses}</small>
+                <small>risk: {routeIntelCatalog[lane].riskTags} / reward: {routeIntelCatalog[lane].rewardTags}</small>
+                {scenario?.body && <small>{scenario.body}</small>}
+              </div>;
+            })}
+          </div>}
       </section>}
 
       {state.gamePhase === 'signal' && <section className="event-card">

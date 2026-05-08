@@ -131,6 +131,7 @@ export const CommandPanel = ({
 
     <RouteCommands
       gamePhase={gamePhase}
+      state={state}
       rewardOptions={state.rewardOptions as RewardOption[]}
       signalChoices={signalChoices}
       getDialogueLine={getDialogueLine}

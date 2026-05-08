@@ -1,8 +1,10 @@
-import type { RewardOption } from '../../../game/types';
+import { getNaviRouteCandidates } from '../../state/routeGraph';
+import type { RewardOption, State } from '../../../game/types';
 import type { SignalChoice } from './types';
 
 type RouteCommandsProps = {
   gamePhase: string;
+  state: State;
   rewardOptions: RewardOption[];
   signalChoices: SignalChoice[];
   getDialogueLine: (key: string, fallback: string) => string;
@@ -18,6 +20,7 @@ type RouteCommandsProps = {
 
 export const RouteCommands = ({
   gamePhase,
+  state,
   rewardOptions,
   signalChoices,
   getDialogueLine,
@@ -44,6 +47,23 @@ export const RouteCommands = ({
   }
 
   if (gamePhase === 'route_choice') {
+    const naviCandidates = getNaviRouteCandidates(state);
+    if (naviCandidates.length > 0) {
+      return <div className="command-window command-list">
+        {naviCandidates.map((candidate) => (
+          <button
+            key={`${candidate.nodeId}-${candidate.choiceId}`}
+            className={candidate.choiceId === 'return_gate' ? 'command-button command-button--danger' : 'command-button command-button--route'}
+            onMouseEnter={() => setHoveredHint(candidate.body ?? `${candidate.title} / risk: ${candidate.risk} / reward: ${candidate.reward}`)}
+            onMouseLeave={clearHoveredHint}
+            onClick={() => onRouteChoice(candidate.choiceId)}
+          >
+            {candidate.title} <span>{candidate.risk} / {candidate.reward}</span>
+          </button>
+        ))}
+      </div>;
+    }
+
     return <div className="command-window command-list">
       <button className="command-button command-button--route" onMouseEnter={() => setHoveredHint(getDialogueLine('hint.hover.route.salvage', '補給寄りレーン。立て直し向け。'))} onMouseLeave={clearHoveredHint} onClick={() => onRouteChoice('salvage')}>Salvage Lane</button>
       <button className="command-button command-button--route" onMouseEnter={() => setHoveredHint(getDialogueLine('hint.hover.route.signal', 'Signal寄りレーン。解析と交渉を伸ばせる。'))} onMouseLeave={clearHoveredHint} onClick={() => onRouteChoice('signal')}>Signal Lane</button>

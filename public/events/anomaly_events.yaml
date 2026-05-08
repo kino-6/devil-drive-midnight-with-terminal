@@ -5,6 +5,8 @@ events:
       pool: "anomaly.stage_1"
       weight: 1
       tags: "story, analyze"
+      body: "A weak trace resembles the previous driver logs."
+      effects: "Analyze-oriented anomaly."
       log: "ANOMALY EVENT: MEMORY TRACE"
       moeLine: "前任者ログに似た波形。慎重に拾おう。"
     open_radio:
@@ -12,6 +14,8 @@ events:
       pool: "anomaly.stage_1"
       weight: 1
       tags: "talk, signal"
+      body: "The radio carrier opens long enough for a first reply."
+      effects: "Talk setup and rare route signal."
       routeChoice: "open_radio"
       log: "ANOMALY EVENT: AM 666.0 OPEN"
       moeLine: "AM帯が開いた。声を返せるかも。"
@@ -20,5 +24,7 @@ events:
       pool: "anomaly.stage_1"
       weight: 1
       tags: "risk, signal"
+      body: "The carrier doubles back through the windshield band."
+      effects: "Signal risk anomaly."
       log: "ANOMALY EVENT: FALSE CARRIER"
       moeLine: "搬送波が二重に見える。踏み込みすぎないで。"

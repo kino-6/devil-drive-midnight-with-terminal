@@ -5,6 +5,8 @@ events:
       pool: "salvage.stage_1"
       weight: 1
       tags: "ammo, common"
+      body: "A half-buried crate still carries usable main gun shells."
+      effects: "Main ammo salvage candidate."
       rewardId: "main_ammo"
       log: "SALVAGE EVENT: MAIN AMMO CACHE"
       moeLine: "主砲弾、まだ使える。"
@@ -13,6 +15,8 @@ events:
       pool: "salvage.stage_1"
       weight: 1
       tags: "armor, common"
+      body: "Plate scraps can be strapped onto the chassis before the next contact."
+      effects: "Armor salvage candidate."
       rewardId: "armor_patch"
       log: "SALVAGE EVENT: ARMOR PATCH"
       moeLine: "応急装甲材。今なら貼れる。"
@@ -21,6 +25,8 @@ events:
       pool: "salvage.stage_1"
       weight: 1
       tags: "signal, uncommon"
+      body: "A cracked guide sign repeats a clean signal edge."
+      effects: "Signal salvage candidate."
       rewardId: "signal_boost"
       log: "SALVAGE EVENT: SIGNAL SCRAP"
       moeLine: "信号片。解析に回せる。"

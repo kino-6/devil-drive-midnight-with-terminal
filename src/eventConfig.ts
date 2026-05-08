@@ -7,6 +7,8 @@ export type RouteEventEntry = {
   pool: string;
   weight: number;
   tags: string[];
+  body?: string;
+  effects?: string;
   log?: string;
   moeLine?: string;
   rewardId?: string;
@@ -29,6 +31,8 @@ export const defaultEventConfig: EventConfig = {
         pool: 'route.stage_1',
         weight: 1,
         tags: ['safe', 'reward'],
+        body: 'A service shoulder with scrap signatures and low hostile pressure.',
+        effects: 'repair or ammo leaning salvage',
         routeChoice: 'salvage',
         log: 'ROUTE EVENT: SALVAGE LANE',
         moeLine: '補給反応あり。拾うなら今。',
@@ -40,6 +44,8 @@ export const defaultEventConfig: EventConfig = {
         pool: 'route.stage_1',
         weight: 1,
         tags: ['signal', 'analyze'],
+        body: 'AM interference opens a readable route through the loop.',
+        effects: 'Signal gain / forecast route choice',
         routeChoice: 'signal',
         log: 'ROUTE EVENT: SIGNAL TUNNEL',
         moeLine: '信号帯が開いてる。読むか、抜けるか選べる。',
@@ -53,6 +59,8 @@ export const defaultEventConfig: EventConfig = {
         pool: 'salvage.stage_1',
         weight: 1,
         tags: ['ammo', 'common'],
+        body: 'A half-buried crate still carries usable main gun shells.',
+        effects: 'main ammo salvage candidate',
         rewardId: 'main_ammo',
         log: 'SALVAGE EVENT: MAIN AMMO CACHE',
         moeLine: '主砲弾、まだ使える。',
@@ -64,6 +72,8 @@ export const defaultEventConfig: EventConfig = {
         pool: 'salvage.stage_1',
         weight: 1,
         tags: ['armor', 'common'],
+        body: 'Plate scraps can be strapped onto the chassis before the next contact.',
+        effects: 'armor salvage candidate',
         rewardId: 'armor_patch',
         log: 'SALVAGE EVENT: ARMOR PATCH',
         moeLine: '応急装甲材。今なら貼れる。',
@@ -77,6 +87,8 @@ export const defaultEventConfig: EventConfig = {
         pool: 'anomaly.stage_1',
         weight: 1,
         tags: ['story', 'analyze'],
+        body: 'A weak trace resembles the previous driver logs.',
+        effects: 'analyze-oriented anomaly',
         log: 'ANOMALY EVENT: MEMORY TRACE',
         moeLine: '前任者ログに似た波形。慎重に拾おう。',
       },
@@ -87,6 +99,8 @@ export const defaultEventConfig: EventConfig = {
         pool: 'anomaly.stage_1',
         weight: 1,
         tags: ['talk', 'signal'],
+        body: 'The radio carrier opens long enough for a first reply.',
+        effects: 'Talk setup / rare route signal',
         routeChoice: 'open_radio',
         log: 'ANOMALY EVENT: AM 666.0 OPEN',
         moeLine: 'AM帯が開いた。声を返せるかも。',
@@ -201,6 +215,8 @@ const toEventConfig = (raw: Record<string, unknown>): EventConfig => {
         pool: asString(eventRaw.pool, `${categoryKey}.stage_1`),
         weight: Math.max(0, asNumber(eventRaw.weight, 1)),
         tags: parseCsvTags(eventRaw.tags),
+        body: typeof eventRaw.body === 'string' && eventRaw.body.trim() ? eventRaw.body.trim() : undefined,
+        effects: typeof eventRaw.effects === 'string' && eventRaw.effects.trim() ? eventRaw.effects.trim() : undefined,
         log: typeof eventRaw.log === 'string' && eventRaw.log.trim() ? eventRaw.log.trim() : undefined,
         moeLine: typeof eventRaw.moeLine === 'string' && eventRaw.moeLine.trim() ? eventRaw.moeLine.trim() : undefined,
         rewardId: typeof eventRaw.rewardId === 'string' && eventRaw.rewardId.trim() ? eventRaw.rewardId.trim() : undefined,
@@ -229,6 +245,17 @@ export const getEventsByPool = (pool: string): RouteEventEntry[] => {
     }
   }
   return out;
+};
+
+export const getEventById = (id?: string): RouteEventEntry | undefined => {
+  if (!id) return undefined;
+  for (const category of Object.keys(runtimeEventConfig.events)) {
+    const normalized = normalizeCategory(category);
+    if (!normalized) continue;
+    const event = runtimeEventConfig.events[normalized][id];
+    if (event) return event;
+  }
+  return undefined;
 };
 
 const parseConfigRecordText = (text: string): Record<string, unknown> => {
