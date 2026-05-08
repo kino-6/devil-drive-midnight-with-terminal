@@ -147,7 +147,11 @@ images:
       moveFrames:
         - "images/devil/siren_ambulance_v2_idle.png"
         - "images/devil/siren_ambulance_v2_move_01.png"
-    unknown_sign: "images/devil/unknown_idle.png"
+    unknown_sign:
+      idle: "images/devil/unknown_idle.png"
+      moveFrames:
+        - "images/devil/unknown_idle.png"
+        - "images/devil/unknown_move_01.png"
     unknown_mask_a: "images/devil/mirror_curve_idle.png"
     unknown_mask_b: "images/devil/cone_swarm_idle.png"
   ui:

@@ -43,6 +43,7 @@ import {
   isAlive,
   resolveEnemyAnimationFrames,
   resolveEnemyAsset,
+  resolveUnknownEnemyAnimationFrames,
   UNKNOWN_SIGN_LABEL,
 } from '../game/runtimeHelpers';
 
@@ -182,6 +183,7 @@ export function App() {
     resolveEnemyAssetEntryUrl(enemyAssetMap.unknown_sign)
     ?? resolveEnemyAssetEntryUrl(defaultEnemyAssetMap.unknown_sign);
   const resolveUnknownEnemyAsset = (_index: number): string | undefined => unknownEnemyAsset;
+  const unknownEnemyAnimationFrames = resolveUnknownEnemyAnimationFrames(enemyAssetMap, defaultEnemyAssetMap);
   const playerAsset = resolveAssetUrl(assetManifest.images.player);
   const moeVariantMap = assetManifest.images.moeVariants ?? {};
   const resolveMoeAsset = (variant: MoeVariant): string | undefined =>
@@ -554,6 +556,7 @@ const tacticalLinesCompact = tacticalLines
           getContractHint={getContractHint}
           isBossProfile={isBossProfile}
           resolveUnknownEnemyAsset={resolveUnknownEnemyAsset}
+          resolveUnknownEnemyAnimationFrames={() => unknownEnemyAnimationFrames}
           resolveEnemyAsset={(profile) => resolveEnemyAsset(profile, enemyAssetMap)}
           resolveEnemyAnimationFrames={(profile) => resolveEnemyAnimationFrames(profile, enemyAssetMap)}
           resolveEnemyLane={resolveEnemyLane}

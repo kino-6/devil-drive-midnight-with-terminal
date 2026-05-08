@@ -251,6 +251,7 @@ export function BattleDevilSprite({
   const animationFrames = imageFrames?.map((frame) => frame.trim()).filter(Boolean).slice(0, 2) ?? [];
   const canAnimate = animationFrames.length >= 2;
   const staticImageSrc = animationFrames[0] ?? imageSrc;
+  const unknownAssetClassName = `battle-devil__asset ${revealState.showSilhouette ? 'is-silhouette' : ''}`.trim();
   return <article
     className={`battle-devil battle-devil--${lane} ${focused ? 'is-focused' : ''} ${profile.contractable ? 'is-contractable' : 'is-hostile'} ${devil.hp <= 0 ? 'is-defeated' : ''} ${hitFx ? `is-hitfx-${hitFx}` : ''}`}
     onClick={onSelect}
@@ -269,25 +270,25 @@ export function BattleDevilSprite({
   >
     <div className="battle-devil__body">
       <div className="battle-devil__art">
-        {revealState.showName
-          ? canAnimate
-            ? <DevilAnimationFigure
-              frames={animationFrames}
-              alt={`${profile.label} visual`}
-              className="battle-devil__asset"
-              fallback={renderDevilArt(devil.profile)}
-            />
-            : <AssetFigure
+        {canAnimate
+          ? <DevilAnimationFigure
+            frames={animationFrames}
+            alt={revealState.showName ? `${profile.label} visual` : 'Unknown signal visual'}
+            className={revealState.showName ? 'battle-devil__asset' : unknownAssetClassName}
+            fallback={revealState.showName ? renderDevilArt(devil.profile) : <span className="battle-devil__unknown">?</span>}
+          />
+          : revealState.showName
+            ? <AssetFigure
               src={staticImageSrc}
               alt={`${profile.label} visual`}
               className="battle-devil__asset"
               fallback={renderDevilArt(devil.profile)}
               transparencyMode="auto-corner"
             />
-          : <AssetFigure
+            : <AssetFigure
             src={imageSrc}
             alt="Unknown signal visual"
-            className={`battle-devil__asset ${revealState.showSilhouette ? 'is-silhouette' : ''}`.trim()}
+            className={unknownAssetClassName}
             fallback={<span className="battle-devil__unknown">?</span>}
             transparencyMode="auto-corner"
           />}
@@ -306,7 +307,7 @@ export function BattleDevilSprite({
     </div>
     {showDebugBadge && (
       <span className={`battle-devil__debug ${canAnimate ? 'is-animated' : ''}`}>
-        {revealState.showName ? `ANIM ${animationFrames.length}F` : 'UNKNOWN STATIC'}
+        {revealState.showName ? `ANIM ${animationFrames.length}F` : canAnimate ? `UNKNOWN ${animationFrames.length}F` : 'UNKNOWN STATIC'}
       </span>
     )}
     {focused && <span className="battle-devil__target">TARGET LOCK</span>}
@@ -319,6 +320,7 @@ export function ApproachContactMarker({
   scanSuccess,
   revealIdentity = false,
   imageSrc,
+  imageFrames,
   encounterProfiles,
   getLikelyWeaknessSummary,
 }: {
@@ -327,20 +329,30 @@ export function ApproachContactMarker({
   scanSuccess: boolean;
   revealIdentity?: boolean;
   imageSrc?: string;
+  imageFrames?: string[];
   encounterProfiles: Record<EncounterId, EncounterProfile>;
   getLikelyWeaknessSummary: (id: EncounterId) => string;
 }) {
   const info = encounterProfiles[profile];
   const showIdentity = scanSuccess && revealIdentity;
+  const animationFrames = imageFrames?.map((frame) => frame.trim()).filter(Boolean).slice(0, 2) ?? [];
+  const canAnimate = animationFrames.length >= 2;
   return <article className={`approach-contact approach-contact--${lane}`}>
     <div className="approach-contact__sigil">
-      <AssetFigure
-        src={imageSrc}
-        alt={`${info.label} contact`}
-        className="approach-contact__asset"
-        fallback={<span className="approach-contact__fallback">?</span>}
-        transparencyMode="auto-corner"
-      />
+      {canAnimate
+        ? <DevilAnimationFigure
+          frames={animationFrames}
+          alt={`${info.label} contact`}
+          className="approach-contact__asset"
+          fallback={<span className="approach-contact__fallback">?</span>}
+        />
+        : <AssetFigure
+          src={imageSrc}
+          alt={`${info.label} contact`}
+          className="approach-contact__asset"
+          fallback={<span className="approach-contact__fallback">?</span>}
+          transparencyMode="auto-corner"
+        />}
     </div>
     <div className="approach-contact__meta">
       <strong>{showIdentity ? info.label : 'UNKNOWN'}</strong>

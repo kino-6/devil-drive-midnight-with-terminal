@@ -33,6 +33,7 @@ type BattleViewProps = {
   getContractHint: (enemy: Devil) => string;
   isBossProfile: (profile: EncounterId) => boolean;
   resolveUnknownEnemyAsset: (index: number) => string | undefined;
+  resolveUnknownEnemyAnimationFrames: () => string[];
   resolveEnemyAsset: (profile: EncounterId) => string | undefined;
   resolveEnemyAnimationFrames: (profile: EncounterId) => string[];
   resolveEnemyLane: (index: number, total: number, isBoss: boolean) => 'left' | 'center' | 'right';
@@ -67,6 +68,7 @@ export const BattleView = ({
   getContractHint,
   isBossProfile,
   resolveUnknownEnemyAsset,
+  resolveUnknownEnemyAnimationFrames,
   resolveEnemyAsset,
   resolveEnemyAnimationFrames,
   resolveEnemyLane,
@@ -142,7 +144,9 @@ export const BattleView = ({
               : resolveUnknownEnemyAsset(index);
           const imageFrames = reveal.showName
             ? resolveEnemyAnimationFrames(enemy.profile)
-            : [];
+            : showBossSilhouette
+              ? resolveEnemyAnimationFrames(enemy.profile)
+              : resolveUnknownEnemyAnimationFrames();
           return (
             <BattleDevilSprite
               key={enemy.id}
@@ -169,6 +173,7 @@ export const BattleView = ({
             scanSuccess={approachScanSuccess}
             revealIdentity={approachRevealIdentity}
             imageSrc={approachRevealIdentity ? resolveEnemyAsset(profile) : resolveUnknownEnemyAsset(index)}
+            imageFrames={approachRevealIdentity ? resolveEnemyAnimationFrames(profile) : resolveUnknownEnemyAnimationFrames()}
             encounterProfiles={profiles}
             getLikelyWeaknessSummary={getLikelyWeaknessSummary}
           />

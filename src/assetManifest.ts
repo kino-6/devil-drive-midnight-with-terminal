@@ -28,7 +28,10 @@ export const defaultAssetManifest: AssetManifest = {
   media: {},
   images: {
     enemies: {
-      unknown_sign: 'images/devil/unknown_idle.png',
+      unknown_sign: {
+        idle: 'images/devil/unknown_idle.png',
+        moveFrames: ['images/devil/unknown_idle.png', 'images/devil/unknown_move_01.png'],
+      },
     },
   },
   ui: {},

@@ -149,6 +149,15 @@ export const resolveEnemyAnimationFrames = (
   return profileAsset ? [profileAsset] : [];
 };
 
+export const resolveUnknownEnemyAnimationFrames = (
+  manifestMap: Record<string, EnemyAssetEntry>,
+  fallbackMap: Record<string, EnemyAssetEntry>,
+): string[] => {
+  const resolved = resolveEnemyAssetEntryFrameUrls(manifestMap.unknown_sign);
+  if (resolved.length > 0) return resolved;
+  return resolveEnemyAssetEntryFrameUrls(fallbackMap.unknown_sign);
+};
+
 const supportDaemonStabilityByTemperament: Record<Temperament, 'STABLE' | 'NOISY' | 'HUNGRY' | 'UNKNOWN'> = {
   hungry: 'HUNGRY',
   proud: 'STABLE',
