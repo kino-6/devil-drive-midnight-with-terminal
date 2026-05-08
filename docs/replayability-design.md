@@ -205,6 +205,57 @@ Contracted demons should feel like temporary companions riding with the vehicle 
 - Contracts now create a visible “passenger in the system” state during the run.
 - End-of-run disconnect logs reinforce that each run is a short-lived bond, encouraging another run.
 
+## Progression Unlock Loop
+
+### Design intent
+
+Unlockは「装備をたくさん並べる」ためではなく、Run中に見つけたものをGarageへ持ち帰るための短い報酬ループです。
+
+現行の解放対象:
+
+- Main Gun / Sub Gun / S-E
+- Contract Support
+- Vehicle Upgrade
+
+### Reward sources
+
+初期解放:
+
+- 新規saveがすぐ出撃できる最低限の装備だけを開く
+- 現在は `light_cannon`, `hood_mg`, `signal_harpoon`, `support: none`
+- 基本改造の `fuel_tank`, `armor_plating`, `ammo_rack`, `se_rack` は最初から購入可能
+
+購入解放:
+
+- Garageで資源を払って選択肢を広げる
+- Creditsは装備寄り、Driver XPはDriver寄り、M.O.E. SyncはM.O.E./信号寄りに使う
+- 例: `heavy_cannon`, `twin_mg`, `radio_voice`, `decoy_beacon`
+
+マイルストーン解放:
+
+- Stage clear / Boss clear / Story Log数 / temperament契約など、Run結果で開く
+- 例: `clear_stage_1`, `clear_stage_2`, `story_logs_2`, `contract_temperament_machine`
+
+レアイベント解放:
+
+- 通常報酬ではなく、blueprintやstrange partを持ち帰る
+- 例: `blueprint_signal_antenna`
+- Rare Salvage文言は `public/dialogue.yaml`
+
+### Implementation notes
+
+- 条件は `public/progression.yaml`
+- 判定は `src/game/progression.ts`
+- Rare Salvage候補は `src/game/rareEvents.ts`
+- Garageのlocked表示は `GarageLoadoutSection` / `GarageGrowthSection`
+- Run中の長文は reducer に直書きせず `dialogue.yaml` / scenario config へ置く
+
+### Naming
+
+- Runtime IDは `snake_case`
+- 進行milestoneも `clear_stage_1`, `story_logs_2`, `blueprint_signal_antenna` のように機械可読な名前にする
+- 表示名は catalog / dialogue 側で管理し、IDをUI文言として使い回さない
+
 ## Save Management + Report Integration
 
 ### Why this matters for solo playtesting

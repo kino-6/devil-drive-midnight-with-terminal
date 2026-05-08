@@ -128,12 +128,51 @@ Analyze済み敵は相性が表示され、戦闘判断（ダメージ/交渉効
 Result後に遷移可能。主機能:
 
 - Loadout選択（Main Gun / Sub Gun / S-E / Contract Support）
+  - locked装備は選択不可
+  - unlock理由は短く表示
 - Growth購入
   - Skill: `ram_control / gunnery / scan_boost / translation_assist`
-  - Vehicle: `fuel_tank / armor_plating / ammo_rack / se_rack`
+  - Vehicle: `fuel_tank / armor_plating / ammo_rack / se_rack / signal_antenna / noise_filter / daemon_bus`
 - 次Run開始時の初期リソースプレビュー
 - Story Log Archive
 - Autoplay Lab
+
+## 8.1 Progression / Unlock
+
+現行の進行は、装備を大量配布するツリーではなく、Runで「見つけて持ち帰る」軽量unlockです。
+
+Unlock対象:
+
+- Main Gun
+- Sub Gun
+- S-E
+- Contract Support
+- Vehicle Upgrade
+
+初期解放:
+
+- `light_cannon`
+- `hood_mg`
+- `signal_harpoon`
+- `support: none`
+- 基本Vehicle Upgrade: `fuel_tank / armor_plating / ammo_rack / se_rack`
+
+解放ルート:
+
+- purchase: Garageで Credits / Driver XP / M.O.E. Sync を使う
+- milestone: `clear_stage_1`, `clear_stage_2`, `story_logs_2` など
+- rare salvage: `blueprint_signal_antenna` などをSalvage Laneから持ち帰る
+- contract milestone: `contract_temperament_machine`, `contract_temperament_lonely`
+- story log: `LOG_04` など特定ログ回収
+- boss clear: Boss clear報酬
+
+データ配置:
+
+- 基本データ: `src/game/catalogs.ts`
+- 数値: `public/balance.yaml`
+- unlock条件: `public/progression.yaml`
+- 文言: `public/dialogue.yaml`
+- unlock判定: `src/game/progression.ts`
 
 ## 9. Story Progression（軽量）
 

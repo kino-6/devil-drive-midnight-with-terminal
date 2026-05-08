@@ -103,6 +103,58 @@
 ### バランス値
 - `public/balance.yaml`
 - loader: `src/balanceConfig.ts`
+- 装備の数値（damage/ammo/hits/softenChance）と Autoplay/Garage Lab の判断閾値もここへ置く
+
+### 装備 / 改造 / Unlock進行
+- 装備・改造IDと基本説明:
+  - `src/game/catalogs.ts`
+  - `src/game/types.ts`
+- Skill / M.O.E. Skill:
+  - ID/label/default level: `src/game/catalogs.ts`
+  - Garage購入UI: `src/app/components/garage/GarageGrowthSection.tsx`
+  - scan/forecast入口: `src/game/encounterFactory.ts`
+  - approach効果: `src/app/state/approachReducer.ts`
+  - Talk/Contract効果: `src/app/state/combatReducer.ts`
+- Unlock条件:
+  - `public/progression.yaml`
+  - loader: `src/progressionConfig.ts`
+  - helper: `src/game/progression.ts`
+- Rare salvage:
+  - event helper: `src/game/rareEvents.ts`
+  - 文言: `public/dialogue.yaml`
+- Vehicle upgrade効果:
+  - `src/game/vehicleUpgrades.ts`
+  - 数値: `public/balance.yaml`
+- Garage表示:
+  - `src/app/components/garage/GarageLoadoutSection.tsx`
+  - `src/app/components/garage/GarageGrowthSection.tsx`
+- Run中の効果:
+  - weapon/Analyze/Talk/Contract: `src/app/state/combatReducer.ts`
+  - route/salvage/boss return: `src/app/state/routeReducer.ts`
+  - run reward集約: `src/app/state/storyProgression.ts`
+
+ID命名規則:
+- 装備/改造/skill/unlock ID は `snake_case`
+- Main Gun: `*_cannon`, `*_driver` など既存トーンに合わせる
+- Sub Gun: `*_mg`, `*_pod`, `*_jammer`
+- S-E: `*_flare`, `*_beacon`, `*_pulse`, `*_anchor`
+- Vehicle Upgrade: `fuel_tank`, `signal_antenna`, `noise_filter` のように機能名を直接表す
+- unlock milestone は `clear_stage_1`, `story_logs_2`, `blueprint_signal_antenna`, `contract_temperament_machine`
+
+Unlock条件の使い分け:
+- `initialUnlocks`: 新規saveの初期装備。増やしすぎない
+- `purchase`: Credits / Driver XP / M.O.E. Sync を使う明示的なGarage解放
+- `milestone`: Stage clear、Story Log数、blueprint持ち帰りなどRun結果で解放
+- `boss_clear`: Boss clearに紐づく明確な報酬
+- `contract`: 特定support daemon契約で解放
+- `story_log`: 特定Story Log回収で解放
+- `rare_route`: Signal Tunnelなど、ルート選択ログから解放
+
+注意:
+- unlock条件を React や `AppRoot.tsx` に直書きしない
+- 既存save互換のため、`SaveData.unlocks` 欠損時は安全側のfallbackがある
+- 新装備を追加したら catalog/type/order/balance/progression/Garage表示の全経路を確認する
+- Skillを追加または強化したら、Garage購入表示だけでなくRun中の参照箇所まで確認する
 
 ### 文言
 - 汎用: `public/dialogue.yaml`（loader: `src/dialogueConfig.ts`）
