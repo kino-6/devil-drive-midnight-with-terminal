@@ -606,6 +606,7 @@ const tacticalLinesCompact = tacticalLines
             signalChoices={signalChoices}
             onSignalRouteChoice={(choiceId) => dispatch({ type: 'SIGNAL_ROUTE_CHOICE', choiceId })}
             onBossPreviewChoice={(choice) => dispatch({ type: 'BOSS_PREVIEW_CHOICE', choice })}
+            onReturnExtract={() => dispatch({ type: 'RETURN_EXTRACT' })}
             onReturnToSurface={() => dispatch({ type: 'RETURN_TO_SURFACE' })}
             showGarageLaunchConfirm={showGarageLaunchConfirm}
             onGarageEnterNightLoop={onGarageEnterNightLoop}

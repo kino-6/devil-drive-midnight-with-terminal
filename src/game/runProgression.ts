@@ -1,6 +1,7 @@
 import { storyLogById } from './catalogs';
 import { applyRunUnlockRewards, formatUnlockRewardLog } from './progression';
 import type { PreviousRunSummary, ResultType, State, StoryLogId, StoryState } from './types';
+import { applyWipeoutCarryback, formatWipeoutCarrybackLog, isWipeoutCarryback } from './carryback';
 
 export const makePreviousRunSummary = (state: State, resultType: ResultType): PreviousRunSummary => ({
   stage: state.stage,
@@ -21,7 +22,8 @@ export const getRunGrowth = (state: State) => {
   const driverXp = state.runSummary.cleared + ((state.resultType ?? 'Early Return') === 'Boss Cleared' ? 2 : 0);
   const moeSync = state.runSummary.contracted + state.analyzeSuccessCount;
   const salvageCreditGain = state.salvageCredits + (isReturned ? 1 : 0);
-  return { driverXp, moeSync, salvageCreditGain };
+  const growth = { driverXp, moeSync, salvageCreditGain };
+  return isWipeoutCarryback(state) ? applyWipeoutCarryback(growth) : growth;
 };
 
 export const claimRunGrowthIfNeeded = (state: State): State => {
@@ -29,13 +31,14 @@ export const claimRunGrowthIfNeeded = (state: State): State => {
   const growth = getRunGrowth(state);
   const unlockRewards = applyRunUnlockRewards(state);
   const unlockLogs = unlockRewards.newlyUnlocked.map(formatUnlockRewardLog);
+  const carrybackLogs = isWipeoutCarryback(state) ? [formatWipeoutCarrybackLog()] : [];
   return {
     ...state,
     driverXpBank: state.driverXpBank + growth.driverXp,
     moeSyncBank: state.moeSyncBank + growth.moeSync,
     creditBank: state.creditBank + growth.salvageCreditGain,
     unlocks: unlockRewards.unlocks,
-    logs: unlockLogs.length > 0 ? [...state.logs, ...unlockLogs] : state.logs,
+    logs: [...state.logs, ...carrybackLogs, ...unlockLogs],
     growthClaimed: true,
   };
 };

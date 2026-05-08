@@ -350,6 +350,10 @@ export const useTelemetryEffects = ({
         touchRouteLog('return_gate', routeLogCatalog.return_gate.name, routeLogCatalog.return_gate.note);
         refreshSaveSnapshot();
       }
+      if (clean.includes('BACKTRACK STARTED')) emitTelemetry('backtrack_started');
+      if (clean.includes('RETURN CHECKPOINT REACHED')) emitTelemetry('return_checkpoint_reached');
+      if (clean.includes('SAFE EXTRACT USED')) emitTelemetry('safe_extract_used');
+      if (clean.includes('WIPEOUT CARRYBACK')) emitTelemetry('wipeout_carryback');
       if (clean.includes('BOSS ENCOUNTER: TOLL GATE SAINT')) {
         if (activeRunRef.current) activeRunRef.current.routeChoices.push('boss');
         touchRouteLog('boss', routeLogCatalog.boss.name, routeLogCatalog.boss.note);

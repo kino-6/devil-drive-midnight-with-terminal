@@ -290,6 +290,8 @@ export type RouteState = {
   currentNodeId: string;
   visitedNodeIds: string[];
   currentEventId?: string;
+  lastReturnCheckpointId?: string;
+  returnIntent?: 'none' | 'backtracking' | 'extracting';
 };
 
 export type ActiveSupportDaemon = {
@@ -366,6 +368,8 @@ export type Action =
   | { type: 'SIGNAL_ROUTE_CHOICE'; choiceId: 'analyze_trace' | 'hold_lane' | 'open_radio' }
   | { type: 'SIGNAL_CONTINUE' }
   | { type: 'BOSS_PREVIEW_CHOICE'; choice: 'challenge' | 'emergency_salvage' | 'return_gate' }
+  | { type: 'RETURN_BACKTRACK' }
+  | { type: 'RETURN_EXTRACT' }
   | { type: 'RETURN_TO_SURFACE' }
   | { type: 'OPEN_GARAGE' }
   | { type: 'GARAGE_SET_MAIN_GUN'; id: MainGunId }

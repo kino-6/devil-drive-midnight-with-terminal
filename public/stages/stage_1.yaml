@@ -14,6 +14,7 @@ stages:
         type: "route_choice"
         label: "Route Split"
         eventPool: "route.stage_1"
+        returnCheckpoint: true
         choices: "salvage:salvage_lane, signal:signal_tunnel, push_forward:forward_contact, return_gate:early_return"
       salvage_lane:
         type: "salvage"

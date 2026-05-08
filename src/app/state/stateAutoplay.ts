@@ -183,7 +183,7 @@ export const runAutoplayBatchWithDeps = (loadout: Loadout, runs: number, strateg
           ? deps.reducer(s, { type: 'ROUTE_NODE_CHOOSE', nodeId })
           : deps.reducer(s, { type: 'BOSS_PREVIEW_CHOICE', choice });
       } else if (s.gamePhase === 'return_gate') {
-        s = deps.reducer(s, { type: 'RETURN_TO_SURFACE' });
+        s = deps.reducer(s, { type: s.resultType === 'Boss Cleared' ? 'RETURN_TO_SURFACE' : 'RETURN_EXTRACT' });
       } else if (s.gamePhase === 'garage') {
         s = deps.reducer(s, { type: 'GARAGE_ENTER_RUN' });
       } else if (s.gamePhase === 'prologue') {

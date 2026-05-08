@@ -5,6 +5,7 @@ import { appendSupportDaemonDisconnectLogs } from '../../game/runtimeHelpers';
 import { applyRunUnlockRewards, formatUnlockRewardLog } from '../../game/progression';
 import { getSupportBacklashChance } from '../../game/vehicleUpgrades';
 import { getRareSalvageLog, getRareSalvageMoeLine, isRareSalvageReward, maybeAddRareSalvageReward } from '../../game/rareEvents';
+import { getEventsByPool } from '../../eventConfig';
 import { applyRewardOption, pickRewardChoices } from './stateRuntime';
 import { moveToApproach } from './approachReducer';
 import { getRouteChoiceTargetNodeId, getRouteNextNodeId, getStageRouteNode, moveRouteStateToNode } from './routeGraph';
@@ -25,6 +26,11 @@ const getCurrentChoiceIdForTargetNode = (state: State, nodeId: string): string |
   if (!choices) return undefined;
   return Object.entries(choices).find(([, targetNodeId]) => targetNodeId === nodeId)?.[0];
 };
+
+const checkpointLogForCurrentNode = (state: State): string[] =>
+  state.routeState?.lastReturnCheckpointId && state.routeState.currentNodeId === state.routeState.lastReturnCheckpointId
+    ? ['> RETURN CHECKPOINT REACHED']
+    : [];
 
 const applySilentShapeBacklash = (
   state: State,
@@ -48,8 +54,86 @@ const completeRunAtReturnGate = (state: State, resultType: ResultType, moeLine: 
     resultType,
     activeSupportDaemon: undefined,
     story,
-    logs: appendRecoveredStoryLogLines([...disconnectLogs, '> RETURN GATE ROUTE OPEN', '> RUN COMPLETE'], story),
+    logs: appendRecoveredStoryLogLines([
+      ...disconnectLogs,
+      '> RETURN GATE ROUTE OPEN',
+      ...(state.routeState?.returnIntent === 'extracting' ? ['> SAFE EXTRACT USED'] : []),
+      '> RUN COMPLETE',
+    ], story),
     moeLine,
+  };
+};
+
+const withReturnIntent = (state: State, returnIntent: NonNullable<State['routeState']>['returnIntent']): State => ({
+  ...state,
+  routeState: state.routeState ? { ...state.routeState, returnIntent } : state.routeState,
+});
+
+const getBacktrackRiskEvent = (state: State) => {
+  const pool = getEventsByPool(`return.stage_${state.stage}`);
+  if (pool.length === 0) return undefined;
+  return pool[Math.floor(Math.random() * pool.length)];
+};
+
+const backtrackToReturnCheckpoint = (state: State, resultType: ResultType): State => {
+  const checkpointId = state.routeState?.lastReturnCheckpointId;
+  if (!checkpointId) {
+    return completeRunAtReturnGate(
+      state,
+      resultType,
+      getDialogueLine('moe.run.route_return', '帰るのも仕事だよ。持ち帰れなきゃ、全部ゼロ。'),
+    );
+  }
+
+  const graphState = withReturnIntent(moveRouteStateToNode(state, checkpointId), 'backtracking');
+  const risk = getBacktrackRiskEvent(graphState);
+  const logs = [...graphState.logs, '> BACKTRACK STARTED'];
+  let fuel = graphState.fuel;
+  let armor = graphState.armor;
+  let signal = graphState.signal;
+  if (risk) logs.push(`> ${risk.log ?? `RETURN RISK: ${risk.title.toUpperCase()}`}`);
+  const tags = risk?.tags ?? [];
+  if (tags.includes('fuel')) {
+    fuel = Math.max(0, fuel - 1);
+    logs.push('> FUEL -1');
+  } else if (tags.includes('armor')) {
+    armor = Math.max(0, armor - 1);
+    logs.push('> ARMOR -1');
+  } else if (tags.includes('signal')) {
+    signal = Math.max(0, signal - 1);
+    logs.push('> SIGNAL -1');
+  } else {
+    signal = Math.max(0, signal - 1);
+    logs.push('> SIGNAL -1');
+  }
+
+  if (fuel <= 0 || armor <= 0) {
+    const disabledType: ResultType = 'Vehicle Disabled';
+    const story = resolveStoryFromRun(graphState, disabledType);
+    const disconnectLogs = appendSupportDaemonDisconnectLogs(logs, graphState.activeSupportDaemon, 'archive');
+    return {
+      ...graphState,
+      gamePhase: 'game_over',
+      resultType: disabledType,
+      fuel,
+      armor,
+      signal,
+      activeSupportDaemon: undefined,
+      story,
+      logs: appendRecoveredStoryLogLines([...disconnectLogs, '> SIGNAL LOST', '> VEHICLE DISABLED DURING BACKTRACK'], story),
+      moeLine: getDialogueLine('moe.run.game_over', '応答して。……だめ、車両信号が落ちてる。'),
+    };
+  }
+
+  return {
+    ...graphState,
+    gamePhase: 'return_gate',
+    resultType,
+    fuel,
+    armor,
+    signal,
+    logs: [...logs, '> RETURN CHECKPOINT REACHED'],
+    moeLine: risk?.moeLine ?? getDialogueLine('moe.run.return_checkpoint', '帰還チェックポイントに戻った。ここからなら安全に抜けられる。'),
   };
 };
 
@@ -64,7 +148,7 @@ const enterRouteNode = (state: State, nodeId: string): State => {
     return {
       ...graphState,
       gamePhase: 'route_choice',
-      logs: [...graphState.logs, '> ROUTE CHOICE AVAILABLE'],
+      logs: [...graphState.logs, ...checkpointLogForCurrentNode(graphState), '> ROUTE CHOICE AVAILABLE'],
       moeLine: getDialogueLine('moe.run.route_choice', '次の車線を選んで。補給・信号強化・強行突破・帰還、どれも正解になり得る。'),
     };
   }
@@ -101,13 +185,21 @@ const enterRouteNode = (state: State, nodeId: string): State => {
     };
   }
 
-  if (node.type === 'return_gate') {
+  if (node.type === 'return_checkpoint' || node.type === 'return_gate') {
     return {
       ...graphState,
       gamePhase: 'return_gate',
       logs: [...graphState.logs, '> RETURN GATE ROUTE OPEN'],
       moeLine: getDialogueLine('moe.run.return_gate_seen', '帰還ゲート、見えた。まだ車は動くね。'),
     };
+  }
+
+  if (node.type === 'extract') {
+    return completeRunAtReturnGate(
+      withReturnIntent(graphState, 'extracting'),
+      graphState.resultType ?? 'Early Return',
+      getDialogueLine('moe.run.route_return', '帰るのも仕事だよ。持ち帰れなきゃ、全部ゼロ。'),
+    );
   }
 
   if (node.type === 'encounter' || node.type === 'boss') {
@@ -146,11 +238,11 @@ export function reduceRoute(state: State, action: Action): State {
     if (state.rewardScope === 'post_enc1') {
       const graphState = moveRouteStateToNode(state, getRouteNextNodeId(state) ?? 'post_encounter_1');
       return {
-        ...graphState,
-        gamePhase: 'route_choice',
-        logs: [...graphState.logs, '> ROUTE CHOICE AVAILABLE'],
-        moeLine: getDialogueLine('moe.run.route_choice', '次の車線を選んで。補給・信号強化・強行突破・帰還、どれも正解になり得る。'),
-      };
+      ...graphState,
+      gamePhase: 'route_choice',
+      logs: [...graphState.logs, ...checkpointLogForCurrentNode(graphState), '> ROUTE CHOICE AVAILABLE'],
+      moeLine: getDialogueLine('moe.run.route_choice', '次の車線を選んで。補給・信号強化・強行突破・帰還、どれも正解になり得る。'),
+    };
     }
     const graphState = moveRouteStateToNode(state, getRouteNextNodeId(state) ?? 'boss_preview');
     return {
@@ -165,8 +257,11 @@ export function reduceRoute(state: State, action: Action): State {
     if (state.gamePhase !== 'route_choice') return state;
     if (action.lane === 'return_gate') {
       const graphState = moveRouteStateToNode(state, getRouteChoiceTargetNodeId(state, action.lane) ?? 'early_return');
+      if (state.routeState?.lastReturnCheckpointId && state.routeState.currentNodeId !== state.routeState.lastReturnCheckpointId) {
+        return backtrackToReturnCheckpoint(graphState, 'Early Return');
+      }
       return completeRunAtReturnGate(
-        graphState,
+        withReturnIntent(graphState, 'extracting'),
         'Early Return',
         getDialogueLine('moe.run.route_return', '帰るのも仕事だよ。持ち帰れなきゃ、全部ゼロ。'),
       );
@@ -316,8 +411,9 @@ export function reduceRoute(state: State, action: Action): State {
     if (state.gamePhase !== 'boss_preview') return state;
     if (action.choice === 'return_gate') {
       const graphState = moveRouteStateToNode(state, getRouteChoiceTargetNodeId(state, action.choice) ?? 'boss_return');
+      if (state.routeState?.lastReturnCheckpointId) return backtrackToReturnCheckpoint(graphState, 'Boss Avoided');
       return completeRunAtReturnGate(
-        graphState,
+        withReturnIntent(graphState, 'extracting'),
         'Boss Avoided',
         getDialogueLine('moe.run.boss_return', '引き返す判断、正解。持ち帰ることが最優先。'),
       );
@@ -349,9 +445,19 @@ export function reduceRoute(state: State, action: Action): State {
     }, 'boss');
   }
 
+  if (action.type === 'RETURN_BACKTRACK') {
+    if (!(state.gamePhase === 'route_choice' || state.gamePhase === 'boss_preview')) return state;
+    return backtrackToReturnCheckpoint(state, state.resultType ?? (state.gamePhase === 'boss_preview' ? 'Boss Avoided' : 'Early Return'));
+  }
+
+  if (action.type === 'RETURN_EXTRACT') {
+    if (state.gamePhase !== 'return_gate') return state;
+    return reduceRoute(withReturnIntent(state, 'extracting'), { type: 'RETURN_TO_SURFACE' });
+  }
+
   if (action.type === 'RETURN_TO_SURFACE') {
     if (state.gamePhase !== 'return_gate') return state;
-    const graphState = moveRouteStateToNode(state, getRouteNextNodeId(state) ?? 'result');
+    const graphState = withReturnIntent(moveRouteStateToNode(state, getRouteNextNodeId(state) ?? 'result'), 'extracting');
     const resultType = state.resultType ?? 'Boss Cleared';
     const disconnectLogs = appendSupportDaemonDisconnectLogs(graphState.logs, graphState.activeSupportDaemon, 'return_gate');
     const unlockedAbyssLoop = resultType === 'Boss Cleared' && graphState.stageCount < 4 && graphState.stage >= 3;
@@ -376,6 +482,7 @@ export function reduceRoute(state: State, action: Action): State {
         logs: appendRecoveredStoryLogLines([
           ...disconnectLogs,
           ...unlockLogs,
+          ...(graphState.routeState?.returnIntent === 'extracting' ? ['> SAFE EXTRACT USED'] : []),
           `> STAGE CLEAR: ${graphState.stage}/${graphState.stageCount}`,
           `> NEXT STAGE PREP: ${nextStage}/${graphState.stageCount}`,
           '> GARAGE: MIDNIGHT BAY ONLINE',
@@ -393,6 +500,7 @@ export function reduceRoute(state: State, action: Action): State {
       story,
       logs: appendRecoveredStoryLogLines([
         ...disconnectLogs,
+        ...(graphState.routeState?.returnIntent === 'extracting' ? ['> SAFE EXTRACT USED'] : []),
         ...(unlockedAbyssLoop ? ['> ABYSS LOOP UNLOCKED: STAGE 4'] : []),
         '> RUN COMPLETE',
       ], story),

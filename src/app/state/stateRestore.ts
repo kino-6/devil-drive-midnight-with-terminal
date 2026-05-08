@@ -144,11 +144,18 @@ export const sanitizeRestoredStateWithDeps = (raw: unknown, fallback: State, dep
     const validVisitedNodeIds = route
       ? visitedNodeIds.filter((nodeId) => !!route.nodes[nodeId])
       : visitedNodeIds;
+    const rawCheckpointId = asStr(raw.lastReturnCheckpointId, '');
+    const lastReturnCheckpointId = rawCheckpointId && (!route || route.nodes[rawCheckpointId])
+      ? rawCheckpointId
+      : undefined;
+    const rawReturnIntent = asStr(raw.returnIntent, 'none');
     return {
       stageRouteId,
       currentNodeId,
       visitedNodeIds: validVisitedNodeIds.length > 0 ? validVisitedNodeIds : [currentNodeId],
       currentEventId: asStr(raw.currentEventId, undefined as unknown as string) || undefined,
+      lastReturnCheckpointId,
+      returnIntent: rawReturnIntent === 'backtracking' || rawReturnIntent === 'extracting' ? rawReturnIntent : 'none',
     };
   };
 

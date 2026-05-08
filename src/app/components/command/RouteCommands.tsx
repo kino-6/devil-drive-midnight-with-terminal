@@ -15,6 +15,7 @@ type RouteCommandsProps = {
   onSalvagePick: (rewardId: string) => void;
   onSignalRouteChoice: (choiceId: 'analyze_trace' | 'hold_lane' | 'open_radio') => void;
   onBossPreviewChoice: (choice: 'challenge' | 'emergency_salvage' | 'return_gate') => void;
+  onReturnExtract: () => void;
   onReturnToSurface: () => void;
 };
 
@@ -31,6 +32,7 @@ export const RouteCommands = ({
   onSalvagePick,
   onSignalRouteChoice,
   onBossPreviewChoice,
+  onReturnExtract,
   onReturnToSurface,
 }: RouteCommandsProps) => {
   if (gamePhase === 'reward') {
@@ -107,13 +109,21 @@ export const RouteCommands = ({
     return <div className="command-window command-list">
       <button className="command-button command-button--danger" onMouseEnter={() => setHoveredHint(getDialogueLine('hint.hover.boss.challenge', '深層反応に挑む。高リスク高リターン。'))} onMouseLeave={clearHoveredHint} onClick={() => onBossPreviewChoice('challenge')}>Challenge Deep Signal</button>
       <button className="command-button command-button--route" onMouseEnter={() => setHoveredHint(getDialogueLine('hint.hover.boss.emergency_salvage', '応急補給してから突入。安定重視。'))} onMouseLeave={clearHoveredHint} onClick={() => onBossPreviewChoice('emergency_salvage')}>Emergency Salvage</button>
-      <button className="command-button command-button--route" onMouseEnter={() => setHoveredHint(getDialogueLine('hint.hover.boss.return_gate', 'ここで撤退。戦果の確保を優先。'))} onMouseLeave={clearHoveredHint} onClick={() => onBossPreviewChoice('return_gate')}>Return Gate</button>
+      <button className="command-button command-button--route" onMouseEnter={() => setHoveredHint(getDialogueLine('hint.hover.boss.return_gate', '帰還ポイントまで戻る。途中で小さな撤退リスクがある。'))} onMouseLeave={clearHoveredHint} onClick={() => onBossPreviewChoice('return_gate')}>Backtrack</button>
     </div>;
   }
 
   if (gamePhase === 'return_gate') {
+    const label = state.resultType === 'Boss Cleared' ? 'RETURN TO SURFACE' : 'SAFE EXTRACT';
     return <div className="command-window command-list">
-      <button className="command-button command-button--route" onMouseEnter={() => setHoveredHint(getDialogueLine('hint.hover.return_to_surface', '帰還処理を実行。地上へ戻る。'))} onMouseLeave={clearHoveredHint} onClick={onReturnToSurface}>RETURN TO SURFACE</button>
+      <button
+        className="command-button command-button--route"
+        onMouseEnter={() => setHoveredHint(getDialogueLine('hint.hover.return_to_surface', '帰還処理を実行。地上へ戻る。'))}
+        onMouseLeave={clearHoveredHint}
+        onClick={state.resultType === 'Boss Cleared' ? onReturnToSurface : onReturnExtract}
+      >
+        {label}
+      </button>
     </div>;
   }
 

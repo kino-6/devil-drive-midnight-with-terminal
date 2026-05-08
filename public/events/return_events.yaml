@@ -1,0 +1,29 @@
+events:
+  return:
+    fuel_drain:
+      title: "Fuel Drain"
+      pool: "return.stage_1"
+      weight: 1
+      tags: "fuel, backtrack"
+      body: "The loop charges one last fuel tax on the way back."
+      effects: "Fuel -1 during backtrack."
+      log: "RETURN RISK: FUEL DRAIN"
+      moeLine: "帰り道、燃料を持っていかれる。落ち着いて戻ろう。"
+    armor_scrape:
+      title: "Armor Scrape"
+      pool: "return.stage_1"
+      weight: 1
+      tags: "armor, backtrack"
+      body: "A guardrail shadow scrapes the side armor while reversing course."
+      effects: "Armor -1 during backtrack."
+      log: "RETURN RISK: ARMOR SCRAPE"
+      moeLine: "戻り車線、狭い。装甲を少し削られた。"
+    signal_noise:
+      title: "Signal Noise"
+      pool: "return.stage_1"
+      weight: 1
+      tags: "signal, backtrack"
+      body: "The return echo jitters and strips a little signal from the dashboard."
+      effects: "Signal -1 during backtrack."
+      log: "RETURN RISK: SIGNAL NOISE"
+      moeLine: "帰還反響が濁った。Signalを少し削られる。"

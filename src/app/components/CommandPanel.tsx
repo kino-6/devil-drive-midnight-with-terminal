@@ -39,6 +39,7 @@ type CommandPanelProps = {
   signalChoices: SignalChoice[];
   onSignalRouteChoice: (choiceId: 'analyze_trace' | 'hold_lane' | 'open_radio') => void;
   onBossPreviewChoice: (choice: 'challenge' | 'emergency_salvage' | 'return_gate') => void;
+  onReturnExtract: () => void;
   onReturnToSurface: () => void;
   showGarageLaunchConfirm: boolean;
   onGarageEnterNightLoop: () => void;
@@ -79,6 +80,7 @@ export const CommandPanel = ({
   signalChoices,
   onSignalRouteChoice,
   onBossPreviewChoice,
+  onReturnExtract,
   onReturnToSurface,
   showGarageLaunchConfirm,
   onGarageEnterNightLoop,
@@ -142,6 +144,7 @@ export const CommandPanel = ({
       onSalvagePick={onSalvagePick}
       onSignalRouteChoice={onSignalRouteChoice}
       onBossPreviewChoice={onBossPreviewChoice}
+      onReturnExtract={onReturnExtract}
       onReturnToSurface={onReturnToSurface}
     />
 

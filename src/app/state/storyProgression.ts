@@ -4,6 +4,7 @@ import { storyLogById } from '../../game/catalogs';
 import type { PreviousRunSummary, ResultType, State, StoryLogId, StoryState } from '../../game/types';
 import { getMainGunSpec, getSpecialEquipmentSpec, getSubGunSpec } from '../../game/runtimeHelpers';
 import { applyRunUnlockRewards, formatUnlockRewardLog } from '../../game/progression';
+import { applyWipeoutCarryback, formatWipeoutCarrybackLog, isWipeoutCarryback } from '../../game/carryback';
 import { getRunStartResources, getStageProfile } from './stateRuntime';
 
 export const makePreviousRunSummary = (state: State, resultType: ResultType): PreviousRunSummary => ({
@@ -25,7 +26,8 @@ export const getRunGrowth = (state: State) => {
   const driverXp = state.runSummary.cleared + ((state.resultType ?? 'Early Return') === 'Boss Cleared' ? 2 : 0);
   const moeSync = state.runSummary.contracted + state.analyzeSuccessCount;
   const salvageCreditGain = state.salvageCredits + (isReturned ? 1 : 0);
-  return { driverXp, moeSync, salvageCreditGain };
+  const growth = { driverXp, moeSync, salvageCreditGain };
+  return isWipeoutCarryback(state) ? applyWipeoutCarryback(growth) : growth;
 };
 
 export const getGarageStageAdvisory = (state: State, stage: number): string => {
@@ -52,13 +54,14 @@ export const claimRunGrowthIfNeeded = (state: State): State => {
   const growth = getRunGrowth(state);
   const unlockRewards = applyRunUnlockRewards(state);
   const unlockLogs = unlockRewards.newlyUnlocked.map(formatUnlockRewardLog);
+  const carrybackLogs = isWipeoutCarryback(state) ? [formatWipeoutCarrybackLog()] : [];
   return {
     ...state,
     driverXpBank: state.driverXpBank + growth.driverXp,
     moeSyncBank: state.moeSyncBank + growth.moeSync,
     creditBank: state.creditBank + growth.salvageCreditGain,
     unlocks: unlockRewards.unlocks,
-    logs: unlockLogs.length > 0 ? [...state.logs, ...unlockLogs] : state.logs,
+    logs: [...state.logs, ...carrybackLogs, ...unlockLogs],
     growthClaimed: true,
   };
 };

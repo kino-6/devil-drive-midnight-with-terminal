@@ -1,4 +1,4 @@
-export type EventPoolCategory = 'route' | 'salvage' | 'anomaly';
+export type EventPoolCategory = 'route' | 'salvage' | 'anomaly' | 'return';
 
 export type RouteEventEntry = {
   id: string;
@@ -106,6 +106,32 @@ export const defaultEventConfig: EventConfig = {
         moeLine: 'AM帯が開いた。声を返せるかも。',
       },
     },
+    return: {
+      fuel_drain: {
+        id: 'fuel_drain',
+        category: 'return',
+        title: 'Fuel Drain',
+        pool: 'return.stage_1',
+        weight: 1,
+        tags: ['fuel', 'backtrack'],
+        body: 'The loop charges one last fuel tax on the way back.',
+        effects: 'Fuel -1 during backtrack.',
+        log: 'RETURN RISK: FUEL DRAIN',
+        moeLine: '帰り道、燃料を持っていかれる。落ち着いて戻ろう。',
+      },
+      armor_scrape: {
+        id: 'armor_scrape',
+        category: 'return',
+        title: 'Armor Scrape',
+        pool: 'return.stage_1',
+        weight: 1,
+        tags: ['armor', 'backtrack'],
+        body: 'A guardrail shadow scrapes the side armor while reversing course.',
+        effects: 'Armor -1 during backtrack.',
+        log: 'RETURN RISK: ARMOR SCRAPE',
+        moeLine: '戻り車線、狭い。装甲を少し削られた。',
+      },
+    },
   },
 };
 
@@ -196,15 +222,15 @@ const parseCsvTags = (value: unknown): string[] => {
 };
 
 const normalizeCategory = (value: string): EventPoolCategory | undefined => {
-  if (value === 'route' || value === 'salvage' || value === 'anomaly') return value;
+  if (value === 'route' || value === 'salvage' || value === 'anomaly' || value === 'return') return value;
   return undefined;
 };
 
 const toEventConfig = (raw: Record<string, unknown>): EventConfig => {
   const eventsRaw = asRecord(raw.events);
-  const events: EventConfig['events'] = { route: {}, salvage: {}, anomaly: {} };
+  const events: EventConfig['events'] = { route: {}, salvage: {}, anomaly: {}, return: {} };
 
-  for (const categoryKey of ['route', 'salvage', 'anomaly'] as const) {
+  for (const categoryKey of ['route', 'salvage', 'anomaly', 'return'] as const) {
     const categoryRaw = asRecord(eventsRaw[categoryKey]);
     for (const [eventId, value] of Object.entries(categoryRaw)) {
       const eventRaw = asRecord(value);
@@ -231,6 +257,7 @@ const toEventConfig = (raw: Record<string, unknown>): EventConfig => {
       route: Object.keys(events.route).length > 0 ? events.route : defaultEventConfig.events.route,
       salvage: Object.keys(events.salvage).length > 0 ? events.salvage : defaultEventConfig.events.salvage,
       anomaly: Object.keys(events.anomaly).length > 0 ? events.anomaly : defaultEventConfig.events.anomaly,
+      return: Object.keys(events.return).length > 0 ? events.return : defaultEventConfig.events.return,
     },
   };
 };

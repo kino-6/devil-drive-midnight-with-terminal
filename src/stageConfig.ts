@@ -5,7 +5,9 @@ export type StageNodeType =
   | 'signal'
   | 'boss_preview'
   | 'boss'
+  | 'return_checkpoint'
   | 'return_gate'
+  | 'extract'
   | 'result';
 
 export type StageEncounterKind = 'enc1' | 'enc2' | 'boss';
@@ -16,6 +18,7 @@ export type StageRouteNode = {
   label: string;
   encounterKind?: StageEncounterKind;
   eventPool?: string;
+  returnCheckpoint?: boolean;
   next?: string;
   choices?: Record<string, string>;
 };
@@ -50,6 +53,7 @@ export const defaultStageConfig: StageConfig = {
           type: 'route_choice',
           label: 'Route Split',
           eventPool: 'route.stage_1',
+          returnCheckpoint: true,
           choices: {
             salvage: 'salvage_lane',
             signal: 'signal_tunnel',
@@ -188,7 +192,9 @@ const normalizeNodeType = (value: unknown): StageNodeType | undefined => {
     || value === 'signal'
     || value === 'boss_preview'
     || value === 'boss'
+    || value === 'return_checkpoint'
     || value === 'return_gate'
+    || value === 'extract'
     || value === 'result'
   ) return value;
   return undefined;
@@ -217,6 +223,7 @@ const toStageConfig = (raw: Record<string, unknown>): StageConfig => {
         label: asString(nodeRaw.label, nodeId),
         encounterKind: normalizeEncounterKind(nodeRaw.encounterKind),
         eventPool: typeof nodeRaw.eventPool === 'string' && nodeRaw.eventPool.trim() ? nodeRaw.eventPool.trim() : undefined,
+        returnCheckpoint: nodeRaw.returnCheckpoint === true,
         next: typeof nodeRaw.next === 'string' && nodeRaw.next.trim() ? nodeRaw.next.trim() : undefined,
         choices: parseChoices(nodeRaw.choices),
       };

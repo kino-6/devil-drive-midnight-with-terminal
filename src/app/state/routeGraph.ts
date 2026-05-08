@@ -73,6 +73,7 @@ export const moveRouteStateToNode = (state: State, nodeId: string): State => {
   const visitedNodeIds = current?.visitedNodeIds.includes(nodeId)
     ? current.visitedNodeIds
     : [...(current?.visitedNodeIds ?? []), nodeId];
+  const isReturnCheckpoint = node.returnCheckpoint || node.type === 'return_checkpoint';
 
   return {
     ...state,
@@ -81,6 +82,8 @@ export const moveRouteStateToNode = (state: State, nodeId: string): State => {
       currentNodeId: nodeId,
       visitedNodeIds,
       currentEventId: pickEventIdForNode(node),
+      lastReturnCheckpointId: isReturnCheckpoint ? nodeId : current?.lastReturnCheckpointId,
+      returnIntent: current?.returnIntent ?? 'none',
     },
   };
 };

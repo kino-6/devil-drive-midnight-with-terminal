@@ -139,10 +139,10 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
 
       {state.gamePhase === 'return_gate' && <section className="event-card">
         <div className="event-header">
-          <div className="event-kicker">RETURN GATE</div>
-          <span className="event-chip event-chip--route">LOCK ACQUIRED</span>
+          <div className="event-kicker">{state.routeState?.lastReturnCheckpointId ? 'RETURN CHECKPOINT' : 'RETURN GATE'}</div>
+          <span className="event-chip event-chip--route">{state.routeState?.returnIntent === 'backtracking' ? 'BACKTRACK COMPLETE' : 'LOCK ACQUIRED'}</span>
         </div>
-        <p>RETURN GATE LOCK ACQUIRED</p>
+        <p>{state.routeState?.returnIntent === 'backtracking' ? 'Return checkpoint reacquired. Safe extract is available.' : 'RETURN GATE LOCK ACQUIRED'}</p>
         <div className="negotiation-grid">
           <p><span>Fuel</span><strong>{state.fuel}</strong></p>
           <p><span>Armor</span><strong>{state.armor}</strong></p>
