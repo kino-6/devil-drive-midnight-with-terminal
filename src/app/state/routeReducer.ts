@@ -9,6 +9,37 @@ import { applyRewardOption, pickRewardChoices } from './stateRuntime';
 import { moveToApproach } from './approachReducer';
 import { appendRecoveredStoryLogLines, getRunGrowth, makePreviousRunSummary, resolveStoryFromRun } from './storyProgression';
 
+type ApproachRouteKind = State['encounter']['kind'];
+
+const applySilentShapeBacklash = (
+  state: State,
+  logs: string[],
+  fuel = state.fuel,
+): { fuel: number; logs: string[] } => {
+  if (state.selectedLoadout.contractSupportId !== 'silent_shape') return { fuel, logs };
+  if (Math.random() >= getSupportBacklashChance(0.2, state.vehicleUpgrades)) return { fuel, logs };
+  return {
+    fuel: Math.max(0, fuel - 1),
+    logs: [...logs, '> SUPPORT BACKLASH: SILENT SHAPE / FUEL -1'],
+  };
+};
+
+const completeRunAtReturnGate = (state: State, resultType: ResultType, moeLine: string): State => {
+  const story = resolveStoryFromRun(state, resultType);
+  const disconnectLogs = appendSupportDaemonDisconnectLogs(state.logs, state.activeSupportDaemon, 'return_gate');
+  return {
+    ...state,
+    gamePhase: 'result',
+    resultType,
+    activeSupportDaemon: undefined,
+    story,
+    logs: appendRecoveredStoryLogLines([...disconnectLogs, '> RETURN GATE ROUTE OPEN', '> RUN COMPLETE'], story),
+    moeLine,
+  };
+};
+
+const nextRouteEncounterKind = (toBoss: boolean): ApproachRouteKind => (toBoss ? 'boss' : 'enc2');
+
 export function reduceRoute(state: State, action: Action): State {
   if (action.type === 'REWARD_CONTINUE') {
     if (state.gamePhase !== 'reward') return state;
@@ -31,18 +62,11 @@ export function reduceRoute(state: State, action: Action): State {
   if (action.type === 'ROUTE_CHOICE') {
     if (state.gamePhase !== 'route_choice') return state;
     if (action.lane === 'return_gate') {
-      const resultType: ResultType = 'Early Return';
-      const story = resolveStoryFromRun(state, resultType);
-      const disconnectLogs = appendSupportDaemonDisconnectLogs(state.logs, state.activeSupportDaemon, 'return_gate');
-      return {
-        ...state,
-        gamePhase: 'result',
-        resultType,
-        activeSupportDaemon: undefined,
-        story,
-        logs: appendRecoveredStoryLogLines([...disconnectLogs, '> RETURN GATE ROUTE OPEN', '> RUN COMPLETE'], story),
-        moeLine: getDialogueLine('moe.run.route_return', '帰るのも仕事だよ。持ち帰れなきゃ、全部ゼロ。'),
-      };
+      return completeRunAtReturnGate(
+        state,
+        'Early Return',
+        getDialogueLine('moe.run.route_return', '帰るのも仕事だよ。持ち帰れなきゃ、全部ゼロ。'),
+      );
     }
     if (action.lane === 'salvage') {
       const rewards = maybeAddRareSalvageReward(state, pickRewardChoices(rewardCatalog));
@@ -69,17 +93,12 @@ export function reduceRoute(state: State, action: Action): State {
         moeLine: getDialogueLine('moe.run.route_signal', '信号帯がクリアになった。次の予測が少し長く見える。'),
       };
     }
-    const logs = [...state.logs, '> PUSH FORWARD SELECTED', '> ENCOUNTER 2: FORWARD CONTACT'];
-    let fuel = state.fuel;
-    if (state.selectedLoadout.contractSupportId === 'silent_shape' && Math.random() < getSupportBacklashChance(0.2, state.vehicleUpgrades)) {
-      fuel = Math.max(0, fuel - 1);
-      logs.push('> SUPPORT BACKLASH: SILENT SHAPE / FUEL -1');
-    }
+    const pushedRoute = applySilentShapeBacklash(state, [...state.logs, '> PUSH FORWARD SELECTED', '> ENCOUNTER 2: FORWARD CONTACT']);
     return moveToApproach({
       ...state,
-      fuel,
+      fuel: pushedRoute.fuel,
       routeBoostReward: true,
-      logs,
+      logs: pushedRoute.logs,
       encounterIndex: 1,
       moeLine: getDialogueLine('moe.run.route_push', '回復なしで進むのね。報酬は少し盛れるかも。'),
     }, 'enc2');
@@ -91,6 +110,7 @@ export function reduceRoute(state: State, action: Action): State {
     if (!selected) return state;
     if (isRareSalvageReward(selected.id)) {
       const toBoss = state.rewardTarget === 'boss';
+      const nextKind = nextRouteEncounterKind(toBoss);
       const logs = [...state.logs, `> ${getRareSalvageLog(selected.id)}`, `> ${toBoss ? 'BOSS CONTACT' : 'ENCOUNTER 2: SIGNAL CONTACT'}`];
       return moveToApproach({
         ...state,
@@ -100,27 +120,27 @@ export function reduceRoute(state: State, action: Action): State {
         bossChallenged: toBoss ? true : state.bossChallenged,
         encounterIndex: toBoss ? 2 : 1,
         moeLine: getRareSalvageMoeLine(selected.id),
-      }, toBoss ? 'boss' : 'enc2');
+      }, nextKind);
     }
     const patched = applyRewardOption(state, selected);
     const toBoss = state.rewardTarget === 'boss';
-    const logs = [...state.logs, `> SALVAGE APPLIED: ${selected.label.toUpperCase()}`, `> ${toBoss ? 'BOSS CONTACT' : 'ENCOUNTER 2: SIGNAL CONTACT'}`];
-    let fuel = patched.fuel;
-    if (state.selectedLoadout.contractSupportId === 'silent_shape' && Math.random() < getSupportBacklashChance(0.2, state.vehicleUpgrades)) {
-      fuel = Math.max(0, fuel - 1);
-      logs.push('> SUPPORT BACKLASH: SILENT SHAPE / FUEL -1');
-    }
+    const nextKind = nextRouteEncounterKind(toBoss);
+    const rewardedRoute = applySilentShapeBacklash(
+      state,
+      [...state.logs, `> SALVAGE APPLIED: ${selected.label.toUpperCase()}`, `> ${toBoss ? 'BOSS CONTACT' : 'ENCOUNTER 2: SIGNAL CONTACT'}`],
+      patched.fuel,
+    );
     return moveToApproach({
       ...state,
       ...patched,
-      fuel,
+      fuel: rewardedRoute.fuel,
       rewardTarget: undefined,
       tempForecastBoost: 0,
-      logs,
+      logs: rewardedRoute.logs,
       bossChallenged: toBoss ? true : state.bossChallenged,
       encounterIndex: toBoss ? 2 : 1,
       moeLine: toBoss ? '応急補給完了。Toll Gate Saintへ向かう。' : '補給完了。次の区画へ。',
-    }, toBoss ? 'boss' : 'enc2');
+    }, nextKind);
   }
 
   if (action.type === 'SIGNAL_ROUTE_CHOICE' || action.type === 'SIGNAL_CONTINUE') {
@@ -166,17 +186,14 @@ export function reduceRoute(state: State, action: Action): State {
     }
 
     logs.push('> ENCOUNTER 2: SIGNAL CONTACT');
-    if (state.selectedLoadout.contractSupportId === 'silent_shape' && Math.random() < getSupportBacklashChance(0.2, state.vehicleUpgrades)) {
-      fuel = Math.max(0, fuel - 1);
-      logs.push('> SUPPORT BACKLASH: SILENT SHAPE / FUEL -1');
-    }
+    const signaledRoute = applySilentShapeBacklash(state, logs, fuel);
     return moveToApproach({
       ...state,
       signal,
-      fuel,
+      fuel: signaledRoute.fuel,
       encounterIndex: 1,
       tempForecastBoost,
-      logs,
+      logs: signaledRoute.logs,
       moeLine:
         normalizedChoice === 'analyze_trace'
           ? '断片ログを掴んだ。次接敵の読みは少し深い。'
@@ -189,18 +206,11 @@ export function reduceRoute(state: State, action: Action): State {
   if (action.type === 'BOSS_PREVIEW_CHOICE') {
     if (state.gamePhase !== 'boss_preview') return state;
     if (action.choice === 'return_gate') {
-      const resultType: ResultType = 'Boss Avoided';
-      const story = resolveStoryFromRun(state, resultType);
-      const disconnectLogs = appendSupportDaemonDisconnectLogs(state.logs, state.activeSupportDaemon, 'return_gate');
-      return {
-        ...state,
-        gamePhase: 'result',
-        resultType,
-        activeSupportDaemon: undefined,
-        story,
-        logs: appendRecoveredStoryLogLines([...disconnectLogs, '> RETURN GATE ROUTE OPEN', '> RUN COMPLETE'], story),
-        moeLine: getDialogueLine('moe.run.boss_return', '引き返す判断、正解。持ち帰ることが最優先。'),
-      };
+      return completeRunAtReturnGate(
+        state,
+        'Boss Avoided',
+        getDialogueLine('moe.run.boss_return', '引き返す判断、正解。持ち帰ることが最優先。'),
+      );
     }
     if (action.choice === 'emergency_salvage') {
       const emergencyPool = state.routeBoostReward
@@ -215,19 +225,14 @@ export function reduceRoute(state: State, action: Action): State {
         moeLine: getDialogueLine('moe.run.salvage_to_boss', '主砲弾か装甲を足してから行ける。選んで。'),
       };
     }
-    const logs = [...state.logs, '> BOSS ENCOUNTER: TOLL GATE SAINT'];
-    let fuel = state.fuel;
-    if (state.selectedLoadout.contractSupportId === 'silent_shape' && Math.random() < getSupportBacklashChance(0.2, state.vehicleUpgrades)) {
-      fuel = Math.max(0, fuel - 1);
-      logs.push('> SUPPORT BACKLASH: SILENT SHAPE / FUEL -1');
-    }
+    const bossRoute = applySilentShapeBacklash(state, [...state.logs, '> BOSS ENCOUNTER: TOLL GATE SAINT']);
     return moveToApproach({
       ...state,
-      fuel,
+      fuel: bossRoute.fuel,
       encounterIndex: 2,
       bossChallenged: true,
       tempForecastBoost: 0,
-      logs,
+      logs: bossRoute.logs,
       moeLine: getDialogueLine('moe.run.boss_start', '深層料金所、突入。主砲を温存しすぎないで。'),
     }, 'boss');
   }
