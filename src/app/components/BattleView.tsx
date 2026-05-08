@@ -91,6 +91,7 @@ export const BattleView = ({
   const analyzesToAffinityReveal = detailEnemy?.affinityRevealed
     ? 0
     : Math.ceil(detailAffinityRemaining / analyzeIntelGain);
+  const routePreviewCandidates = routeCandidates.slice(0, 3);
 
   return (
     <section
@@ -118,7 +119,7 @@ export const BattleView = ({
       <span>THREAT FIELD {aliveEnemiesCount > 0 && (gamePhase === 'encounter' || gamePhase === 'boss_encounter') ? 'ACTIVE' : 'CLEAR'}</span>
       <strong>{windshieldThreatLabel}</strong>
     </div>
-    {gamePhase === 'route_choice' && routeCandidates.length > 0 && (
+    {gamePhase === 'route_choice' && routePreviewCandidates.length > 0 && (
       <div className="battle-view__route-preview" aria-label="Route candidates">
         {routeIntelStatus?.isLimited && (
           <div className={`battle-view__route-status battle-view__route-status--${routeIntelStatus.level}`}>
@@ -126,7 +127,20 @@ export const BattleView = ({
             <small>{routeIntelStatus.detail}</small>
           </div>
         )}
-        {routeCandidates.slice(0, 3).map((candidate, index) => (
+        <div className="battle-view__route-map" aria-hidden="true">
+          <span className="route-map__origin">NOW</span>
+          <span className="route-map__trunk" />
+          <span className="route-map__branch route-map__branch--left" />
+          <span className="route-map__branch route-map__branch--straight" />
+          <span className="route-map__branch route-map__branch--right" />
+          {routePreviewCandidates.map((candidate, index) => (
+            <span key={`route-map-${candidate.nodeId}-${candidate.choiceId}`} className={`route-map__node route-map__node--${index}`}>
+              <small>{index === 0 ? 'LEFT' : index === 1 ? 'STRAIGHT' : 'RIGHT'}</small>
+              <strong>{candidate.bossSteps ?? '--'}</strong>
+            </span>
+          ))}
+        </div>
+        {routePreviewCandidates.map((candidate, index) => (
           <div key={`${candidate.nodeId}-${candidate.choiceId}`} className={`battle-view__route-card battle-view__route-card--${index}`}>
             <span>{index === 0 ? 'LEFT' : index === 1 ? 'STRAIGHT' : 'RIGHT'}</span>
             <strong>{candidate.title}</strong>

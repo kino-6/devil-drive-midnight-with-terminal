@@ -1046,6 +1046,103 @@ body {
   font-size: 0.64rem;
 }
 
+.battle-view__route-map {
+  grid-column: 1 / -1;
+  position: relative;
+  justify-self: center;
+  width: min(560px, 72%);
+  height: 92px;
+  margin: -2px 0 2px;
+  border: 1px solid rgba(123, 165, 188, 0.24);
+  background:
+    radial-gradient(circle at 50% 84%, rgba(211, 154, 74, 0.16), transparent 24%),
+    linear-gradient(180deg, rgba(12, 18, 26, 0.62), rgba(8, 12, 18, 0.34));
+  box-shadow: inset 0 0 26px rgba(91, 132, 157, 0.08);
+}
+
+.route-map__origin {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(211, 154, 74, 0.58);
+  background: rgba(11, 15, 21, 0.9);
+  color: #f0d3a4;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  z-index: 2;
+}
+
+.route-map__trunk,
+.route-map__branch {
+  position: absolute;
+  left: 50%;
+  bottom: 25px;
+  width: 2px;
+  height: 38px;
+  transform-origin: bottom center;
+  background: linear-gradient(0deg, rgba(211, 154, 74, 0.72), rgba(127, 192, 207, 0.22));
+}
+
+.route-map__branch--left {
+  transform: rotate(-54deg);
+}
+
+.route-map__branch--straight {
+  transform: rotate(0deg);
+}
+
+.route-map__branch--right {
+  transform: rotate(54deg);
+}
+
+.route-map__node {
+  position: absolute;
+  top: 10px;
+  width: 82px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(127, 192, 207, 0.52);
+  background: rgba(10, 15, 22, 0.88);
+  color: #9fb2bd;
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  padding: 4px 5px;
+}
+
+.route-map__node--0 {
+  left: 18%;
+}
+
+.route-map__node--1 {
+  left: 50%;
+  border-color: rgba(211, 154, 74, 0.56);
+}
+
+.route-map__node--2 {
+  left: 82%;
+}
+
+.route-map__node small {
+  color: #7fc0cf;
+  font-size: 0.52rem;
+  letter-spacing: 0.08em;
+}
+
+.route-map__node strong {
+  color: #f0d3a4;
+  font-size: 0.76rem;
+  line-height: 1;
+}
+
+.route-map__node strong::before {
+  content: "BOSS ";
+  color: #9fb2bd;
+  font-size: 0.48rem;
+  letter-spacing: 0.08em;
+}
+
 .battle-view__route-card {
   min-height: 82px;
   border: 1px solid rgba(123, 165, 188, 0.42);
@@ -3231,6 +3328,14 @@ body {
     left: 4%;
     right: 4%;
     gap: 6px;
+  }
+
+  .battle-view__route-map {
+    width: min(620px, 92%);
+  }
+
+  .route-map__node {
+    width: 74px;
   }
 
   .battle-view__route-card {
