@@ -830,6 +830,7 @@ body {
   width: 35%;
   height: 64%;
   border-top: 1px solid rgba(120, 151, 174, 0.38);
+  transition: left 220ms ease, right 220ms ease, width 220ms ease, transform 220ms ease;
 }
 
 .battle-view__rail--left {
@@ -840,6 +841,20 @@ body {
 .battle-view__rail--right {
   right: -4%;
   transform: skewY(18deg);
+}
+
+.battle-view.is-cruising .battle-view__rail {
+  width: 46%;
+}
+
+.battle-view.is-cruising .battle-view__rail--left {
+  left: -9%;
+  transform: skewY(-31deg);
+}
+
+.battle-view.is-cruising .battle-view__rail--right {
+  right: -9%;
+  transform: skewY(31deg);
 }
 
 .battle-view__city {
