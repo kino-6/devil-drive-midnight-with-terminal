@@ -1,0 +1,32 @@
+events:
+  salvage:
+    boss_ammo_case:
+      title: "Boss Ammo Case"
+      pool: "salvage.boss_prep"
+      weight: 1
+      tags: "boss, ammo"
+      body: "A sealed case carries heavy shells for the final contact."
+      effects: "Boss prep ammo candidate."
+      rewardId: "main_ammo"
+      log: "BOSS PREP EVENT: AMMO CASE"
+      moeLine: "主砲弾、深層前に足せる。"
+    saint_plate_scrap:
+      title: "Saint Plate Scrap"
+      pool: "salvage.boss_prep"
+      weight: 1
+      tags: "boss, armor"
+      body: "A bent toll plate can reinforce the front frame."
+      effects: "Boss prep armor candidate."
+      rewardId: "armor_patch"
+      log: "BOSS PREP EVENT: PLATE SCRAP"
+      moeLine: "装甲に回せる板。料金所前なら助かる。"
+    signal_relay_stub:
+      title: "Signal Relay Stub"
+      pool: "salvage.boss_prep"
+      weight: 1
+      tags: "boss, signal, analyze"
+      body: "A relay stub holds a cleaner read on the deep signal."
+      effects: "Boss prep signal candidate."
+      rewardId: "signal_boost"
+      log: "BOSS PREP EVENT: RELAY STUB"
+      moeLine: "深層信号を少し読みやすくできる。"

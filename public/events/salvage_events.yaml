@@ -30,3 +30,23 @@ events:
       rewardId: "signal_boost"
       log: "SALVAGE EVENT: SIGNAL SCRAP"
       moeLine: "信号片。解析に回せる。"
+    fuel_siphon:
+      title: "Fuel Siphon"
+      pool: "salvage.stage_1"
+      weight: 1
+      tags: "fuel, risk"
+      body: "A roadside tank still holds fuel, but the line is unstable."
+      effects: "Fuel salvage candidate with route risk."
+      rewardId: "fuel_cell"
+      log: "SALVAGE EVENT: FUEL SIPHON"
+      moeLine: "燃料は取れる。でも長居は危ない。"
+    blueprint_ping:
+      title: "Blueprint Ping"
+      pool: "salvage.stage_1"
+      weight: 1
+      tags: "rare, blueprint, signal"
+      body: "A faint part signature points deeper into salvage noise."
+      effects: "Rare salvage hint."
+      rewardId: "signal_boost"
+      log: "SALVAGE EVENT: BLUEPRINT PING"
+      moeLine: "設計図っぽい反応。今夜は薄いけど、覚えておく。"

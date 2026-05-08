@@ -19,6 +19,25 @@ events:
       routeChoice: "open_radio"
       log: "ANOMALY EVENT: AM 666.0 OPEN"
       moeLine: "AM帯が開いた。声を返せるかも。"
+    archive_echo:
+      title: "Archive Echo"
+      pool: "anomaly.stage_1"
+      weight: 1
+      tags: "archive, demon, analyze"
+      body: "The demon archive pings against an old profile signature."
+      effects: "Demon archive hint."
+      log: "ANOMALY EVENT: ARCHIVE ECHO"
+      moeLine: "既知悪魔の反応に似てる。記録と照合できる。"
+    soft_channel:
+      title: "Soft Channel"
+      pool: "anomaly.stage_1"
+      weight: 1
+      tags: "talk, low_risk"
+      body: "A clean carrier forms a small, patient talk window."
+      effects: "Talk boost hint."
+      routeChoice: "open_radio"
+      log: "ANOMALY EVENT: SOFT CHANNEL"
+      moeLine: "声が荒れてない。話すなら今。"
     false_carrier:
       title: "False Carrier"
       pool: "anomaly.stage_1"

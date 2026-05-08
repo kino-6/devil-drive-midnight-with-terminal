@@ -20,6 +20,26 @@ events:
       routeChoice: "signal"
       log: "ROUTE EVENT: SIGNAL TUNNEL"
       moeLine: "信号帯が開いてる。読むか、抜けるか選べる。"
+    toll_rush:
+      title: "Toll Rush"
+      pool: "route.stage_1"
+      weight: 1
+      tags: "risk, boss, speed"
+      body: "A fast lane points straight toward the deeper toll signal."
+      effects: "High risk push toward next contact."
+      routeChoice: "push_forward"
+      log: "ROUTE EVENT: TOLL RUSH"
+      moeLine: "深い料金所反応に近い。急ぐならここ。"
+    quiet_shoulder:
+      title: "Quiet Shoulder"
+      pool: "route.stage_1"
+      weight: 1
+      tags: "low_risk, talk, safe"
+      body: "The shoulder lane has low noise and a narrow talk window."
+      effects: "Safer route read, modest reward."
+      routeChoice: "salvage"
+      log: "ROUTE EVENT: QUIET SHOULDER"
+      moeLine: "静かな路肩。会話狙いなら悪くない。"
     return_gate:
       title: "Return Gate"
       pool: "route.stage_1"
