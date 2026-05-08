@@ -1,0 +1,26 @@
+events:
+  route:
+    salvage_lane:
+      title: "Salvage Lane"
+      pool: "route.stage_1"
+      weight: 1
+      tags: "safe, reward"
+      routeChoice: "salvage"
+      log: "ROUTE EVENT: SALVAGE LANE"
+      moeLine: "補給反応あり。拾うなら今。"
+    signal_tunnel:
+      title: "Signal Tunnel"
+      pool: "route.stage_1"
+      weight: 1
+      tags: "signal, analyze"
+      routeChoice: "signal"
+      log: "ROUTE EVENT: SIGNAL TUNNEL"
+      moeLine: "信号帯が開いてる。読むか、抜けるか選べる。"
+    return_gate:
+      title: "Return Gate"
+      pool: "route.stage_1"
+      weight: 1
+      tags: "safe, exit"
+      routeChoice: "return_gate"
+      log: "ROUTE EVENT: RETURN GATE"
+      moeLine: "帰還ゲート反応。持ち帰るならここ。"

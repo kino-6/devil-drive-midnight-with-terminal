@@ -1,0 +1,26 @@
+events:
+  salvage:
+    main_ammo_cache:
+      title: "Main Ammo Cache"
+      pool: "salvage.stage_1"
+      weight: 1
+      tags: "ammo, common"
+      rewardId: "main_ammo"
+      log: "SALVAGE EVENT: MAIN AMMO CACHE"
+      moeLine: "主砲弾、まだ使える。"
+    armor_patch:
+      title: "Armor Patch"
+      pool: "salvage.stage_1"
+      weight: 1
+      tags: "armor, common"
+      rewardId: "armor_patch"
+      log: "SALVAGE EVENT: ARMOR PATCH"
+      moeLine: "応急装甲材。今なら貼れる。"
+    signal_scrap:
+      title: "Signal Scrap"
+      pool: "salvage.stage_1"
+      weight: 1
+      tags: "signal, uncommon"
+      rewardId: "signal_boost"
+      log: "SALVAGE EVENT: SIGNAL SCRAP"
+      moeLine: "信号片。解析に回せる。"

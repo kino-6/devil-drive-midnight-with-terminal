@@ -1,0 +1,4 @@
+# Event config split-loader entrypoint.
+# Event pools are loaded for future stage graph routing, but are not yet used by reducers.
+version: "events-v1"
+includes: "/events/route_events.yaml, /events/salvage_events.yaml, /events/anomaly_events.yaml"

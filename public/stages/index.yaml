@@ -1,0 +1,5 @@
+# Stage config split-loader entrypoint.
+# Runtime loads this file first; included files are merged in order.
+version: "stages-v1"
+defaultStageId: "stage_1"
+includes: "/stages/stage_1.yaml"

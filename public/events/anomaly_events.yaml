@@ -1,0 +1,24 @@
+events:
+  anomaly:
+    memory_trace:
+      title: "Memory Trace"
+      pool: "anomaly.stage_1"
+      weight: 1
+      tags: "story, analyze"
+      log: "ANOMALY EVENT: MEMORY TRACE"
+      moeLine: "前任者ログに似た波形。慎重に拾おう。"
+    open_radio:
+      title: "Open Radio"
+      pool: "anomaly.stage_1"
+      weight: 1
+      tags: "talk, signal"
+      routeChoice: "open_radio"
+      log: "ANOMALY EVENT: AM 666.0 OPEN"
+      moeLine: "AM帯が開いた。声を返せるかも。"
+    false_carrier:
+      title: "False Carrier"
+      pool: "anomaly.stage_1"
+      weight: 1
+      tags: "risk, signal"
+      log: "ANOMALY EVENT: FALSE CARRIER"
+      moeLine: "搬送波が二重に見える。踏み込みすぎないで。"

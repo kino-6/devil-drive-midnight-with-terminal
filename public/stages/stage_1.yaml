@@ -1,0 +1,62 @@
+stages:
+  stage_1:
+    id: "stage_1"
+    stage: 1
+    title: "Shallow Night Loop"
+    entryNode: "entry"
+    nodes:
+      entry:
+        type: "encounter"
+        encounterKind: "enc1"
+        label: "Entry Contact"
+        next: "post_encounter_1"
+      post_encounter_1:
+        type: "route_choice"
+        label: "Route Split"
+        eventPool: "route.stage_1"
+        choices: "salvage:salvage_lane, signal:signal_tunnel, push_forward:forward_contact, return_gate:early_return"
+      salvage_lane:
+        type: "salvage"
+        label: "Salvage Lane"
+        eventPool: "salvage.stage_1"
+        next: "encounter_2"
+      signal_tunnel:
+        type: "signal"
+        label: "Signal Tunnel"
+        eventPool: "anomaly.stage_1"
+        next: "encounter_2"
+      forward_contact:
+        type: "encounter"
+        encounterKind: "enc2"
+        label: "Forward Contact"
+        next: "boss_preview"
+      encounter_2:
+        type: "encounter"
+        encounterKind: "enc2"
+        label: "Second Contact"
+        next: "boss_preview"
+      early_return:
+        type: "return_gate"
+        label: "Early Return Gate"
+        next: "result"
+      boss_preview:
+        type: "boss_preview"
+        label: "Deep Signal Preview"
+        choices: "challenge:boss_contact, emergency_salvage:boss_salvage, return_gate:boss_return"
+      boss_salvage:
+        type: "salvage"
+        label: "Emergency Salvage"
+        eventPool: "salvage.boss_prep"
+        next: "boss_contact"
+      boss_return:
+        type: "return_gate"
+        label: "Boss Return Gate"
+        next: "result"
+      boss_contact:
+        type: "boss"
+        encounterKind: "boss"
+        label: "Toll Gate Saint"
+        next: "result"
+      result:
+        type: "result"
+        label: "Surface Result"

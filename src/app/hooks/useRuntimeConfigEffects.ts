@@ -4,8 +4,10 @@ import { defaultBalanceConfig, type BalanceConfig, loadBalanceConfig } from '../
 import { loadConversationConfig } from '../../conversationConfig';
 import { loadDevilConfig } from '../../devilConfig';
 import { getDialogueConfig, loadDialogueConfig } from '../../dialogueConfig';
+import { loadEventConfig } from '../../eventConfig';
 import { loadProgressionConfig } from '../../progressionConfig';
 import { loadScenarioPack } from '../../scenario/scenarioLoader';
+import { loadStageConfig } from '../../stageConfig';
 
 type UseRuntimeConfigEffectsParams = {
   setAssetManifest: (value: AssetManifest) => void;
@@ -90,6 +92,11 @@ export const useRuntimeConfigEffects = ({
 
   useEffect(() => {
     void loadProgressionConfig();
+  }, []);
+
+  useEffect(() => {
+    void loadStageConfig();
+    void loadEventConfig();
   }, []);
 
   useEffect(() => {
