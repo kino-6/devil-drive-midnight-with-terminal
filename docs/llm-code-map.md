@@ -170,6 +170,7 @@ Fallback方針:
   - 数値: `public/balance.yaml`
 - Garage表示:
   - `src/app/components/garage/GarageLoadoutSection.tsx`
+  - `src/app/components/garage/loadoutOptions.ts`
   - `src/app/components/garage/GarageGrowthSection.tsx`
 - Run中の効果:
   - weapon/Analyze/Talk/Contract: `src/app/state/combatReducer.ts`
@@ -270,12 +271,16 @@ images:
   - 判定と購入処理は `src/game/progression.ts`
   - Garage UIはlocked理由/購入可否を表示するだけに寄せる
 - YAML参照検証:
-  - stage/event/progression/balance/catalog のID参照ミスを検出する軽いvalidatorを今後追加候補にする
+  - `npm run config:validate` で devil profile / asset manifest / Encounter ID のズレを検出する
+  - `npm run scenario:validate` で scenario JSON を検証する
+  - `npm run check` で config validate + scenario validate + build をまとめて実行する
+  - stage/event/progression/balance/catalog のID参照ミス検出は今後の拡張候補
   - unknown effect / unknown unlock target は落とさず警告できる設計を優先
 - AppRoot:
   - props結線と画面構成に留める
   - 派生値、MOE表情、runtime config、save/telemetry副作用はhook/view-modelへ継続移管する
 - GaragePanel:
+  - Loadout option組み立ては `src/app/components/garage/loadoutOptions.ts`
   - locked判定、購入可否、装備選択可否が増える場合はselector/helperへ逃がす
   - UI側にprogression条件を直書きしない
 
@@ -299,7 +304,7 @@ images:
 
 1. 変更対象が UI / ロジック / データ のどれかを先に切り分ける
 2. 変更先が `AppRoot.tsx` で本当に妥当か確認する（多くは別ファイル）
-3. `npm run build` を実行
+3. `npm run check` を実行
 4. 主要ループ確認  
    `Prologue -> Approach -> Encounter -> Reward/Route -> Boss/Return -> Result -> Garage`
 5. save/telemetry の localStorage キー互換を壊していないか確認
