@@ -32,13 +32,17 @@
 ### hooks（`src/app/hooks/`）
 - `useAudioEffects.ts`
 - `useRuntimeConfigEffects.ts`
-  - runtime config のロード起点（assets / balance / devils / dialogue / scenario / conversation）
+  - runtime config のロード起点（assets / balance / devils / dialogue / scenario / conversation / progression / stage / event）
 
 ### 戦闘・進行ロジック（`src/app/state/`）
 - `stateReducer.ts`
-  - reducer本体、phase遷移、初期化、主要 helper
+  - reducer本体、phase遷移の入口、主要 helper の再export
 - `combatReducer.ts`
   - `EXECUTE_COMMAND` / `TALK_CHOOSE` を含む戦闘行動解決
+- `routeReducer.ts`
+  - `REWARD_CONTINUE` 以降の route/salvage/signal/boss preview/return gate 遷移
+- `routeGraph.ts`
+  - `routeState` と Stage route graph の接続、NAVI候補/briefingの生成
 - `stateRestore.ts`
   - save復元時の sanitize
 - `stateAutoplay.ts`
@@ -77,7 +81,7 @@
 
 ### telemetry変更
 1. `src/telemetry.ts`
-2. `src/app/AppRoot.tsx`（emit 呼び出し点）
+2. `src/app/hooks/useTelemetryEffects.ts`（emit 呼び出し点）
 
 ### 再現調査ログ変更
 1. `src/reproLog.ts`
@@ -85,7 +89,7 @@
 
 ### runtime config / loader変更
 1. `src/app/hooks/useRuntimeConfigEffects.ts`
-2. `src/*Config.ts`（`balanceConfig.ts`, `devilConfig.ts`, `dialogueConfig.ts`, `conversationConfig.ts`）
+2. `src/*Config.ts`（`balanceConfig.ts`, `devilConfig.ts`, `dialogueConfig.ts`, `conversationConfig.ts`, `progressionConfig.ts`, `stageConfig.ts`, `eventConfig.ts`）
 
 ---
 
@@ -104,6 +108,45 @@
 - `public/balance.yaml`
 - loader: `src/balanceConfig.ts`
 - 装備の数値（damage/ammo/hits/softenChance）と Autoplay/Garage Lab の判断閾値もここへ置く
+
+### Stage route / Event pool
+- Stage構成:
+  - エントリ: `public/stages/index.yaml`
+  - include先: `public/stages/stage_1.yaml`
+  - loader: `src/stageConfig.ts`
+- Event pool:
+  - エントリ: `public/events/index.yaml`
+  - include先: `public/events/route_events.yaml`, `public/events/salvage_events.yaml`, `public/events/anomaly_events.yaml`, `public/events/boss_events.yaml`
+  - loader: `src/eventConfig.ts`
+- runtime接続:
+  - load起点: `src/app/hooks/useRuntimeConfigEffects.ts`
+  - State: `src/game/types.ts` の `routeState`
+  - graph helper: `src/app/state/routeGraph.ts`
+  - route遷移: `src/app/state/routeReducer.ts`
+  - Autoplay対応: `src/app/state/stateAutoplay.ts`
+  - restore対応: `src/app/state/stateRestore.ts`
+  - telemetry: `src/app/hooks/useTelemetryEffects.ts` / `src/telemetry.ts`
+- NAVI分岐UI:
+  - 表示カード: `src/app/components/EventPanels.tsx`
+  - コマンドボタン: `src/app/components/command/RouteCommands.tsx`
+  - `AppRoot.tsx` は props/action 結線の最小変更に留める
+
+`routeState` は「現在のStage route graph上の位置」を持つ軽量なRun中状態。`stageRouteId`, `currentNodeId`, `visitedNodeIds`, `currentEventId` を保存し、React側でstage/event本文や分岐条件を直書きせず、loader + helper 経由で表示する。
+
+Event ID命名規則:
+- `snake_case`
+- route event: 進路や状況が分かる短い名詞句（例: `signal_tunnel`, `quiet_shoulder`, `return_gate`）
+- salvage event: 回収対象や危険が分かる名詞句（例: `blueprint_cache`, `ammo_cache`, `split_guardrail`）
+- anomaly event: 信号/解析/交渉寄りの現象名（例: `am_echo`, `ghost_lane`, `archive_ping`）
+- boss event: boss prep / boss route 文脈が分かる名詞句（例: `toll_shadow`, `last_service_area`）
+- `pool` は `<kind>.<stage_id>` を基本にし、boss準備だけ `salvage.boss_prep` のように用途名を使う
+
+Fallback方針:
+- `public/stages` / `public/events` が欠損、またはロード失敗した場合は `stageConfig.ts` / `eventConfig.ts` の builtin fallback を使う
+- Stage graphが有効でない場合、`RouteCommands.tsx` / `EventPanels.tsx` は既存の `Salvage Lane / Signal Lane / Push Forward / Return Gate` 表示へfallbackする
+- restore時に存在しない `stageRouteId` / `currentNodeId` は `stateRestore.ts` で安全なfallbackへ戻す
+- Stage 1以外は、明示的にStage graphを接続するまで既存固定進行にfallbackする
+- event本文や効果説明は `public/events` 側へ置き、Reactへ長文を足さない
 
 ### 装備 / 改造 / Unlock進行
 - 装備・改造IDと基本説明:

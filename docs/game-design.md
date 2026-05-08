@@ -107,7 +107,44 @@ Analyze済み敵は相性が表示され、戦闘判断（ダメージ/交渉効
 
 失敗時は不利状態で接敵（Ambush系ペナルティ）。
 
-## 7. Devil / Encounter
+## 7. Stage Route / Event Pool
+
+Run中のルート進行は、既存の `gamePhase` を保ったまま `routeState` でStage route graph上の位置を持ちます。
+
+`routeState`:
+
+- `stageRouteId`: 現在のStage route graph ID
+- `currentNodeId`: 現在node
+- `visitedNodeIds`: 通過済みnode
+- `currentEventId`: NAVI表示に使うevent ID
+
+データ配置:
+
+- Stage構成: `public/stages/index.yaml` + `public/stages/stage_1.yaml`
+- Event pool: `public/events/index.yaml` + `public/events/*_events.yaml`
+- loader: `src/stageConfig.ts`, `src/eventConfig.ts`
+- graph/helper: `src/app/state/routeGraph.ts`
+- route遷移: `src/app/state/routeReducer.ts`
+- NAVI表示: `src/app/components/EventPanels.tsx`, `src/app/components/command/RouteCommands.tsx`
+
+Stage 1は小さなgraphで、`route_choice` nodeから `salvage / signal / push_forward / return_gate` の候補を提示します。NAVIの情報精度はSignal、`scan_boost`、AI NAVI support/contractで変わり、低Signalではrisk/rewardや本文が一部 `UNKNOWN` になります。
+
+Event追加方針:
+
+- IDは `snake_case`
+- `pool` は `route.stage_1`, `salvage.stage_1`, `anomaly.stage_1` など `<kind>.<stage_id>` を基本にする
+- 本文、tags、effects、routeChoice は `public/events` 側に置く
+- React側にイベント本文や分岐条件を直書きしない
+- 1 poolにつき少数の短文イベントを足し、低リスク/高リスク/解析/交渉/補給の役割を混ぜる
+
+Fallback:
+
+- Stage/Event configが欠損した場合は builtin fallback を使う
+- Stage graphが有効でない場合は既存の固定 route choice 表示に戻る
+- restore時に壊れたnode参照があれば安全な `routeState` に戻す
+- Stage 1以外は、明示接続するまで従来進行を維持する
+
+## 8. Devil / Encounter
 
 現在の敵プロファイル（EncounterId）:
 
@@ -123,7 +160,7 @@ Analyze済み敵は相性が表示され、戦闘判断（ダメージ/交渉効
 
 敵は `HP / temperament / intent / trust / pressure / interest / affinity` を持ちます。
 
-## 8. Garage / Midnight Bay
+## 9. Garage / Midnight Bay
 
 Result後に遷移可能。主機能:
 
@@ -137,7 +174,7 @@ Result後に遷移可能。主機能:
 - Story Log Archive
 - Autoplay Lab
 
-## 8.1 Progression / Unlock
+## 9.1 Progression / Unlock
 
 現行の進行は、装備を大量配布するツリーではなく、Runで「見つけて持ち帰る」軽量unlockです。
 
@@ -174,7 +211,7 @@ Unlock対象:
 - 文言: `public/dialogue.yaml`
 - unlock判定: `src/game/progression.ts`
 
-## 9. Story Progression（軽量）
+## 10. Story Progression（軽量）
 
 StoryState:
 
@@ -185,7 +222,7 @@ StoryState:
 
 Resultで回収ログを表示し、Garageでアーカイブ参照可能。
 
-## 10. Autoplay Lab
+## 11. Autoplay Lab
 
 Garage内で複数Runを自動実行し、バランス検証用集計を出力:
 
@@ -194,7 +231,7 @@ Garage内で複数Runを自動実行し、バランス検証用集計を出力:
 - 平均リソース残量
 - 平均Encounter/Contract/Salvage
 
-## 11. 非スコープ（現状）
+## 12. 非スコープ（現状）
 
 - 長編ADV分岐
 - 永続セーブ（localStorage）
