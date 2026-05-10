@@ -44,6 +44,8 @@ import {
 } from '../../game/runtimeHelpers';
 import { assignTalkPersona } from '../../game/talkRules';
 import { getSupportBacklashChance, getVehicleUpgradeResourceBonuses } from '../../game/vehicleUpgrades';
+import { chooseNextIntent } from '../../game/intentWeights';
+import { getSignalCapacity } from '../../game/signalSystem';
 import { initRouteStateForStage } from './routeGraph';
 
 export const pickRewardChoices = (pool: RewardOption[], count = 3): RewardOption[] => {
@@ -65,14 +67,18 @@ const createInitialStoryState = (): StoryState => ({
 
 export const hasAiNaviContract = (contracts: ContractModule[]) => contracts.some((module) => module.id === 'abandoned_ai_navi');
 
-export const getRunStartResources = (loadout: Loadout, vehicleUpgrades: VehicleUpgradeLevels = defaultVehicleUpgrades) => {
+export const getRunStartResources = (
+  loadout: Loadout,
+  vehicleUpgrades: VehicleUpgradeLevels = defaultVehicleUpgrades,
+  skillLevels = defaultSkillLevels,
+) => {
   const upgradeBonuses = getVehicleUpgradeResourceBonuses(vehicleUpgrades);
   const mainAmmo = getMainGunSpec(loadout.mainGunId).ammo + upgradeBonuses.mainAmmo;
   const seAmmo = getSpecialEquipmentSpec(loadout.specialEquipmentId).ammo + upgradeBonuses.seAmmo;
   return {
     fuel: getBalanceConfig().resources.baseFuel + upgradeBonuses.fuel,
     armor: getBalanceConfig().resources.baseArmor + upgradeBonuses.armor,
-    signal: getBalanceConfig().resources.baseSignal,
+    signal: getSignalCapacity(skillLevels),
     mainAmmo,
     maxMainAmmo: mainAmmo,
     seAmmo,
@@ -171,18 +177,7 @@ export const getScanChance = (state: State, kind: ApproachKind, lineup: Encounte
 };
 
 export const nextIntent = (profile?: EncounterId): Intent => {
-  const roll = Math.random();
-  if (profile === 'toll_gate_saint') {
-    if (roll < 0.25) return 'attack';
-    if (roll < 0.55) return 'bargain';
-    if (roll < 0.85) return 'guard';
-    return 'curse';
-  }
-  if (roll < 0.4) return 'attack';
-  if (roll < 0.62) return 'curse';
-  if (roll < 0.8) return 'bargain';
-  if (roll < 0.95) return 'guard';
-  return 'flee';
+  return chooseNextIntent(profile);
 };
 
 const getIntelThreshold = (profile: EncounterId) => (profile === 'toll_gate_saint' ? 170 : 100);
@@ -491,7 +486,7 @@ export const initState = (): State => {
   const saved = loadSaveData();
   const unlocks = saved.unlocks;
   const selectedLoadout = sanitizeLoadoutForUnlocks(defaultLoadout, unlocks);
-  const start = getRunStartResources(selectedLoadout, defaultVehicleUpgrades);
+  const start = getRunStartResources(selectedLoadout, defaultVehicleUpgrades, defaultSkillLevels);
   return {
     stage: 1,
     stageCount: 3,
@@ -541,7 +536,7 @@ export const getSkillCost = (currentLevel: number) => currentLevel + 1;
 export const getVehicleUpgradeCost = (currentLevel: number) => 2 + currentLevel;
 
 export const initRunWithLoadout = (state: State, logsPrefix: string[] = []): State => {
-  const start = getRunStartResources(state.selectedLoadout, state.vehicleUpgrades);
+  const start = getRunStartResources(state.selectedLoadout, state.vehicleUpgrades, state.skillLevels);
   const routeState = initRouteStateForStage(state.stage);
   const lineup = pickEncounterLineup('enc1', state.stage);
   const scanChance = getScanChance({ ...state, signal: start.signal }, 'enc1', lineup);
@@ -606,7 +601,7 @@ export const initRunWithLoadout = (state: State, logsPrefix: string[] = []): Sta
 export const applyRewardOption = (state: State, option: RewardOption) => ({
   fuel: state.fuel + (option.fuel ?? 0),
   armor: state.armor + (option.armor ?? 0),
-  signal: state.signal + (option.signal ?? 0),
+  signal: Math.min(getSignalCapacity(state.skillLevels), state.signal + (option.signal ?? 0)),
   mainAmmo: Math.min(state.maxMainAmmo, state.mainAmmo + (option.mainAmmo ?? 0)),
   seAmmo: Math.min(state.maxSeAmmo, state.seAmmo + (option.seAmmo ?? 0)),
 });

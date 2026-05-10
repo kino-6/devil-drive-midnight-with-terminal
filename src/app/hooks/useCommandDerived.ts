@@ -30,6 +30,8 @@ export const useCommandDerived = ({
 }: UseCommandDerivedArgs): UseCommandDerivedResult => {
   const aliveEnemies = state.encounter.enemies.filter(isAlive);
   const selectedEnemyAlive = !!selectedEnemy && isAlive(selectedEnemy);
+  const selectedEnemyReveal = selectedEnemy ? getEnemyRevealState(selectedEnemy, state.encounter.analyzedEnemyIds) : undefined;
+  const selectedEnemyKnown = !!selectedEnemyReveal?.showName;
   const contractEnabled = !!selectedEnemy && selectedEnemy.contractWindow && selectedEnemy.contractable;
 
   const commandAffinityTagMap: Partial<Record<CommandId, string>> = selectedEnemyAnalyzed && selectedEnemy
@@ -43,7 +45,7 @@ export const useCommandDerived = ({
     sub_gun: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && aliveEnemies.length > 0,
     se_harpoon: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && selectedEnemyAlive && state.seAmmo >= selectedSE.seAmmoCost,
     analyze: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && selectedEnemyAlive && state.signal > 0,
-    talk: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && selectedEnemyAlive,
+    talk: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && selectedEnemyAlive && selectedEnemyKnown,
     contract: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && contractEnabled,
     ram: (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && selectedEnemyAlive && state.armor > 0,
     guard: state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter',
@@ -62,6 +64,7 @@ export const useCommandDerived = ({
         affinity: getAffinityFor('ballistic'),
         variance: damageVarianceByCommand.main_gun,
         flatReduction: shield,
+        armored: !!target?.armored,
       });
       return `${roll.min}-${roll.max}`;
     }
@@ -90,6 +93,7 @@ export const useCommandDerived = ({
       affinity: getAffinityFor('impact'),
       variance: damageVarianceByCommand.ram,
       flatReduction: shield,
+      armored: !!target?.armored,
     });
     return `${roll.min}-${roll.max}`;
   };

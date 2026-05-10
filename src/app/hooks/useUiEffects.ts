@@ -1,11 +1,13 @@
-import { useEffect, useState, type Dispatch, type RefObject, type SetStateAction } from 'react';
+import { useEffect, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from 'react';
 import { commandOptions } from '../../game/catalogs';
-import type { Action, GamePhase, HitFxTone, State } from '../../game/types';
+import { collectCombatFxCues } from '../../game/combatFx';
+import type { Action, CombatFxCue, GamePhase, HitFxTone, State } from '../../game/types';
 import { isAlive } from '../../game/runtimeHelpers';
 
 type UseUiEffectsParams = {
   state: State;
   dispatch: Dispatch<Action>;
+  playCombatEffects: boolean;
   showGarageLaunchConfirm: boolean;
   setShowGarageLaunchConfirm: Dispatch<SetStateAction<boolean>>;
   terminalLogRef: RefObject<HTMLUListElement | null>;
@@ -16,6 +18,7 @@ type UseUiEffectsParams = {
 export const useUiEffects = ({
   state,
   dispatch,
+  playCombatEffects,
   showGarageLaunchConfirm,
   setShowGarageLaunchConfirm,
   terminalLogRef,
@@ -24,6 +27,10 @@ export const useUiEffects = ({
 }: UseUiEffectsParams) => {
   const [hitFxTone, setHitFxTone] = useState<HitFxTone | null>(null);
   const [hitFxPulse, setHitFxPulse] = useState(0);
+  const [combatFxCue, setCombatFxCue] = useState<CombatFxCue | null>(null);
+  const [combatFxPulse, setCombatFxPulse] = useState(0);
+  const [combatFxQueue, setCombatFxQueue] = useState<CombatFxCue[]>([]);
+  const previousLogLengthRef = useRef(state.logs.length);
 
   useEffect(() => {
     if (state.gamePhase !== 'garage' && showGarageLaunchConfirm) {
@@ -32,6 +39,10 @@ export const useUiEffects = ({
   }, [state.gamePhase, showGarageLaunchConfirm, setShowGarageLaunchConfirm]);
 
   useEffect(() => {
+    if (!playCombatEffects) {
+      setHitFxTone(null);
+      return;
+    }
     const log = state.logs[state.logs.length - 1] ?? '';
     let nextTone: HitFxTone | null = null;
     if (log.includes('WEAK POINT DETECTED')) nextTone = 'weak';
@@ -48,7 +59,37 @@ export const useUiEffects = ({
     setHitFxPulse((prev) => prev + 1);
     const timer = setTimeout(() => setHitFxTone(null), 420);
     return () => clearTimeout(timer);
-  }, [state.logs]);
+  }, [playCombatEffects, state.logs]);
+
+  useEffect(() => {
+    const previousLength = previousLogLengthRef.current;
+    const nextLogs = state.logs.length >= previousLength ? state.logs.slice(previousLength) : state.logs;
+    previousLogLengthRef.current = state.logs.length;
+    if (!playCombatEffects) {
+      setCombatFxQueue([]);
+      setCombatFxCue(null);
+      return;
+    }
+    if (nextLogs.length === 0) return;
+    const cues = collectCombatFxCues(nextLogs);
+    if (cues.length === 0) return;
+    setCombatFxQueue((current) => [...current, ...cues]);
+  }, [playCombatEffects, state.logs]);
+
+  useEffect(() => {
+    if (!playCombatEffects) return;
+    if (combatFxCue || combatFxQueue.length === 0) return;
+    const [nextCue, ...remaining] = combatFxQueue;
+    setCombatFxQueue(remaining);
+    setCombatFxCue(nextCue);
+    setCombatFxPulse((prev) => prev + 1);
+  }, [combatFxCue, combatFxQueue, playCombatEffects]);
+
+  useEffect(() => {
+    if (!combatFxCue) return;
+    const timer = setTimeout(() => setCombatFxCue(null), 860);
+    return () => clearTimeout(timer);
+  }, [combatFxCue, combatFxPulse]);
 
   useEffect(() => {
     if (!terminalLogRef.current) return;
@@ -102,6 +143,8 @@ export const useUiEffects = ({
   return {
     hitFxTone,
     hitFxPulse,
+    combatFxCue,
+    combatFxPulse,
   };
 };
 

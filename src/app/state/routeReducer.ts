@@ -3,6 +3,8 @@ import { getMoeLine } from '../../game/moeDialogue';
 import { emergencyRewardCatalog, rewardCatalog } from '../../game/catalogs';
 import { appendSupportDaemonDisconnectLogs } from '../../game/runtimeHelpers';
 import { applyRunUnlockRewards, formatUnlockRewardLog } from '../../game/progression';
+import { buildSituationalSalvageChoices } from '../../game/salvageChoices';
+import { getSignalCapacity, getSignalLaneGain } from '../../game/signalSystem';
 import { getSupportBacklashChance } from '../../game/vehicleUpgrades';
 import { getRareSalvageLog, getRareSalvageMoeLine, isRareSalvageReward, maybeAddRareSalvageReward } from '../../game/rareEvents';
 import { getEventById, getEventsByPool } from '../../eventConfig';
@@ -86,6 +88,9 @@ const prioritizeSalvageEventReward = (
   if (!eventReward) return rewards;
   return [eventReward, ...rewards.slice(0, Math.max(0, rewards.length - 1))];
 };
+
+const prepareSalvageChoices = (state: State, rewards: RewardOption[], eventId: string | undefined, catalog: RewardOption[]) =>
+  buildSituationalSalvageChoices(state, prioritizeSalvageEventReward(rewards, eventId, catalog), eventId);
 
 const backtrackToReturnCheckpoint = (state: State, resultType: ResultType): State => {
   const checkpointId = state.routeState?.lastReturnCheckpointId;
@@ -172,7 +177,7 @@ const enterRouteNode = (state: State, nodeId: string): State => {
       ...graphState,
       gamePhase: 'salvage',
       rewardTarget: toBoss ? 'boss' : 'encounter2',
-      rewardOptions: prioritizeSalvageEventReward(pickRewardChoices(rewardPool), graphState.routeState?.currentEventId, rewardPool),
+      rewardOptions: prepareSalvageChoices(graphState, pickRewardChoices(rewardPool), graphState.routeState?.currentEventId, rewardPool),
       logs: [...graphState.logs, `> ROUTE NODE: ${node.label.toUpperCase()}`],
       moeLine: toBoss
         ? getMoeLine('moe.run.salvage_to_boss', '主砲弾か装甲を足してから行ける。選んで。', undefined, 'serious')
@@ -289,21 +294,29 @@ export function reduceRoute(state: State, action: Action): State {
         ...graphState,
         gamePhase: 'salvage',
         rewardTarget: 'encounter2',
-        rewardOptions: rewards,
+        rewardOptions: buildSituationalSalvageChoices(graphState, rewards, graphState.routeState?.currentEventId),
         logs: [...graphState.logs, '> SALVAGE LANE SELECTED'],
         moeLine: getMoeLine('moe.run.salvage_ready', '補給反応あり。ひとつだけ拾える。'),
       };
     }
     if (action.lane === 'signal') {
       const graphState = moveRouteStateToNode(state, getRouteChoiceTargetNodeId(state, action.lane) ?? 'signal_tunnel');
-      const signalGain = state.selectedLoadout.contractSupportId === 'radio_voice' ? 2 : 1;
+      const supportSignalBoost = state.selectedLoadout.contractSupportId === 'radio_voice' ? 1 : 0;
+      const signalGain = getSignalLaneGain(state.skillLevels, supportSignalBoost);
+      const nextSignal = Math.min(getSignalCapacity(state.skillLevels), state.signal + signalGain);
+      const actualSignalGain = nextSignal - state.signal;
       const forecastGain = state.selectedLoadout.contractSupportId === 'radio_voice' ? 2 : 1;
-      const signalLogs = [...graphState.logs, '> SIGNAL LANE SELECTED', `> SIGNAL +${signalGain}`];
+      const signalLogs = [
+        ...graphState.logs,
+        '> SIGNAL LANE SELECTED',
+        actualSignalGain > 0 ? `> SIGNAL +${actualSignalGain}` : '> SIGNAL CAP REACHED',
+        ...(state.skillLevels.signal_tuning > 0 ? [`> M.O.E. SIGNAL TUNING +${state.skillLevels.signal_tuning}`] : []),
+      ];
       if (state.selectedLoadout.contractSupportId === 'radio_voice' && Math.random() < getSupportBacklashChance(0.4, state.vehicleUpgrades)) signalLogs.push('> WARNING: AM 666.0 FALSE CARRIER');
       return {
         ...graphState,
         gamePhase: 'signal',
-        signal: state.signal + signalGain,
+        signal: nextSignal,
         tempForecastBoost: forecastGain,
         logs: signalLogs,
         moeLine: getMoeLine('moe.run.route_signal', '信号帯がクリアになった。次の予測が少し長く見える。', undefined, 'proud'),
@@ -346,7 +359,12 @@ export function reduceRoute(state: State, action: Action): State {
     const graphState = moveRouteStateToNode(state, getRouteNextNodeId(state) ?? (toBoss ? 'boss_contact' : 'encounter_2'));
     const rewardedRoute = applySilentShapeBacklash(
       state,
-      [...graphState.logs, `> SALVAGE APPLIED: ${selected.label.toUpperCase()}`, `> ${toBoss ? 'BOSS CONTACT' : 'ENCOUNTER 2: SIGNAL CONTACT'}`],
+      [
+        ...graphState.logs,
+        `> SALVAGE APPLIED: ${selected.label.toUpperCase()}`,
+        ...(selected.salvageContext ? [`> SALVAGE NOTE: ${selected.salvageContext}`] : []),
+        `> ${toBoss ? 'BOSS CONTACT' : 'ENCOUNTER 2: SIGNAL CONTACT'}`,
+      ],
       patched.fuel,
     );
     return moveToApproach({
@@ -445,7 +463,7 @@ export function reduceRoute(state: State, action: Action): State {
         ...graphState,
         gamePhase: 'salvage',
         rewardTarget: 'boss',
-        rewardOptions: prioritizeSalvageEventReward(pickRewardChoices(emergencyPool), graphState.routeState?.currentEventId, emergencyPool),
+        rewardOptions: prepareSalvageChoices(graphState, pickRewardChoices(emergencyPool), graphState.routeState?.currentEventId, emergencyPool),
         logs: [...graphState.logs, '> EMERGENCY SALVAGE OPEN'],
         moeLine: getMoeLine('moe.run.salvage_to_boss', '主砲弾か装甲を足してから行ける。選んで。', undefined, 'serious'),
       };

@@ -31,13 +31,14 @@ type GarageGrowthSectionProps = {
   onRunAutoplay: () => void;
 };
 
-const skillOrder: UpgradeId[] = ['ram_control', 'gunnery', 'scan_boost', 'translation_assist'];
+const skillOrder: UpgradeId[] = ['ram_control', 'gunnery', 'scan_boost', 'translation_assist', 'signal_tuning'];
 const vehicleUpgradeOrder: VehicleUpgradeId[] = ['fuel_tank', 'armor_plating', 'ammo_rack', 'se_rack', 'signal_antenna', 'noise_filter', 'daemon_bus'];
 const skillEffectText: Record<UpgradeId, string> = {
   ram_control: 'Approach ram stability',
   gunnery: 'Main Gun damage stability',
   scan_boost: 'NAVI scan chance',
   translation_assist: 'Talk success support',
+  signal_tuning: 'Start Signal +1 / Signal Lane +1',
 };
 const vehicleUpgradeEffectText: Record<VehicleUpgradeId, string> = {
   fuel_tank: 'Start Fuel +1',
@@ -121,7 +122,7 @@ export const GarageGrowthSection = ({
       <summary>{`M.O.E. SKILL (SYNC)${canUpdateMoeSkill ? ' / UPDATE READY' : ''}`}</summary>
       <div className="garage-fold__body">
         <div className="garage-select-grid">
-          {skillOrder.filter((skillId) => skillId === 'scan_boost' || skillId === 'translation_assist').map((skillId) => {
+          {skillOrder.filter((skillId) => skillId === 'scan_boost' || skillId === 'translation_assist' || skillId === 'signal_tuning').map((skillId) => {
             const level = state.skillLevels[skillId];
             const cost = getSkillCost(level);
             const canBuy = state.moeSyncBank >= cost;

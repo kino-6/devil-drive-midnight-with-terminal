@@ -26,6 +26,7 @@ import {
   pickEncounterLineup,
 } from './encounterFactory';
 import { getInitialUnlocks, sanitizeLoadoutForUnlocks } from './progression';
+import { getSignalCapacity } from './signalSystem';
 import { getSupportBacklashChance } from './vehicleUpgrades';
 
 export {
@@ -323,7 +324,7 @@ export const accumulateSummary = (summary: RunSummary, report: EncounterReport):
 export const applyRewardOption = (state: State, option: RewardOption) => ({
   fuel: state.fuel + (option.fuel ?? 0),
   armor: state.armor + (option.armor ?? 0),
-  signal: state.signal + (option.signal ?? 0),
+  signal: Math.min(getSignalCapacity(state.skillLevels), state.signal + (option.signal ?? 0)),
   mainAmmo: Math.min(state.maxMainAmmo, state.mainAmmo + (option.mainAmmo ?? 0)),
   seAmmo: Math.min(state.maxSeAmmo, state.seAmmo + (option.seAmmo ?? 0)),
 });
@@ -331,7 +332,7 @@ export const applyRewardOption = (state: State, option: RewardOption) => ({
 export const initState = (): State => {
   const unlocks = getInitialUnlocks();
   const selectedLoadout = sanitizeLoadoutForUnlocks(defaultLoadout, unlocks);
-  const start = getRunStartResources(selectedLoadout, defaultVehicleUpgrades);
+  const start = getRunStartResources(selectedLoadout, defaultVehicleUpgrades, defaultSkillLevels);
   return {
     stage: 1,
     stageCount: 3,
@@ -405,7 +406,7 @@ export const getNarrativeMoeLine = (state: State): string => {
 
 
 export const initRunWithLoadout = (state: State, logsPrefix: string[] = []): State => {
-  const start = getRunStartResources(state.selectedLoadout, state.vehicleUpgrades);
+  const start = getRunStartResources(state.selectedLoadout, state.vehicleUpgrades, state.skillLevels);
   const lineup = pickEncounterLineup('enc1', state.stage);
   const scanChance = getScanChance({ ...state, signal: start.signal }, 'enc1', lineup);
   const scanSuccess = Math.random() * 100 < scanChance;

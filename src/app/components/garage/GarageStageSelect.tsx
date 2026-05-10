@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { getMoeLine } from '../../../game/moeDialogue';
 import type { StageProfile } from './types';
 
@@ -27,8 +28,13 @@ export const GarageStageSelect = ({
   onGarageEnterNightLoop,
   onGarageLaunchConfirm,
   onGarageLaunchCancel,
-}: GarageStageSelectProps) => (
-  <>
+}: GarageStageSelectProps) => {
+  const sortieConfirmLine = useMemo(
+    () => getMoeLine('moe.garage.sortie_confirm', '準備完了なら、出る。まだならここで調整して。', undefined, 'soft'),
+    [showGarageLaunchConfirm],
+  );
+
+  return <>
     <div className="command-window">
       <strong>STAGE SELECT</strong>
       <div className="garage-select-grid">
@@ -56,7 +62,7 @@ export const GarageStageSelect = ({
         : <>
           <div className="command-window">
             <strong>Sortie Confirmation</strong>
-            <p>M.O.E.: 「{getMoeLine('moe.garage.sortie_confirm', '準備完了なら、出る。まだならここで調整して。', undefined, 'soft')}」</p>
+            <p>M.O.E.: 「{sortieConfirmLine}」</p>
             <details className="garage-fold">
               <summary>STARTING RESOURCES PREVIEW</summary>
               <div className="garage-fold__body">
@@ -68,5 +74,5 @@ export const GarageStageSelect = ({
           <button className="command-button command-button--system" onClick={onGarageLaunchCancel}>KEEP TUNING</button>
         </>}
     </div>
-  </>
-);
+  </>;
+};

@@ -1,4 +1,4 @@
-import { contractModules, garageMainGunOrder, garageSEOrder, garageSubGunOrder } from '../../game/catalogs';
+import { contractModules, defaultSkillLevels, garageMainGunOrder, garageSEOrder, garageSubGunOrder } from '../../game/catalogs';
 import { isEncounterId } from '../../game/encounterIds';
 import { normalizeUnlockState, sanitizeLoadoutForUnlocks } from '../../game/progression';
 import { limitStateLogs } from '../../runtimeLimits';
@@ -96,6 +96,13 @@ export const sanitizeRestoredStateWithDeps = (raw: unknown, fallback: State, dep
       : 'curious';
 
   const unlocks = normalizeUnlockState(source.unlocks, fallback.unlocks);
+  const skillLevelsRaw = asRec(source.skillLevels);
+  const skillLevels = Object.fromEntries(
+    Object.entries(defaultSkillLevels).map(([skillId, fallbackLevel]) => [
+      skillId,
+      Math.max(0, asNum(skillLevelsRaw[skillId], fallback.skillLevels[skillId as keyof typeof defaultSkillLevels] ?? fallbackLevel)),
+    ]),
+  ) as State['skillLevels'];
   const selectedLoadoutRaw = asRec(source.selectedLoadout);
   const selectedLoadout: Loadout = sanitizeLoadoutForUnlocks({
     mainGunId: normalizeMainGun(selectedLoadoutRaw.mainGunId),
@@ -163,6 +170,7 @@ export const sanitizeRestoredStateWithDeps = (raw: unknown, fallback: State, dep
       ? limitStateLogs(source.logs.filter((line): line is string => typeof line === 'string'))
       : fallback.logs,
     selectedLoadout,
+    skillLevels,
     unlocks,
     routeState: normalizeRouteState(source.routeState),
     activeSupportDaemon,

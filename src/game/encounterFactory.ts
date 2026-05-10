@@ -10,9 +10,12 @@ import type {
   ForecastMap,
   Intent,
   Loadout,
+  SkillLevels,
   VehicleUpgradeLevels,
 } from './types';
-import { defaultVehicleUpgrades, mainGunCatalog, specialEquipmentCatalog } from './catalogs';
+import { defaultSkillLevels, defaultVehicleUpgrades, mainGunCatalog, specialEquipmentCatalog } from './catalogs';
+import { chooseNextIntent } from './intentWeights';
+import { getSignalCapacity } from './signalSystem';
 import { assignTalkPersona } from './talkRules';
 import { getVehicleUpgradeResourceBonuses } from './vehicleUpgrades';
 
@@ -22,18 +25,7 @@ const devilTemplates = () => getDevilConfig().devilTemplates;
 const hasAiNaviContract = (contracts: ContractModule[]) => contracts.some((module) => module.id === 'abandoned_ai_navi');
 
 export const nextIntent = (profile?: EncounterId): Intent => {
-  const roll = Math.random();
-  if (profile === 'toll_gate_saint') {
-    if (roll < 0.25) return 'attack';
-    if (roll < 0.55) return 'bargain';
-    if (roll < 0.85) return 'guard';
-    return 'curse';
-  }
-  if (roll < 0.4) return 'attack';
-  if (roll < 0.62) return 'curse';
-  if (roll < 0.8) return 'bargain';
-  if (roll < 0.95) return 'guard';
-  return 'flee';
+  return chooseNextIntent(profile);
 };
 
 const lineupByKind = (kind: ApproachKind): EncounterId[] =>
@@ -184,6 +176,7 @@ const getSpecialEquipmentAmmo = (id: Loadout['specialEquipmentId']) => {
 export const getRunStartResources = (
   loadout: Loadout,
   vehicleUpgrades: VehicleUpgradeLevels = defaultVehicleUpgrades,
+  skillLevels: SkillLevels = defaultSkillLevels,
 ) => {
   const upgradeBonuses = getVehicleUpgradeResourceBonuses(vehicleUpgrades);
   const mainAmmo = getMainGunAmmo(loadout.mainGunId) + upgradeBonuses.mainAmmo;
@@ -191,7 +184,7 @@ export const getRunStartResources = (
   return {
     fuel: getBalanceConfig().resources.baseFuel + upgradeBonuses.fuel,
     armor: getBalanceConfig().resources.baseArmor + upgradeBonuses.armor,
-    signal: getBalanceConfig().resources.baseSignal,
+    signal: getSignalCapacity(skillLevels),
     mainAmmo,
     maxMainAmmo: mainAmmo,
     seAmmo,

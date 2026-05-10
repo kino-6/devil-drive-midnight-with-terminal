@@ -1,5 +1,6 @@
 import { getNaviRouteCandidates, getNaviRouteIntelStatus } from '../../state/routeGraph';
 import { getEventById } from '../../../eventConfig';
+import { formatRouteForecast } from '../routePreviewHelpers';
 import type { RewardOption, State } from '../../../game/types';
 import type { SignalChoice } from './types';
 
@@ -64,11 +65,21 @@ export const RouteCommands = ({
           <button
             key={`${candidate.nodeId}-${candidate.choiceId}`}
             className={candidate.choiceId === 'return_gate' ? 'command-button command-button--danger' : 'command-button command-button--route'}
-            onMouseEnter={() => setHoveredHint(candidate.body ?? `${candidate.title} / ${candidate.forecast.join(' > ')} / risk: ${candidate.risk} / reward: ${candidate.reward}`)}
+            onMouseEnter={() => setHoveredHint(candidate.body ?? `${candidate.title} / ${candidate.note} / risk: ${candidate.risk} / reward: ${candidate.reward}`)}
             onMouseLeave={clearHoveredHint}
             onClick={() => onRouteChoice(candidate.choiceId)}
           >
-            {candidate.title} <span>{candidate.forecast.join(' > ')} / BOSS IN {candidate.bossSteps ?? '--'}</span>
+            <span className="command-button__label-stack">
+              <strong>{candidate.title}</strong>
+              <small>{candidate.tags}</small>
+              <small>Risk: {candidate.risk}</small>
+              <small>Reward: {candidate.reward}</small>
+              {candidate.resourceWarning && <small className="command-button__warning">{candidate.resourceWarning}</small>}
+            </span>
+            <span className="command-button__meta-stack">
+              <strong>{formatRouteForecast(candidate.forecast)}</strong>
+              <small>BOSS {candidate.bossSteps ?? '--'}</small>
+            </span>
           </button>
         ))}
       </div>;
@@ -87,16 +98,24 @@ export const RouteCommands = ({
     return <div className="command-window command-list">
       <div className="command-alert command-alert--salvage">
         <strong>{salvageEvent?.title ?? 'SALVAGE WINDOW'}</strong>
-        <span>{salvageEvent?.effects ?? 'One safe extraction before the lane collapses.'}</span>
+        <span>{salvageEvent?.body ?? 'The loop opens a short supply window. Only one safe extraction fits before the lane collapses.'}</span>
+        <small>{salvageEvent?.effects ?? 'One safe extraction before the lane collapses.'}</small>
       </div>
       {rewardOptions.map((option: RewardOption) => <button
         key={option.id}
-        className="command-button command-button--route"
-        onMouseEnter={() => setHoveredHint(`回収候補: ${option.label} / ${option.detail}`)}
+        className={`command-button command-button--route ${option.salvagePriority ? `command-button--salvage-${option.salvagePriority}` : ''}`}
+        onMouseEnter={() => setHoveredHint(`回収候補: ${option.label} / ${option.detail}${option.salvageContext ? ` / ${option.salvageContext}` : ''}`)}
         onMouseLeave={clearHoveredHint}
         onClick={() => onSalvagePick(option.id)}
       >
-        {option.label} <span>{option.detail}</span>
+        <span className="command-button__label-stack">
+          <strong>{option.label}</strong>
+          {option.salvageContext && <small>{option.salvageContext}</small>}
+        </span>
+        <span className="command-button__meta-stack">
+          <strong>{option.detail}</strong>
+          {option.salvageConsequence && <small>{option.salvageConsequence}</small>}
+        </span>
       </button>)}
     </div>;
   }

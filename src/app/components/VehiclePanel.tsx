@@ -1,12 +1,12 @@
 import { ResourceMeter } from '../../components/DashboardWidgets';
 import { AssetFigure } from '../../components/EncounterVisuals';
 import { contractLabels } from '../../game/catalogs';
+import { resourceDescriptions } from '../../game/resourceGlossary';
 import { getSupportDaemonStability } from '../../game/runtimeHelpers';
 import type { State } from '../../game/types';
 
 type VehiclePanelProps = {
   playerAsset?: string;
-  speed: number;
   state: State;
   dashboardFuelMax: number;
   dashboardArmorMax: number;
@@ -19,7 +19,6 @@ type VehiclePanelProps = {
 
 export const VehiclePanel = ({
   playerAsset,
-  speed,
   state,
   dashboardFuelMax,
   dashboardArmorMax,
@@ -41,14 +40,13 @@ export const VehiclePanel = ({
         />
         VEHICLE DASHBOARD
       </span>
-      <small>SPD {String(speed).padStart(3, '0')} km/h</small>
     </div>
     <div className="vehicle-panel__meters">
-      <ResourceMeter label="Fuel" value={state.fuel} max={dashboardFuelMax} tone="fuel" />
-      <ResourceMeter label="Armor" value={state.armor} max={dashboardArmorMax} tone="armor" />
-      <ResourceMeter label="Signal" value={state.signal} max={dashboardSignalMax} tone="signal" />
-      <ResourceMeter label="Main Ammo" value={state.mainAmmo} max={state.maxMainAmmo} tone="ammo" />
-      <ResourceMeter label="S-E Ammo" value={state.seAmmo} max={state.maxSeAmmo} tone="seammo" />
+      <ResourceMeter label="Fuel" value={state.fuel} max={dashboardFuelMax} tone="fuel" description={resourceDescriptions.fuel} />
+      <ResourceMeter label="Armor" value={state.armor} max={dashboardArmorMax} tone="armor" description={resourceDescriptions.armor} />
+      <ResourceMeter label="Signal" value={state.signal} max={dashboardSignalMax} tone="signal" description={resourceDescriptions.signal} />
+      <ResourceMeter label="Main Ammo" value={state.mainAmmo} max={state.maxMainAmmo} tone="ammo" description={resourceDescriptions.mainAmmo} />
+      <ResourceMeter label="S-E Ammo" value={state.seAmmo} max={state.maxSeAmmo} tone="seammo" description={resourceDescriptions.seAmmo} />
     </div>
     <div className="contract-slots">
       <div className="panel-title panel-title--compact">

@@ -1,5 +1,8 @@
 import { bossIntel, routeIntelCatalog, routeScenarioIdMap, storyLogById } from '../../game/catalogs';
+import { WIPEOUT_CARRYBACK_RATE, isWipeoutCarryback } from '../../game/carryback';
 import { getMoeLine } from '../../game/moeDialogue';
+import { getReturnDecisionStatus } from '../../game/returnDecision';
+import { getDialogueLine } from '../../dialogueConfig';
 import { hasAiNaviContract } from '../state/stateReducer';
 import { isAlive } from '../../game/runtimeHelpers';
 import { getRouteEventScenario } from '../../scenario/scenarioLoader';
@@ -24,9 +27,27 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
   const naviRouteCandidates = state.gamePhase === 'route_choice' ? getNaviRouteCandidates(state) : [];
   const naviRouteIntelStatus = state.gamePhase === 'route_choice' ? getNaviRouteIntelStatus(state) : undefined;
   const salvageEvent = state.gamePhase === 'salvage' ? getEventById(state.routeState?.currentEventId) : undefined;
+  const returnStatus = getReturnDecisionStatus(state);
+  const wipeoutCarryback = isWipeoutCarryback(state);
+  const wipeoutCarrybackPercent = Math.round(WIPEOUT_CARRYBACK_RATE * 100);
 
   return (
     <>
+      {returnStatus.visible && <section className={`event-card event-card--return-status event-card--return-${returnStatus.tone}`}>
+        <div className="event-header">
+          <div className="event-kicker">RETURN STATUS</div>
+          <span className={`event-chip ${returnStatus.tone === 'risk' ? 'event-chip--danger' : 'event-chip--route'}`}>
+            {returnStatus.actionLabel}
+          </span>
+        </div>
+        <div className="negotiation-grid">
+          <p><span>Return Point</span><strong>{returnStatus.checkpointLabel.replace('Return Point: ', '').toUpperCase()}</strong></p>
+          <p><span>Extract</span><strong>{returnStatus.actionLabel}</strong></p>
+        </div>
+        <p>{returnStatus.detail}</p>
+        <p>M.O.E.: 「{getDialogueLine(returnStatus.moeKey, returnStatus.moeFallback)}」</p>
+      </section>}
+
       {state.gamePhase === 'route_choice' && <section className="event-card">
         <div className="event-header">
           <div className="event-kicker">NIGHT LOOP ROUTE</div>
@@ -49,6 +70,7 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
               <small>tags: {candidate.tags}</small>
               <small>route: {candidate.forecast.join(' > ')} / boss: {candidate.bossSteps ?? '--'} steps</small>
               <small>risk: {candidate.risk} / reward: {candidate.reward}</small>
+              {candidate.resourceWarning && <small className="next-node__warning">{candidate.resourceWarning}</small>}
               {candidate.body && <small>{candidate.body}</small>}
               {candidate.effects && <small>effects: {candidate.effects}</small>}
             </div>)}
@@ -86,6 +108,13 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
             <strong>Current need</strong>
             <small>Fuel {state.fuel} / Armor {state.armor} / Signal {state.signal} / Main {state.mainAmmo} / S-E {state.seAmmo}</small>
           </div>
+          {state.rewardOptions.map((option) => (
+            <div key={`salvage-preview-${option.id}`} className="next-node">
+              <span>{option.salvagePriority === 'critical' ? '!' : option.salvagePriority === 'event' ? '◎' : '△'}</span>
+              <strong>{option.label}</strong>
+              <small>{option.salvageContext ?? option.detail}</small>
+            </div>
+          ))}
         </div>
       </section>}
 
@@ -172,6 +201,7 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
           <span className="event-chip event-chip--route">{state.routeState?.returnIntent === 'backtracking' ? 'BACKTRACK COMPLETE' : 'LOCK ACQUIRED'}</span>
         </div>
         <p>{state.routeState?.returnIntent === 'backtracking' ? 'Return checkpoint reacquired. Safe extract is available.' : 'RETURN GATE LOCK ACQUIRED'}</p>
+        <p>M.O.E.: 「{state.moeLine}」</p>
         <div className="negotiation-grid">
           <p><span>Fuel</span><strong>{state.fuel}</strong></p>
           <p><span>Armor</span><strong>{state.armor}</strong></p>
@@ -202,6 +232,14 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
           <p>次Run前に Garage で成長・改装できます。</p>
           <p>見込み獲得: Driver XP +{runGrowth.driverXp} / M.O.E. Sync +{runGrowth.moeSync} / Credit +{runGrowth.salvageCreditGain}</p>
         </div>
+        {wipeoutCarryback && <div className="command-window command-window--danger">
+          <div className="panel-title panel-title--compact">
+            <span>WIPEOUT CARRYBACK</span>
+            <small>{wipeoutCarrybackPercent}% RECOVERED</small>
+          </div>
+          <p>全損時の持ち帰り量: Driver XP +{runGrowth.driverXp} / M.O.E. Sync +{runGrowth.moeSync} / Credit +{runGrowth.salvageCreditGain}</p>
+          <p>表示値は持ち帰り補正後です。帰還点からExtractできれば、通常どおり全量を確保できます。</p>
+        </div>}
         <div className="command-window">
           <div className="panel-title panel-title--compact">
             <span>RECOVERED LOG</span>

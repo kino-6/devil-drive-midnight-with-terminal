@@ -15,10 +15,12 @@ export type NaviRouteCandidate = {
   tags: string;
   risk: string;
   reward: string;
+  note: string;
   forecast: string[];
   bossSteps?: number;
   effects?: string;
   eventId?: string;
+  resourceWarning?: string;
   intelLevel: NaviIntelLevel;
 };
 
@@ -118,18 +120,18 @@ const isRouteLaneChoice = (value: string): value is RouteLaneChoice =>
 const lowSignalRouteHints: Record<RouteLaneChoice, { tags: string; risk: string; reward: string }> = {
   salvage: {
     tags: 'supply / repair',
-    risk: 'armor?',
-    reward: 'fuel / ammo?',
+    risk: 'minor route risk',
+    reward: 'resource pick',
   },
   signal: {
     tags: 'signal / analyze',
-    risk: 'signal?',
-    reward: 'intel?',
+    risk: 'noise exposure',
+    reward: 'forecast boost',
   },
   push_forward: {
     tags: 'contact / speed',
-    risk: 'armor!',
-    reward: 'progress+',
+    risk: 'contact risk',
+    reward: 'boss closer',
   },
   return_gate: {
     tags: 'extract / safe',
@@ -142,6 +144,52 @@ const getNaviIntelScore = (state: State) => {
   const supportBonus = state.selectedLoadout.contractSupportId === 'abandoned_ai_navi' ? 1 : 0;
   const contractBonus = state.contracts.some((contract) => contract.id === 'abandoned_ai_navi') ? 1 : 0;
   return state.signal + state.skillLevels.scan_boost + supportBonus + contractBonus;
+};
+
+const getRouteCandidateNote = (state: State, choiceId: RouteLaneChoice, intelLevel: NaviIntelLevel): string => {
+  if (intelLevel === 'low') {
+    return state.signal <= 0
+      ? 'Signal 0: details masked. Take Signal or Salvage to restore planning.'
+      : 'Low Signal: exact reward/risk partly masked.';
+  }
+  if (choiceId === 'salvage') return 'Pick one resource before the lane closes.';
+  if (choiceId === 'signal') return 'Restores Signal and improves the next forecast.';
+  if (choiceId === 'push_forward') {
+    if (state.armor <= 3) return 'Armor low: contact can become fatal.';
+    if (state.fuel <= 2) return 'Fuel low: return options narrow after this.';
+    return 'Skip recovery for faster boss progress.';
+  }
+  if (choiceId === 'return_gate') {
+    return state.routeState?.lastReturnCheckpointId
+      ? 'Backtrack to checkpoint, then extract safely.'
+      : 'No checkpoint yet: return route may be unstable.';
+  }
+  return 'Route effect readable.';
+};
+
+const getRouteResourceWarning = (
+  state: State,
+  choiceId: RouteLaneChoice,
+  intelLevel: NaviIntelLevel,
+): string | undefined => {
+  if (state.signal <= 0 && intelLevel === 'low') return 'SIGNAL LOST: reward masked';
+  if (choiceId === 'signal' && state.signal <= 1) return 'SIGNAL LOW: forecast recovery';
+  if (choiceId === 'salvage') {
+    if (state.fuel <= 3) return 'FUEL LOW: recovery recommended';
+    if (state.armor <= 4) return 'ARMOR LOW: repair recommended';
+    if (state.signal <= 1) return 'SIGNAL LOW: restore before Analyze/Talk';
+    if (state.mainAmmo <= 2) return 'MAIN AMMO LOW: resupply useful';
+    if (state.seAmmo <= 1) return 'S-E AMMO LOW: utility options thin';
+  }
+  if (choiceId === 'push_forward') {
+    if (state.armor <= 3) return 'ARMOR LOW: contact risk high';
+    if (state.fuel <= 2) return 'FUEL LOW: backtrack margin thin';
+    if (state.signal <= 0) return 'SIGNAL LOST: next route blind';
+  }
+  if (choiceId === 'return_gate' && !state.routeState?.lastReturnCheckpointId) {
+    return 'RETURN POINT NOT REACHED';
+  }
+  return undefined;
 };
 
 export const getNaviIntelLevel = (state: State): NaviIntelLevel => {
@@ -171,9 +219,9 @@ export const getNaviRouteIntelStatus = (state: State): NaviRouteIntelStatus => {
   }
   return {
     level,
-    label: state.signal <= 0 ? 'SIGNAL EMPTY' : 'SIGNAL WEAK',
+    label: state.signal <= 0 ? 'SIGNAL LOST' : 'SIGNAL WEAK',
     detail: state.signal <= 0
-      ? 'Route detail masked: Signal is 0. Recover Signal or use NAVI support.'
+      ? 'Reward masked: Signal is 0. Recover Signal or use NAVI support.'
       : 'Route detail masked: Signal/Scan support is too low.',
     isLimited: true,
   };
@@ -286,10 +334,12 @@ export const getNaviRouteCandidates = (state: State): NaviRouteCandidate[] => {
       tags: maskIntel(event.tags.join(' / '), intelLevel, 'medium', lowSignalRouteHints[choiceId].tags),
       risk: maskIntel(intel.riskTags, intelLevel, 'medium', lowSignalRouteHints[choiceId].risk),
       reward: maskIntel(intel.rewardTags, intelLevel, 'high', lowSignalRouteHints[choiceId].reward),
+      note: getRouteCandidateNote(state, choiceId, intelLevel),
       forecast: getRouteForecast(route, nodeId),
       bossSteps: getBossSteps(route, nodeId),
       effects: intelLevel === 'high' ? event.effects : undefined,
       eventId: event.id,
+      resourceWarning: getRouteResourceWarning(state, choiceId, intelLevel),
       intelLevel,
     });
     return out;
@@ -310,8 +360,10 @@ export const getNaviRouteCandidates = (state: State): NaviRouteCandidate[] => {
         tags: maskIntel(intel.likelyEnemyTags, intelLevel, 'medium', lowSignalRouteHints[lane].tags),
         risk: maskIntel(intel.riskTags, intelLevel, 'medium', lowSignalRouteHints[lane].risk),
         reward: maskIntel(intel.rewardTags, intelLevel, 'high', lowSignalRouteHints[lane].reward),
+        note: getRouteCandidateNote(state, lane, intelLevel),
         forecast: getRouteForecast(route, nodeId),
         bossSteps: getBossSteps(route, nodeId),
+        resourceWarning: getRouteResourceWarning(state, lane, intelLevel),
         intelLevel,
       };
     });

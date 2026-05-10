@@ -35,7 +35,7 @@ export const getGarageStageAdvisory = (state: State, stage: number): string => {
   const main = getMainGunSpec(state.selectedLoadout.mainGunId);
   const sub = getSubGunSpec(state.selectedLoadout.subGunId);
   const se = getSpecialEquipmentSpec(state.selectedLoadout.specialEquipmentId);
-  const preview = getRunStartResources(state.selectedLoadout, state.vehicleUpgrades);
+  const preview = getRunStartResources(state.selectedLoadout, state.vehicleUpgrades, state.skillLevels);
   const firepowerScore = main.damage + Math.floor(main.ammo / 2) + sub.damage * 2 + se.damage;
   const survivabilityScore = preview.armor + preview.fuel + preview.signal + state.skillLevels.ram_control + state.skillLevels.scan_boost;
   const totalScore = firepowerScore + survivabilityScore;

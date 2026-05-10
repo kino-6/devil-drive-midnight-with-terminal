@@ -205,6 +205,7 @@ export function reduceApproach(state: State, action: Action): State {
           baseDamage: gunBase,
           affinity: 'normal',
           variance: damageVarianceByCommand.approach_main_gun,
+          armored: !!encounter.enemies[target].armored,
         });
         encounter.enemies[target].hp = Math.max(0, encounter.enemies[target].hp - gunRoll.damage);
         firstStrikeDamage = gunRoll.damage;

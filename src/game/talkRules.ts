@@ -4,6 +4,7 @@ import {
   getConversationLineWithVars,
   getConversationLineWithVarsFromPool,
 } from '../conversationConfig';
+import { UNKNOWN_SIGN_LABEL } from './enemyReveal';
 import type {
   ActiveConversation,
   ConversationChoice,
@@ -136,12 +137,12 @@ const maxByRecord = <T extends string>(
 
 const buildChoiceSeed = (baseSeed: string, attitude: TalkAttitude) => `${baseSeed}:choice:${attitude}`;
 
-const buildMoodHint = (target: Devil, mood: TalkMood): string =>
+const buildMoodHint = (targetName: string, mood: TalkMood): string =>
   getConversationLineWithVarsFromPool(
     `talk.hint.mood.${mood}`,
-    { target: target.name },
-    getConversationLineWithVars('talk.hint.mood.default', { target: target.name, mood }, `Mood: ${mood}`),
-    `${target.id}:${mood}`,
+    { target: targetName },
+    getConversationLineWithVars('talk.hint.mood.default', { target: targetName, mood }, `Mood: ${mood}`),
+    `${targetName}:${mood}`,
   );
 
 export const assignTalkPersona = (
@@ -207,6 +208,7 @@ const costToLabel = (cost: ResourceCost | undefined): string | undefined => {
 
 const makeChoice = (
   target: Devil,
+  targetName: string,
   attitude: TalkAttitude,
   analyzed: boolean,
   persona: TalkPersona,
@@ -222,20 +224,20 @@ const makeChoice = (
 
   const playerLine = getConversationLineWithVarsFromPool(
     `talk.player_line.${attitude}`,
-    { target: target.name, attitude: attitudeLabel },
-    getConversationLineWithVars('talk.player_line.default', { target: target.name, attitude: attitudeLabel }, attitudeLabel),
+    { target: targetName, attitude: attitudeLabel },
+    getConversationLineWithVars('talk.player_line.default', { target: targetName, attitude: attitudeLabel }, attitudeLabel),
     choiceSeed,
   );
   const successBase = getConversationLineWithVarsFromPool(
     `talk.result.good.${target.temperament}.${mood}`,
-    { target: target.name, attitude: attitudeLabel },
+    { target: targetName, attitude: attitudeLabel },
     getConversationLineWithVarsFromPool(
       `talk.result.good.${target.temperament}`,
-      { target: target.name, attitude: attitudeLabel },
+      { target: targetName, attitude: attitudeLabel },
       getConversationLineWithVarsFromPool(
         'talk.result.good',
-        { target: target.name, attitude: attitudeLabel },
-        `${target.name}が反応した。`,
+        { target: targetName, attitude: attitudeLabel },
+        `${targetName}が反応した。`,
         choiceSeed,
       ),
       choiceSeed,
@@ -244,14 +246,14 @@ const makeChoice = (
   );
   const failBase = getConversationLineWithVarsFromPool(
     `talk.result.bad.${target.temperament}.${mood}`,
-    { target: target.name, attitude: attitudeLabel },
+    { target: targetName, attitude: attitudeLabel },
     getConversationLineWithVarsFromPool(
       `talk.result.bad.${target.temperament}`,
-      { target: target.name, attitude: attitudeLabel },
+      { target: targetName, attitude: attitudeLabel },
       getConversationLineWithVarsFromPool(
         'talk.result.bad',
-        { target: target.name, attitude: attitudeLabel },
-        `${target.name}の反応は悪い。`,
+        { target: targetName, attitude: attitudeLabel },
+        `${targetName}の反応は悪い。`,
         choiceSeed,
       ),
       choiceSeed,
@@ -317,6 +319,7 @@ const makeChoice = (
 
 const buildAttitudeChoices = (
   target: Devil,
+  targetName: string,
   persona: TalkPersona,
   mood: TalkMood,
   analyzed: boolean,
@@ -337,11 +340,12 @@ const buildAttitudeChoices = (
 
   const ordered = [preferred, neutral, risky];
   return ordered.map((attitude, idx) =>
-    makeChoice(target, attitude, analyzed, persona, mood, `${baseSeed}:attitude:${idx}`));
+    makeChoice(target, targetName, attitude, analyzed, persona, mood, `${baseSeed}:attitude:${idx}`));
 };
 
 const buildDemandChoices = (
   target: Devil,
+  targetName: string,
   persona: TalkPersona,
   mood: TalkMood,
   analyzed: boolean,
@@ -349,14 +353,14 @@ const buildDemandChoices = (
   resource: keyof ResourceCost,
 ): ConversationChoice[] => {
   const amount = 1;
-  const pay = makeChoice(target, 'pay', analyzed, persona, mood, `${baseSeed}:pay`, { [resource]: amount });
+  const pay = makeChoice(target, targetName, 'pay', analyzed, persona, mood, `${baseSeed}:pay`, { [resource]: amount });
   pay.demand = { resource, amount };
-  const bargain = makeChoice(target, 'bargain', analyzed, persona, mood, `${baseSeed}:bargain`);
+  const bargain = makeChoice(target, targetName, 'bargain', analyzed, persona, mood, `${baseSeed}:bargain`);
   bargain.demand = { resource, amount };
   const thirdAttitude: TalkAttitude = (target.temperament === 'hostile' || target.temperament === 'proud' || mood === 'aggressive')
     ? 'threaten'
     : 'refuse';
-  const third = makeChoice(target, thirdAttitude, analyzed, persona, mood, `${baseSeed}:${thirdAttitude}`);
+  const third = makeChoice(target, targetName, thirdAttitude, analyzed, persona, mood, `${baseSeed}:${thirdAttitude}`);
   third.demand = { resource, amount };
   return [pay, bargain, third];
 };
@@ -379,6 +383,7 @@ export const canPayConversationChoiceCost = (
 export const buildTalkConversation = ({ target, state, analyzed }: TalkBuildInput): ActiveConversation => {
   const persona = target.talkPersona ?? assignTalkPersona(target.profile, target.id);
   const mood = deriveTalkMood(target, analyzed);
+  const targetName = analyzed ? target.name : UNKNOWN_SIGN_LABEL;
   const seed = `${target.id}:${persona}:${mood}:${target.trust}:${target.interest}:${target.pressure}:${target.hp}`;
   const demandNoise = (hashSeed(`${seed}:demand`) % 100) / 100;
   const demandLike = prefersDemand(target.temperament) && (mood === 'aggressive' || mood === 'desperate' || demandNoise < 0.48);
@@ -390,16 +395,16 @@ export const buildTalkConversation = ({ target, state, analyzed }: TalkBuildInpu
       const resourceName = getConversationLine(`talk.resource.${resource}`, resource.toUpperCase());
       return getConversationLineWithVarsFromPool(
         `talk.demand.prompt.${target.temperament}.${persona}.${mood}`,
-        { target: target.name, resource: resourceName, amount },
+        { target: targetName, resource: resourceName, amount },
         getConversationLineWithVarsFromPool(
           `talk.demand.prompt.${target.temperament}.${mood}`,
-          { target: target.name, resource: resourceName, amount },
+          { target: targetName, resource: resourceName, amount },
           getConversationLineWithVarsFromPool(
             `talk.demand.prompt.${target.temperament}`,
-            { target: target.name, resource: resourceName, amount },
+            { target: targetName, resource: resourceName, amount },
             getConversationLineWithVarsFromPool(
               'talk.demand.prompt.default',
-              { target: target.name, resource: resourceName, amount },
+              { target: targetName, resource: resourceName, amount },
               '代価を求める反応。',
               seed,
             ),
@@ -412,14 +417,14 @@ export const buildTalkConversation = ({ target, state, analyzed }: TalkBuildInpu
     })()
     : getConversationLineWithVarsFromPool(
       `talk.prompt.${target.temperament}.${persona}.${mood}`,
-      { target: target.name },
+      { target: targetName },
       getConversationLineWithVarsFromPool(
         `talk.prompt.${target.temperament}.${mood}`,
-        { target: target.name },
+        { target: targetName },
         getConversationLineWithVarsFromPool(
           `talk.prompt.${target.temperament}`,
-          { target: target.name },
-          getConversationLineWithVarsFromPool('talk.prompt.default', { target: target.name }, '反応を読む。短く返す。', seed),
+          { target: targetName },
+          getConversationLineWithVarsFromPool('talk.prompt.default', { target: targetName }, '反応を読む。短く返す。', seed),
           seed,
         ),
         seed,
@@ -428,10 +433,10 @@ export const buildTalkConversation = ({ target, state, analyzed }: TalkBuildInpu
     );
 
   const choices = demandLike
-    ? buildDemandChoices(target, persona, mood, analyzed, seed, chooseDemandResource(target, state))
-    : buildAttitudeChoices(target, persona, mood, analyzed, seed);
+    ? buildDemandChoices(target, targetName, persona, mood, analyzed, seed, chooseDemandResource(target, state))
+    : buildAttitudeChoices(target, targetName, persona, mood, analyzed, seed);
 
-  const moodHint = analyzed ? buildMoodHint(target, mood) : undefined;
+  const moodHint = analyzed ? buildMoodHint(targetName, mood) : undefined;
   const finalIntro = moodHint ? `${introLine} ${moodHint}` : introLine;
 
   return {

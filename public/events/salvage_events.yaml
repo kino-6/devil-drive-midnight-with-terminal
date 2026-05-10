@@ -70,3 +70,33 @@ events:
       rewardId: "signal_core"
       log: "SALVAGE EVENT: BLUEPRINT PING"
       moeLine: "設計図っぽい反応。今夜は薄いけど、覚えておく。"
+    stalled_patrol_trunk:
+      title: "Stalled Patrol Trunk"
+      pool: "salvage.stage_1"
+      weight: 1
+      tags: "mixed, patrol, one_pull"
+      body: "A dead patrol car has one trunk still half-open. The lock daemon is counting down, so M.O.E. can hold it for one clean grab."
+      effects: "Balanced recovery / one trunk cycle."
+      rewardId: "mixed_pack"
+      log: "SALVAGE EVENT: STALLED PATROL TRUNK"
+      moeLine: "パトカーのトランク、まだ開く。長居はだめ、一回だけ。"
+    callbox_signal_nest:
+      title: "Callbox Signal Nest"
+      pool: "salvage.stage_1"
+      weight: 1
+      tags: "signal, talk, one_pull"
+      body: "Emergency callboxes blink in a chain, each repeating a cleaner carrier. Pull one signal core and the rest go dark."
+      effects: "Signal favored / Talk route insurance."
+      rewardId: "signal_core"
+      log: "SALVAGE EVENT: CALLBOX SIGNAL NEST"
+      moeLine: "非常電話がSignalを抱いてる。交渉するなら、これが効く。"
+    underpass_service_locker:
+      title: "Underpass Service Locker"
+      pool: "salvage.stage_1"
+      weight: 1
+      tags: "ammo, se, service, one_pull"
+      body: "A maintenance locker rattles with mixed munitions. The underpass is shifting, so only one drawer can be forced open."
+      effects: "Ammo or S-E recovery favored."
+      rewardId: "se_cell"
+      log: "SALVAGE EVENT: UNDERPASS SERVICE LOCKER"
+      moeLine: "整備ロッカー。弾かS-E、どっちを残したいかで選ぼう。"

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { getDevilTacticalHint } from '../game/devilTactics';
 import type { Devil, EncounterId, HitFxTone } from '../game/types';
 import type { EnemyRevealState } from '../game/runtimeHelpers';
 
@@ -221,6 +222,24 @@ const intentIconMap: Record<Devil['intent'], string> = {
   flee: '↯',
 };
 
+const intentOutcomeMap: Record<Devil['intent'], string> = {
+  attack: 'Armor damage incoming.',
+  curse: 'Signal or control noise.',
+  bargain: 'Talk window pressure.',
+  guard: 'Next damage reduced.',
+  flee: 'May leave the lane.',
+};
+
+const formatIntentLabel = (intent: Devil['intent']) => intent.toUpperCase();
+
+const getDecodeSummary = (revealState: EnemyRevealState) => {
+  if (revealState.showHint) return 'UNLOCKED: ID / ACTION / WEAK / TACTIC';
+  if (revealState.showAffinity) return 'UNLOCKED: ID / ACTION / WEAK';
+  if (revealState.showIntent) return 'UNLOCKED: ID / ACTION';
+  if (revealState.showName) return 'UNLOCKED: ID';
+  return 'LOCKED: Analyze to decode.';
+};
+
 export function BattleDevilSprite({
   devil,
   focused,
@@ -232,6 +251,8 @@ export function BattleDevilSprite({
   imageFrames,
   showDebugBadge = false,
   hitFx,
+  intentForecast = [],
+  forecastUnstable = false,
   encounterProfiles,
 }: {
   devil: Devil;
@@ -244,6 +265,8 @@ export function BattleDevilSprite({
   imageFrames?: string[];
   showDebugBadge?: boolean;
   hitFx?: HitFxTone;
+  intentForecast?: Devil['intent'][];
+  forecastUnstable?: boolean;
   encounterProfiles: Record<EncounterId, EncounterProfile>;
 }) {
   const profile = encounterProfiles[devil.profile];
@@ -251,10 +274,28 @@ export function BattleDevilSprite({
   const intelCurrent = Math.max(0, Math.floor(devil.intelProgress));
   const intelMax = Math.max(1, Math.floor(devil.intelThreshold));
   const intelPct = Math.max(0, Math.min(100, (intelCurrent / intelMax) * 100));
-  const showIntelProgress = revealState.showName || intelCurrent > 0;
+  const hpLabel = revealState.showHp ? `${devil.hp}/${devil.maxHp}` : '--';
+  const intelLabel = `${intelCurrent}/${intelMax}`;
   const animationFrames = imageFrames?.map((frame) => frame.trim()).filter(Boolean).slice(0, 2) ?? [];
   const canAnimate = animationFrames.length >= 2;
   const staticImageSrc = animationFrames[0] ?? imageSrc;
+  const tacticalHint = getDevilTacticalHint(devil, revealState.showName);
+  const actionReadable = revealState.showIntent;
+  const nextIntent = intentForecast[0];
+  const actionLabel = actionReadable ? formatIntentLabel(devil.intent) : 'LOCKED';
+  const nextActionLabel = actionReadable && nextIntent
+    ? `${formatIntentLabel(nextIntent)}${forecastUnstable ? '?' : ''}`
+    : actionReadable
+      ? '--'
+      : 'LOCKED';
+  const actionOutcome = actionReadable ? intentOutcomeMap[devil.intent] : 'Analyze to read action result.';
+  const decodeSummary = getDecodeSummary(revealState);
+  const decodeStatuses = [
+    ['ID', revealState.showName],
+    ['ACTION', revealState.showIntent],
+    ['WEAK', revealState.showAffinity],
+    ['FULL', revealState.showHint],
+  ] as const;
   const unknownAssetClassName = `battle-devil__asset ${revealState.showSilhouette ? 'is-silhouette' : ''}`.trim();
   return <article
     className={`battle-devil battle-devil--${lane} ${focused ? 'is-focused' : ''} ${profile.contractable ? 'is-contractable' : 'is-hostile'} ${devil.hp <= 0 ? 'is-defeated' : ''} ${hitFx ? `is-hitfx-${hitFx}` : ''}`}
@@ -297,22 +338,55 @@ export function BattleDevilSprite({
             transparencyMode="auto-corner"
           />}
       </div>
+    </div>
+    <aside className="battle-devil__sidecar" aria-label={`${revealState.label} intel`}>
       <div className="battle-devil__label">
+        <small>TARGET</small>
         <strong>{revealState.label}</strong>
       </div>
-      {revealState.showHp && <div className="battle-devil__hp">
-        <span>HP {devil.hp}/{devil.maxHp}</span>
-        <div><i style={{ width: `${hpPct}%` }} /></div>
-      </div>}
-      {showIntelProgress && <div className="battle-devil__intel">
-        <span>INTEL {intelCurrent}/{intelMax}</span>
-        <div><i style={{ width: `${intelPct}%` }} /></div>
-      </div>}
-      <div className="battle-devil__intent">
-        <span className={`battle-devil__intent-icon intent--${devil.intent}`}>{intentIconMap[devil.intent]}</span>
-        <small>{revealState.showIntent ? devil.intent.toUpperCase() : 'UNKNOWN'}</small>
+      <div className="battle-devil__meter battle-devil__meter--hp">
+        <span>HP</span>
+        <strong>{hpLabel}</strong>
+        {revealState.showHp && <div><i style={{ width: `${hpPct}%` }} /></div>}
       </div>
-    </div>
+      <div className="battle-devil__meter battle-devil__meter--intel">
+        <span>ANALYZE</span>
+        <strong>{intelLabel}</strong>
+        <div><i style={{ width: `${intelPct}%` }} /></div>
+      </div>
+      <div className="battle-devil__decode" aria-label="Analyze decode state">
+        {decodeStatuses.map(([label, active]) => (
+          <span key={label} className={active ? 'is-active' : ''}>{label}</span>
+        ))}
+      </div>
+      <small className="battle-devil__decode-summary">{decodeSummary}</small>
+      <div className="battle-devil__action">
+        <span>ACTION READ</span>
+        <div className="battle-devil__action-row">
+          <small>ACTION</small>
+          <strong>
+            {actionReadable
+              ? <i className={`battle-devil__intent-icon intent--${devil.intent}`}>{intentIconMap[devil.intent]}</i>
+              : <i className="battle-devil__intent-icon intent--unknown">?</i>}
+            {actionLabel}
+          </strong>
+        </div>
+        <div className="battle-devil__action-row battle-devil__action-row--next">
+          <small>NEXT</small>
+          <strong>
+            {actionReadable && nextIntent
+              ? <i className={`battle-devil__intent-icon intent--${nextIntent}`}>{intentIconMap[nextIntent]}</i>
+              : <i className="battle-devil__intent-icon intent--unknown">?</i>}
+            {nextActionLabel}
+          </strong>
+        </div>
+        <em>{actionOutcome}</em>
+      </div>
+      <div className="battle-devil__tactic">
+        <span>TACTIC</span>
+        <small>{tacticalHint}</small>
+      </div>
+    </aside>
     {showDebugBadge && (
       <span className={`battle-devil__debug ${canAnimate ? 'is-animated' : ''}`}>
         {revealState.showName ? `ANIM ${animationFrames.length}F` : canAnimate ? `UNKNOWN ${animationFrames.length}F` : 'UNKNOWN STATIC'}

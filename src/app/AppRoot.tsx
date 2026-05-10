@@ -8,6 +8,7 @@ import {
 import { defaultBalanceConfig, getBalanceConfig, type BalanceConfig } from '../balanceConfig';
 import { getDialogueConfig, getDialogueLine } from '../dialogueConfig';
 import { getMoeVariantForState, type MoeVariant } from '../game/moeDialogue';
+import { getSignalCapacity } from '../game/signalSystem';
 import {
 } from '../saveSystem';
 import {
@@ -25,7 +26,6 @@ import {
   type Action,
   type AutoPlayReport,
   type AutoPlayStrategy,
-  type Intent,
   type UpgradeId,
   type VehicleUpgradeId,
 } from '../game/types';
@@ -62,7 +62,6 @@ import {
   getVehicleUpgradeCost,
   getLikelyWeaknessSummary,
   getNarrativeMoeLine,
-  getContractHint,
   isBossProfile,
   initState,
   pickSfxCueFromLog,
@@ -118,11 +117,11 @@ export function App() {
   const [showRunHistory, setShowRunHistory] = useState(false);
   const [showGarageLaunchConfirm, setShowGarageLaunchConfirm] = useState(false);
   const [, setHoveredMoeHint] = useState('');
-  const [hoveredEnemyId, setHoveredEnemyId] = useState<string | null>(null);
   const [telemetryRefresh, setTelemetryRefresh] = useState(0);
   const [assetManifest, setAssetManifest] = useState<AssetManifest>(defaultAssetManifest);
   const [assetManifestLoaded, setAssetManifestLoaded] = useState(false);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [animationMode, setAnimationMode] = useState<'play' | 'skip'>('play');
   const terminalLogRef = useRef<HTMLUListElement>(null);
   const bgmRef = useRef<HTMLAudioElement | null>(null);
   const lastSfxAtRef = useRef(0);
@@ -134,25 +133,20 @@ export function App() {
   const encounterProfileMap = encounterProfiles();
   const selectedStageProfile = getStageProfile(state.stage);
   const selectedStageAdvisory = getGarageStageAdvisory(state, state.stage);
-  const nextRunPreview = getRunStartResources(state.selectedLoadout, state.vehicleUpgrades);
+  const nextRunPreview = getRunStartResources(state.selectedLoadout, state.vehicleUpgrades, state.skillLevels);
   const balance = getBalanceConfig();
   const dashboardFuelCapBase = balance.resources.baseFuel + state.vehicleUpgrades.fuel_tank;
   const dashboardArmorCapBase = balance.resources.baseArmor + state.vehicleUpgrades.armor_plating;
-  const dashboardSignalCapBase = balance.resources.baseSignal;
+  const dashboardSignalCapBase = getSignalCapacity(state.skillLevels);
   const dashboardFuelMax = Math.max(dashboardFuelCapBase, state.fuel);
   const dashboardArmorMax = Math.max(dashboardArmorCapBase, state.armor);
   const dashboardSignalMax = Math.max(dashboardSignalCapBase, state.signal);
   const armorCriticalRatio = dashboardArmorMax > 0 ? state.armor / dashboardArmorMax : 1;
   const isArmorCritical = armorCriticalRatio <= 0.25;
-  const skillOrder: UpgradeId[] = ['ram_control', 'gunnery', 'scan_boost', 'translation_assist'];
+  const skillOrder: UpgradeId[] = ['ram_control', 'gunnery', 'scan_boost', 'translation_assist', 'signal_tuning'];
   const vehicleUpgradeOrder: VehicleUpgradeId[] = ['fuel_tank', 'armor_plating', 'ammo_rack', 'se_rack', 'signal_antenna', 'noise_filter', 'daemon_bus'];
 
   const selectedEnemy = useMemo(() => getSelectedEnemy(state.encounter), [state.encounter]);
-  const hoveredEnemy = useMemo(
-    () => (hoveredEnemyId ? state.encounter.enemies.find((enemy) => enemy.id === hoveredEnemyId) : undefined),
-    [hoveredEnemyId, state.encounter.enemies],
-  );
-  const detailEnemy = hoveredEnemy && isAlive(hoveredEnemy) ? hoveredEnemy : selectedEnemy;
   const runGrowth = useMemo(() => getRunGrowth(state), [state]);
   const narrativeMoeLine = useMemo(() => getNarrativeMoeLine(state), [state]);
   const liveMoeLine = state.gamePhase === 'garage' ? state.moeLine : narrativeMoeLine;
@@ -175,7 +169,6 @@ export function App() {
   const isRoadStopped = isBattlePhase || state.gamePhase === 'garage' || state.gamePhase === 'result' || state.gamePhase === 'game_over';
   const isEncounterActive = (state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && state.encounter.phase === 'command';
   const isWindshieldFolded = state.gamePhase === 'garage';
-  const speed = isBattlePhase ? 0 : isRoadMoving ? 122 : state.gamePhase === 'prologue' ? 64 : 8;
   const enemyAssetMap = assetManifest.images.enemies ?? {};
   const defaultEnemyAssetMap = defaultAssetManifest.images.enemies ?? {};
   // Keep UNKNOWN SIGN strictly separated from mask/effect assets like MirrorCurve.
@@ -280,13 +273,6 @@ const tacticalLinesCompact = tacticalLines
       disabled,
     } as SignalChoice;
   });
-  const detailIntentIconMap: Record<Intent, string> = {
-    attack: '⚔',
-    curse: '☣',
-    bargain: '◇',
-    guard: '🛡',
-    flee: '↯',
-  };
   const resolveEnemyLane = (index: number, total: number, isBoss: boolean): 'left' | 'center' | 'right' => {
     if (isBoss || total <= 1) return 'center';
     if (total === 2) return index === 0 ? 'left' : 'right';
@@ -334,7 +320,7 @@ const tacticalLinesCompact = tacticalLines
     .filter((skillId) => skillId === 'ram_control' || skillId === 'gunnery')
     .some((skillId) => state.driverXpBank >= getSkillCost(state.skillLevels[skillId]));
   const canUpdateMoeSkill = skillOrder
-    .filter((skillId) => skillId === 'scan_boost' || skillId === 'translation_assist')
+    .filter((skillId) => skillId === 'scan_boost' || skillId === 'translation_assist' || skillId === 'signal_tuning')
     .some((skillId) => state.moeSyncBank >= getSkillCost(state.skillLevels[skillId]));
   const canUpdateVehicleTune = vehicleUpgradeOrder
     .some((upgradeId) => state.creditBank >= getVehicleUpgradeCost(state.vehicleUpgrades[upgradeId]));
@@ -384,9 +370,10 @@ const tacticalLinesCompact = tacticalLines
     () => buildPlaytestReport(telemetryEvents, persistentProgression),
     [telemetryEvents, persistentProgression],
   );
-  const { hitFxTone, hitFxPulse } = useUiEffects({
+  const { hitFxTone, hitFxPulse, combatFxCue, combatFxPulse } = useUiEffects({
     state,
     dispatch,
+    playCombatEffects: animationMode === 'play',
     showGarageLaunchConfirm,
     setShowGarageLaunchConfirm,
     terminalLogRef,
@@ -394,6 +381,7 @@ const tacticalLinesCompact = tacticalLines
     clearHoveredHint: () => setHoveredMoeHint(''),
   });
   const { activeBeat, dismissBeat } = useRunBeatQueue({
+    enabled: animationMode === 'play',
     gamePhase: state.gamePhase,
     encounterIndex: state.encounterIndex,
     stage: state.stage,
@@ -522,10 +510,12 @@ const tacticalLinesCompact = tacticalLines
         runStatus={runStatus}
         depth={depth}
         currentNode={state.gamePhase}
+        animationMode={animationMode}
         isNaviActive={state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter'}
         isWarnActive={state.fuel <= 3 || state.armor <= 3 || state.signal <= 1}
         isGameOver={state.gamePhase === 'game_over'}
         devBuildLabel={devBuildLabel}
+        onAnimationModeChange={setAnimationMode}
       />
 
       <main className={`action-panel panel ${state.gamePhase === 'garage' ? 'action-panel--garage-focus' : ''} ${isRunFitPhase ? 'action-panel--run-fit' : ''}`}>
@@ -550,15 +540,16 @@ const tacticalLinesCompact = tacticalLines
           isWindshieldFolded={isWindshieldFolded}
           hitFxTone={hitFxTone}
           hitFxPulse={hitFxPulse}
+          combatFxCue={combatFxCue}
+          combatFxPulse={combatFxPulse}
           aliveEnemiesCount={aliveEnemies.length}
+          forecast={state.encounter.forecast}
+          forecastUnstable={state.encounter.forecastUnstable}
           ingressSteps={ingressSteps}
           windshieldThreatLabel={windshieldThreatLabel}
           routeCandidates={naviRouteCandidates}
           routeIntelStatus={naviRouteIntelStatus}
-          detailEnemy={detailEnemy}
-          detailIntentIconMap={detailIntentIconMap}
           profiles={encounterProfileMap}
-          getContractHint={getContractHint}
           isBossProfile={isBossProfile}
           resolveUnknownEnemyAsset={resolveUnknownEnemyAsset}
           resolveUnknownEnemyAnimationFrames={() => unknownEnemyAnimationFrames}
@@ -568,7 +559,7 @@ const tacticalLinesCompact = tacticalLines
           getLikelyWeaknessSummary={getLikelyWeaknessSummary}
           showDebugBadges={bootDebugEnabled}
           onSelectEnemy={(enemyId) => dispatch({ type: 'SELECT_ENEMY', enemyId })}
-          onHoverEnemy={setHoveredEnemyId}
+          onRouteChoice={(lane) => dispatch({ type: 'ROUTE_CHOICE', lane })}
         />
 
         <section className="battle-deck">
@@ -633,7 +624,6 @@ const tacticalLinesCompact = tacticalLines
 
           <VehiclePanel
             playerAsset={playerAsset}
-            speed={speed}
             state={state}
             dashboardFuelMax={dashboardFuelMax}
             dashboardArmorMax={dashboardArmorMax}

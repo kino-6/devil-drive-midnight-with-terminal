@@ -1,8 +1,9 @@
 import { ApproachContactMarker, BattleDevilSprite } from '../../components/EncounterVisuals';
 import { getEnemyRevealState } from '../../game/runtimeHelpers';
+import { RoutePreviewMap } from './RoutePreviewMap';
 import type { NaviRouteCandidate, NaviRouteIntelStatus } from '../state/routeGraph';
 import type { EncounterProfile } from '../../devilConfig';
-import type { Devil, EncounterId, GamePhase, HitFxTone, Intent } from '../../game/types';
+import type { CombatFxCue, Devil, EncounterId, ForecastMap, GamePhase, HitFxTone } from '../../game/types';
 
 type IngressStep = {
   label: string;
@@ -25,15 +26,16 @@ type BattleViewProps = {
   isWindshieldFolded: boolean;
   hitFxTone: HitFxTone | null;
   hitFxPulse: number;
+  combatFxCue: CombatFxCue | null;
+  combatFxPulse: number;
   aliveEnemiesCount: number;
+  forecast: ForecastMap;
+  forecastUnstable: boolean;
   ingressSteps: IngressStep[];
   windshieldThreatLabel: string;
   routeCandidates?: NaviRouteCandidate[];
   routeIntelStatus?: NaviRouteIntelStatus;
-  detailEnemy?: Devil;
-  detailIntentIconMap: Record<Intent, string>;
   profiles: Record<EncounterId, EncounterProfile>;
-  getContractHint: (enemy: Devil) => string;
   isBossProfile: (profile: EncounterId) => boolean;
   resolveUnknownEnemyAsset: (index: number) => string | undefined;
   resolveUnknownEnemyAnimationFrames: () => string[];
@@ -43,7 +45,8 @@ type BattleViewProps = {
   getLikelyWeaknessSummary: (profile: EncounterId) => string;
   showDebugBadges?: boolean;
   onSelectEnemy: (enemyId: string) => void;
-  onHoverEnemy: (enemyId: string | null) => void;
+  onHoverEnemy?: (enemyId: string | null) => void;
+  onRouteChoice?: (lane: NaviRouteCandidate['choiceId']) => void;
 };
 
 export const BattleView = ({
@@ -62,15 +65,16 @@ export const BattleView = ({
   isWindshieldFolded,
   hitFxTone,
   hitFxPulse,
+  combatFxCue,
+  combatFxPulse,
   aliveEnemiesCount,
+  forecast,
+  forecastUnstable,
   ingressSteps,
   windshieldThreatLabel,
   routeCandidates = [],
   routeIntelStatus,
-  detailEnemy,
-  detailIntentIconMap,
   profiles,
-  getContractHint,
   isBossProfile,
   resolveUnknownEnemyAsset,
   resolveUnknownEnemyAnimationFrames,
@@ -81,18 +85,8 @@ export const BattleView = ({
   showDebugBadges = false,
   onSelectEnemy,
   onHoverEnemy,
+  onRouteChoice,
 }: BattleViewProps) => {
-  const detailReveal = detailEnemy ? getEnemyRevealState(detailEnemy, analyzedEnemyIds) : undefined;
-  const detailIntelCurrent = detailEnemy ? Math.max(0, Math.floor(detailEnemy.intelProgress)) : 0;
-  const detailIntelMax = detailEnemy ? Math.max(1, detailEnemy.intelThreshold) : 1;
-  const detailAffinityUnlockAt = Math.floor(detailIntelMax * 0.7);
-  const detailAffinityRemaining = Math.max(0, detailAffinityUnlockAt - detailIntelCurrent);
-  const analyzeIntelGain = 55;
-  const analyzesToAffinityReveal = detailEnemy?.affinityRevealed
-    ? 0
-    : Math.ceil(detailAffinityRemaining / analyzeIntelGain);
-  const routePreviewCandidates = routeCandidates.slice(0, 3);
-
   return (
     <section
     className={`battle-view ${isEncounterActive ? 'is-hot' : ''} ${isRoadMoving ? 'is-cruising' : ''} ${isRoadStopped ? 'is-stopped' : ''} ${isBossPhase ? 'is-boss' : ''} ${hitFxTone ? `is-hitfx-${hitFxTone}` : ''} ${isArmorCritical ? 'is-armor-critical' : ''} ${isWindshieldFolded ? 'is-folded' : ''}`}
@@ -119,37 +113,8 @@ export const BattleView = ({
       <span>THREAT FIELD {aliveEnemiesCount > 0 && (gamePhase === 'encounter' || gamePhase === 'boss_encounter') ? 'ACTIVE' : 'CLEAR'}</span>
       <strong>{windshieldThreatLabel}</strong>
     </div>
-    {gamePhase === 'route_choice' && routePreviewCandidates.length > 0 && (
-      <div className="battle-view__route-preview" aria-label="Route candidates">
-        {routeIntelStatus?.isLimited && (
-          <div className={`battle-view__route-status battle-view__route-status--${routeIntelStatus.level}`}>
-            <strong>{routeIntelStatus.label}</strong>
-            <small>{routeIntelStatus.detail}</small>
-          </div>
-        )}
-        <div className="battle-view__route-map" aria-hidden="true">
-          <span className="route-map__origin">NOW</span>
-          <span className="route-map__trunk" />
-          <span className="route-map__branch route-map__branch--left" />
-          <span className="route-map__branch route-map__branch--straight" />
-          <span className="route-map__branch route-map__branch--right" />
-          {routePreviewCandidates.map((candidate, index) => (
-            <span key={`route-map-${candidate.nodeId}-${candidate.choiceId}`} className={`route-map__node route-map__node--${index}`}>
-              <small>{index === 0 ? 'LEFT' : index === 1 ? 'STRAIGHT' : 'RIGHT'}</small>
-              <strong>{candidate.bossSteps ?? '--'}</strong>
-            </span>
-          ))}
-        </div>
-        {routePreviewCandidates.map((candidate, index) => (
-          <div key={`${candidate.nodeId}-${candidate.choiceId}`} className={`battle-view__route-card battle-view__route-card--${index}`}>
-            <span>{index === 0 ? 'LEFT' : index === 1 ? 'STRAIGHT' : 'RIGHT'}</span>
-            <strong>{candidate.title}</strong>
-            <small>{candidate.tags}</small>
-            <small>{candidate.forecast.join(' > ')}</small>
-            <small>BOSS IN {candidate.bossSteps ?? '--'}</small>
-          </div>
-        ))}
-      </div>
+    {gamePhase === 'route_choice' && (
+      <RoutePreviewMap candidates={routeCandidates} intelStatus={routeIntelStatus} onRouteChoice={onRouteChoice} />
     )}
     {isBossPhase && (
       <div className="battle-view__boss-alert">
@@ -196,6 +161,8 @@ export const BattleView = ({
               imageFrames={imageFrames}
               showDebugBadge={showDebugBadges}
               hitFx={enemy.id === selectedEnemyId ? hitFxTone ?? undefined : undefined}
+              intentForecast={forecast[enemy.id] ?? []}
+              forecastUnstable={forecastUnstable}
               onSelect={() => onSelectEnemy(enemy.id)}
               onHoverEnemy={onHoverEnemy}
               encounterProfiles={profiles}
@@ -217,34 +184,11 @@ export const BattleView = ({
           />
         ))}
     </div>
-    {(gamePhase === 'encounter' || gamePhase === 'boss_encounter') && detailEnemy && (
-      <section className="target-detail-panel target-detail-panel--overlay">
-        <div className="target-detail-panel__head">
-          <strong>TARGET DETAIL</strong>
-          <small>{detailReveal?.showName ? detailEnemy.name.toUpperCase() : 'UNKNOWN SIGN'}</small>
-        </div>
-        <div className="target-detail-panel__core">
-          <span className={`target-detail-panel__intent intent--${detailEnemy.intent}`}>
-            {detailIntentIconMap[detailEnemy.intent]} {detailReveal?.showIntent ? detailEnemy.intent.toUpperCase() : 'UNKNOWN'}
-          </span>
-          {detailReveal?.showHp && <span>HP {detailEnemy.hp}/{detailEnemy.maxHp}</span>}
-          <span>{detailReveal?.showName ? `${profiles[detailEnemy.profile].contractable ? 'CONTRACTABLE' : 'HOSTILE'} / ${profiles[detailEnemy.profile].threat}` : 'UNKNOWN / ---'}</span>
-          {detailReveal?.showHint && <span>INTEL {detailIntelCurrent}/{detailIntelMax}</span>}
-        </div>
-        <div className="target-detail-panel__intel">
-          {detailReveal?.showHint
-            ? <small>{getContractHint(detailEnemy)}</small>
-            : <small>INTEL LOCKED / HOVER + ANALYZE TO REVEAL</small>}
-          {detailReveal?.showHint && !detailEnemy.affinityRevealed && (
-            <small>
-              {analyzesToAffinityReveal <= 1
-                ? 'NEXT ANALYZE: WEAK/RESIST DECODE'
-                : `AFFINITY LOCKED / ~${analyzesToAffinityReveal} ANALYZE TO DECODE`}
-            </small>
-          )}
-          {detailEnemy.contractWindow && <small className="battle-devil__window">CONTRACT WINDOW OPEN</small>}
-        </div>
-      </section>
+    {combatFxCue && (
+      <span
+        key={`combat-fx-${combatFxPulse}`}
+        className={`battle-view__combat-fx battle-view__combat-fx--${combatFxCue}`}
+      />
     )}
     <div className="battle-view__folded-note">WINDSHIELD VIEW FOLDED IN GARAGE MODE</div>
     </section>

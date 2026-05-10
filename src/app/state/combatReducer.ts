@@ -138,24 +138,36 @@ const applyIntelGain = (enemyIndex: number, gain: number, source: 'analyze' | 'c
   const after = enemy.intelProgress;
   if (after <= before) return;
   const revealThreshold = getIntelRevealThreshold(enemy.intelThreshold);
+  const actionThreshold = enemy.profile === 'toll_gate_saint'
+    ? Math.floor(enemy.intelThreshold * 0.45)
+    : revealThreshold;
   const affinityThreshold = getIntelAffinityThreshold(enemy.intelThreshold);
+  const wasIdentityKnown = enemy.revealed || before >= revealThreshold || encounter.analyzedEnemyIds.includes(enemy.id);
+  const wasActionReadable = before >= actionThreshold || encounter.analyzedEnemyIds.includes(enemy.id);
+  const wasAffinityReadable = enemy.affinityRevealed || before >= affinityThreshold || encounter.analyzedEnemyIds.includes(enemy.id);
+  const wasFullyAnalyzed = before >= enemy.intelThreshold || encounter.analyzedEnemyIds.includes(enemy.id);
+  const progressLabel = wasIdentityKnown ? enemy.name.toUpperCase() : 'UNKNOWN SIGN';
   if (source === 'analyze') {
-    logs.push(`> INTEL PROGRESS: ${enemy.name.toUpperCase()} ${after}/${enemy.intelThreshold}`);
+    logs.push(`> ANALYZE PROGRESS: ${progressLabel} ${after}/${enemy.intelThreshold}`);
   }
   if (!enemy.revealed && after >= revealThreshold) {
     enemy.revealed = true;
-    logs.push('> IDENTITY LOCK PARTIAL RELEASED');
+    logs.push(`> IDENTITY DECODED: ${enemy.name.toUpperCase()}`);
   }
-  if (!enemy.affinityRevealed && after >= affinityThreshold) {
-    enemy.affinityRevealed = true;
-    logs.push('> AFFINITY MAP PARTIAL DECODED');
+  if (!wasActionReadable && after >= actionThreshold) {
+    logs.push('> ACTION READABLE: NEXT INTENT VISIBLE');
+  }
+  if (after >= affinityThreshold) {
+    if (!enemy.affinityRevealed) enemy.affinityRevealed = true;
+    if (!wasAffinityReadable) logs.push('> WEAKNESS DECODED: AFFINITY MAP VISIBLE');
   }
   if (after >= enemy.intelThreshold) {
     encounter.analyzedEnemyIds = Array.from(new Set([...encounter.analyzedEnemyIds, enemy.id]));
+    if (!wasFullyAnalyzed) logs.push('> FULL ANALYZE COMPLETE: TACTIC CONFIRMED');
   }
 };
 
-logs.push(`> COMMAND: ${command.toUpperCase()}${selectedEnemy ? ` / ${selectedEnemy.name.toUpperCase()}` : ''}`);
+logs.push(`> COMMAND: ${command.toUpperCase()}${selectedEnemy ? ` / ${getMoeTargetName(selectedEnemy).toUpperCase()}` : ''}`);
 
 if (command === 'main_gun' && selectedEnemy && mainAmmo > 0) {
   const idx = encounter.enemies.findIndex((enemy) => enemy.id === selectedEnemy.id);
@@ -168,6 +180,7 @@ if (command === 'main_gun' && selectedEnemy && mainAmmo > 0) {
       affinity,
       variance: damageVarianceByCommand.main_gun,
       flatReduction: shield,
+      armored: !!encounter.enemies[idx].armored,
     });
     const damage = gunRoll.damage;
     encounter.enemies[idx].hp = Math.max(0, encounter.enemies[idx].hp - damage);
@@ -438,6 +451,35 @@ if (command === 'analyze' && selectedEnemy) {
 if (command === 'talk' && selectedEnemy) {
   const idx = encounter.enemies.findIndex((enemy) => enemy.id === selectedEnemy.id);
   if (idx >= 0) {
+    const targetName = getMoeTargetName(encounter.enemies[idx]);
+    if (!isEnemyIdentityKnown(encounter.enemies[idx], encounter.analyzedEnemyIds)) {
+      encounter.phase = 'command';
+      logs.push('> TALK CHANNEL LOCKED: UNKNOWN SIGN');
+      moeLine = getMoeLine('moe.dynamic.battle.talk.locked_unknown', '相手の輪郭がまだ取れてない。先にAnalyzeで署名を掴もう。', {
+        target: targetName,
+      }, 'serious');
+      return {
+        ...state,
+        fuel,
+        armor,
+        signal,
+        mainAmmo,
+        seAmmo,
+        contracts,
+        activeSupportDaemon,
+        activeConversation,
+        negotiationRewards,
+        tempForecastBoost,
+        moeSyncBank,
+        story,
+        salvageCredits,
+        logs,
+        encounterPrep,
+        analyzeSuccessCount,
+        moeLine,
+        encounter,
+      };
+    }
     const profile = buildTalkConversation({
       target: encounter.enemies[idx],
       analyzed: isEnemyIdentityKnown(encounter.enemies[idx], encounter.analyzedEnemyIds),
@@ -460,11 +502,13 @@ if (command === 'talk' && selectedEnemy) {
       demand: profile.demand,
       seed: profile.seed,
     };
-    logs.push(`> TALK CHANNEL OPEN: ${encounter.enemies[idx].name.toUpperCase()}`);
+    logs.push(`> TALK CHANNEL OPEN: ${targetName.toUpperCase()}`);
     const scenarioTalkLine = getScenarioLine(getEncounterScenario(encounter.enemies[idx].profile)?.talk?.curious);
     if (scenarioTalkLine) logs.push(`> ${scenarioTalkLine}`);
     encounter.phase = 'conversation';
-    moeLine = getMoeLine('moe.dynamic.battle.talk.success.normal', '会話に乗った。反応を見て選んで。');
+    moeLine = getMoeLine('moe.dynamic.battle.talk.success.normal', '会話に乗った。反応を見て選んで。', {
+      target: targetName,
+    });
     return {
       ...state,
       fuel,
@@ -574,6 +618,7 @@ if (command === 'ram' && selectedEnemy && armor > 0) {
       affinity,
       variance: damageVarianceByCommand.ram,
       flatReduction: shield,
+      armored: !!encounter.enemies[idx].armored,
     });
     const damage = ramRoll.damage;
     encounter.enemies[idx].hp = Math.max(0, encounter.enemies[idx].hp - damage);

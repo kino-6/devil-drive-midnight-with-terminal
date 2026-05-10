@@ -30,3 +30,23 @@ events:
       rewardId: "signal_kit"
       log: "BOSS PREP EVENT: RELAY STUB"
       moeLine: "深層信号を少し読みやすくできる。"
+    tollbooth_battery_rack:
+      title: "Tollbooth Battery Rack"
+      pool: "salvage.boss_prep"
+      weight: 1
+      tags: "boss, se, signal, one_pull"
+      body: "A tollbooth battery rack still hums under the counter. Taking one cell wakes the gate sensors, but it can feed the last S-E shot."
+      effects: "Boss prep S-E favored / sensor wake risk."
+      rewardId: "se_kit"
+      log: "BOSS PREP EVENT: BATTERY RACK"
+      moeLine: "S-Eセル、一本だけ抜ける。料金所に気づかれる前に。"
+    lane_barrier_patch:
+      title: "Lane Barrier Patch"
+      pool: "salvage.boss_prep"
+      weight: 1
+      tags: "boss, armor, fuel, one_pull"
+      body: "A flexible lane barrier can be cut into a crude front patch. It will not look pretty, but the next impact cares more than we do."
+      effects: "Armor survival favored / final contact prep."
+      rewardId: "armor_kit"
+      log: "BOSS PREP EVENT: LANE BARRIER PATCH"
+      moeLine: "見た目は悪いけど、装甲にはなる。Boss前なら十分。"

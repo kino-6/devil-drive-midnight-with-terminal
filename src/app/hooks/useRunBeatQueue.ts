@@ -14,6 +14,7 @@ export type RunBeat = {
 };
 
 type UseRunBeatQueueParams = {
+  enabled?: boolean;
   gamePhase: GamePhase;
   encounterIndex: number;
   stage: number;
@@ -48,17 +49,30 @@ const buildPhaseBeats = ({
     { stage },
   );
   const beats: RunBeat[] = [];
+  const routeTransitSubtitle = `${stageLabel} / ${loopLabel}`;
 
   if (gamePhase === 'approach' && prevPhase !== 'approach') {
+    const isRunEntry = prevPhase === 'garage' || prevPhase === 'prologue';
     beats.push(
-      toRunBeat({
-        id: `entry-${stage}-${encounterIndex + 1}`,
-        title: getDialogueLineWithVars('run.beat.entry', 'NIGHT LOOP ENTRY'),
-        subtitle: `${stageLabel} / ${loopLabel}`,
-        moe: getDialogueLineWithVars('moe.beat.entry', '進路同期完了。侵入開始。'),
-        tone: 'route',
-        durationMs: 1500,
-      }),
+      toRunBeat(
+        isRunEntry
+          ? {
+              id: `entry-${stage}-${encounterIndex + 1}`,
+              title: getDialogueLineWithVars('run.beat.entry', 'NIGHT LOOP ENTRY'),
+              subtitle: routeTransitSubtitle,
+              moe: getDialogueLineWithVars('moe.beat.entry', '進路同期完了。侵入開始。'),
+              tone: 'route',
+              durationMs: 1500,
+            }
+          : {
+              id: `lane-transit-${stage}-${encounterIndex + 1}-${prevPhase}`,
+              title: getDialogueLineWithVars('run.beat.lane_transit', 'LANE TRANSIT'),
+              subtitle: routeTransitSubtitle,
+              moe: getDialogueLineWithVars('moe.beat.lane_transit', '車線変更、入った。次の反応まで少しだけ走るよ。'),
+              tone: 'route',
+              durationMs: 1450,
+            },
+      ),
     );
     beats.push(
       toRunBeat({
@@ -81,6 +95,66 @@ const buildPhaseBeats = ({
           : getDialogueLineWithVars('moe.beat.ambush', '遅れた。初撃が来る。'),
         tone: approachScanSuccess ? 'system' : 'warn',
         durationMs: 1400,
+      }),
+    );
+    return beats;
+  }
+
+  if (gamePhase === 'route_choice' && prevPhase !== 'route_choice') {
+    beats.push(
+      toRunBeat({
+        id: `route-forecast-${stage}-${encounterIndex + 1}`,
+        title: getDialogueLineWithVars('run.beat.route_forecast', 'NAVI FORECAST'),
+        subtitle: getDialogueLineWithVars('run.beat.route_options', 'ROUTE OPTIONS AVAILABLE'),
+        moe: getDialogueLineWithVars('moe.beat.route_forecast', '分岐候補、拾えた。少し先まで見て選ぼう。'),
+        tone: 'route',
+        durationMs: 1300,
+      }),
+    );
+    return beats;
+  }
+
+  if (gamePhase === 'salvage' && prevPhase !== 'salvage') {
+    beats.push(
+      toRunBeat({
+        id: `salvage-transit-${stage}-${encounterIndex + 1}`,
+        title: getDialogueLineWithVars('run.beat.lane_transit', 'LANE TRANSIT'),
+        subtitle: getDialogueLineWithVars('run.beat.salvage_lane', 'SALVAGE LANE'),
+        moe: getDialogueLineWithVars('moe.beat.salvage_lane', '補給反応に寄せる。速度を落とすね。'),
+        tone: 'route',
+        durationMs: 1200,
+      }),
+    );
+    beats.push(
+      toRunBeat({
+        id: `salvage-response-${stage}-${encounterIndex + 1}`,
+        title: getDialogueLineWithVars('run.beat.salvage_response', 'SALVAGE RESPONSE'),
+        subtitle: getDialogueLineWithVars('run.beat.choose_pickup', 'CHOOSE ONE PICKUP'),
+        tone: 'system',
+        durationMs: 1200,
+      }),
+    );
+    return beats;
+  }
+
+  if (gamePhase === 'signal' && prevPhase !== 'signal') {
+    beats.push(
+      toRunBeat({
+        id: `signal-transit-${stage}-${encounterIndex + 1}`,
+        title: getDialogueLineWithVars('run.beat.lane_transit', 'LANE TRANSIT'),
+        subtitle: getDialogueLineWithVars('run.beat.signal_lane', 'SIGNAL LANE'),
+        moe: getDialogueLineWithVars('moe.beat.signal_lane', '信号帯に入る。ノイズ、少しだけ我慢して。'),
+        tone: 'route',
+        durationMs: 1200,
+      }),
+    );
+    beats.push(
+      toRunBeat({
+        id: `signal-window-${stage}-${encounterIndex + 1}`,
+        title: getDialogueLineWithVars('run.beat.signal_window', 'SIGNAL WINDOW'),
+        subtitle: getDialogueLineWithVars('run.beat.choose_signal_action', 'CHOOSE SIGNAL ACTION'),
+        tone: 'system',
+        durationMs: 1200,
       }),
     );
     return beats;
@@ -175,6 +249,7 @@ const buildPhaseBeats = ({
 };
 
 export const useRunBeatQueue = ({
+  enabled = true,
   gamePhase,
   encounterIndex,
   stage,
@@ -200,6 +275,15 @@ export const useRunBeatQueue = ({
   }, [clearTimer]);
 
   useEffect(() => {
+    if (enabled) return;
+    clearTimer();
+    setQueue([]);
+    setActiveBeat(null);
+    prevPhaseRef.current = gamePhase;
+  }, [clearTimer, enabled, gamePhase]);
+
+  useEffect(() => {
+    if (!enabled) return;
     const prevPhase = prevPhaseRef.current;
     if (prevPhase !== gamePhase) {
       const nextBeats = buildPhaseBeats({
@@ -216,7 +300,7 @@ export const useRunBeatQueue = ({
       }
       prevPhaseRef.current = gamePhase;
     }
-  }, [approachKind, approachScanSuccess, encounterIndex, encounterPrep, gamePhase, stage]);
+  }, [approachKind, approachScanSuccess, enabled, encounterIndex, encounterPrep, gamePhase, stage]);
 
   useEffect(() => {
     if (activeBeat || queue.length === 0) return;

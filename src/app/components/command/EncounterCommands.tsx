@@ -63,10 +63,12 @@ export const EncounterCommands = ({
           if (choice.cost?.seAmmo) costParts.push(`S-E Ammo -${choice.cost.seAmmo}`);
           if (choice.cost?.salvageCredits) costParts.push(`Credits -${choice.cost.salvageCredits}`);
           const costText = costParts.length > 0 ? `Cost: ${costParts.join(', ')}` : '';
+          const labelJa = choice.attitude ? getConversationLine(`talk.choice.${choice.attitude}.label_ja`, '') : '';
+          const helpText = choice.attitude ? getConversationLine(`talk.choice.${choice.attitude}.help`, '') : '';
           const hintText = choice.hintKey ? getConversationLine(choice.hintKey, '') : '';
           const moodText = state.activeConversation?.mood ? `Mood: ${state.activeConversation.mood}` : '';
           const personaText = state.activeConversation?.persona ? `Persona: ${state.activeConversation.persona}` : '';
-          const descText = [choice.playerLine, hintText, moodText, personaText, costText].filter(Boolean).join(' / ');
+          const descText = [labelJa, helpText, choice.playerLine, hintText, moodText, personaText, costText].filter(Boolean).join(' / ');
 
           return (
             <button
@@ -81,8 +83,15 @@ export const EncounterCommands = ({
               type="button"
               disabled={disabled}
             >
-              {choice.label}
-              {disabled && <span className="command-button__affinity command-button__affinity--resist">NO COST</span>}
+              <span className="command-button__label-stack">
+                <span className="command-button__label">{choice.label}</span>
+                {labelJa && <small>{labelJa}</small>}
+              </span>
+              <span className="command-button__meta-stack">
+                {costText && <small>{costText.replace('Cost: ', '')}</small>}
+                {helpText && <small>{helpText}</small>}
+                {disabled && <span className="command-button__affinity command-button__affinity--resist">NO COST</span>}
+              </span>
             </button>
           );
         })}
@@ -147,12 +156,17 @@ export const EncounterCommands = ({
                       ? `${selectedSEName}: PRED DMG ${getPredictedDamageLabel('se_harpoon')} / ${selectedSEDescription} / S-E AMMO ${state.seAmmo}`
                       : command.id === 'ram'
                         ? `Ram: PRED DMG ${getPredictedDamageLabel('ram')} / ARMOR -1`
+                        : command.id === 'talk' && !commandEnabledMap[command.id]
+                          ? '未解析対象にはTalk不可。Analyzeで署名を掴んでから交信する。'
                         : command.id === 'contract'
                           ? (contractEnabled ? 'Window Open' : 'No contract window')
                           : commandDescriptions[command.id].description
               }
             >
               <span className="command-button__label">{command.label}</span>
+              {command.id === 'talk' && !commandEnabledMap[command.id] && (
+                <span className="command-button__affinity command-button__affinity--resist">ANALYZE FIRST</span>
+              )}
               {commandAffinityTagMap[command.id] && <span className={`command-button__affinity command-button__affinity--${commandAffinityTagMap[command.id]?.toLowerCase()}`}>{commandAffinityTagMap[command.id]}</span>}
             </button>)}
           </div>

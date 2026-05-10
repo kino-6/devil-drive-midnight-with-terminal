@@ -66,7 +66,19 @@ export type RewardScope = 'post_enc1' | 'post_enc2';
 
 export type ContractModule = { id: ContractId; name: string; effect: string };
 export type ForecastMap = Record<string, Intent[]>;
-export type RewardOption = { id: string; label: string; detail: string; fuel?: number; armor?: number; signal?: number; mainAmmo?: number; seAmmo?: number };
+export type RewardOption = {
+  id: string;
+  label: string;
+  detail: string;
+  fuel?: number;
+  armor?: number;
+  signal?: number;
+  mainAmmo?: number;
+  seAmmo?: number;
+  salvageContext?: string;
+  salvageConsequence?: string;
+  salvagePriority?: 'critical' | 'useful' | 'prep' | 'event';
+};
 export type MainGun = { id: MainGunId; name: string; damage: number; ammo: number; effect?: 'intel' | 'contract'; description: string };
 export type SubGun = { id: SubGunId; name: string; damage: number; mode: 'all' | 'random_hits'; hits?: number; softenChance?: number; pressureMode?: 'build' | 'cool'; description: string };
 export type SpecialEquipment = { id: SpecialEquipmentId; name: string; damage: number; seAmmoCost: number; ammo: number; effect: 'interest' | 'all_damage' | 'emp' | 'analyze_lock' | 'contract_window' | 'boss_breaker'; description: string };
@@ -229,6 +241,15 @@ export type SfxCue =
   | 'garage_enter';
 
 export type HitFxTone = 'weak' | 'resist' | 'hit';
+export type CombatFxCue =
+  | 'player_shot'
+  | 'subgun_spray'
+  | 'signal_burst'
+  | 'analyze_scan'
+  | 'talk_ping'
+  | 'guard'
+  | 'enemy_attack'
+  | 'enemy_curse';
 
 export type StoryLogId = 'LOG_00' | 'LOG_01' | 'LOG_02' | 'LOG_03' | 'LOG_04';
 export type StoryLogEntry = { id: StoryLogId; title: string; text: string };
@@ -242,7 +263,7 @@ export type StoryState = {
 
 export type ApproachKind = EncounterState['kind'];
 export type ApproachOption = 'preemptive_main_gun' | 'hit_and_run_ram' | 'silent_coast' | 'open_channel';
-export type UpgradeId = 'ram_control' | 'gunnery' | 'scan_boost' | 'translation_assist';
+export type UpgradeId = 'ram_control' | 'gunnery' | 'scan_boost' | 'translation_assist' | 'signal_tuning';
 export type VehicleUpgradeId = 'fuel_tank' | 'armor_plating' | 'ammo_rack' | 'se_rack' | 'signal_antenna' | 'noise_filter' | 'daemon_bus';
 export type SkillLevels = Record<UpgradeId, number>;
 export type VehicleUpgradeLevels = Record<VehicleUpgradeId, number>;

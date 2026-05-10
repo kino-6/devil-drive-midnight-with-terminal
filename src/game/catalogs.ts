@@ -181,6 +181,7 @@ export const defaultSkillLevels: SkillLevels = {
   gunnery: 0,
   scan_boost: 0,
   translation_assist: 0,
+  signal_tuning: 0,
 };
 
 export const defaultVehicleUpgrades: VehicleUpgradeLevels = {
@@ -198,6 +199,7 @@ export const skillLabels: Record<UpgradeId, string> = {
   gunnery: 'Driver: Gunnery',
   scan_boost: 'M.O.E.: Scan Boost',
   translation_assist: 'M.O.E.: Translation Assist',
+  signal_tuning: 'M.O.E.: Signal Tuning',
 };
 
 export const vehicleUpgradeLabels: Record<VehicleUpgradeId, string> = {

@@ -100,7 +100,7 @@ export function reduceGarage(state: State, action: Action): State {
     if (state.gamePhase !== 'garage') return state;
     const currentLevel = state.skillLevels[action.upgrade];
     const cost = getSkillCost(currentLevel);
-    const isMoeSkill = action.upgrade === 'scan_boost' || action.upgrade === 'translation_assist';
+    const isMoeSkill = action.upgrade === 'scan_boost' || action.upgrade === 'translation_assist' || action.upgrade === 'signal_tuning';
     if (isMoeSkill) {
       if (state.moeSyncBank < cost) return state;
       return {
