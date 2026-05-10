@@ -354,38 +354,40 @@ export function BattleDevilSprite({
         <strong>{intelLabel}</strong>
         <div><i style={{ width: `${intelPct}%` }} /></div>
       </div>
-      <div className="battle-devil__decode" aria-label="Analyze decode state">
-        {decodeStatuses.map(([label, active]) => (
-          <span key={label} className={active ? 'is-active' : ''}>{label}</span>
-        ))}
+      <div className="battle-devil__action-compact" aria-label="Action forecast">
+        <span>ACTION</span>
+        <strong>
+          {actionReadable
+            ? <i className={`battle-devil__intent-icon intent--${devil.intent}`}>{intentIconMap[devil.intent]}</i>
+            : <i className="battle-devil__intent-icon intent--unknown">?</i>}
+          {actionLabel}
+        </strong>
+        <span>NEXT</span>
+        <strong>
+          {actionReadable && nextIntent
+            ? <i className={`battle-devil__intent-icon intent--${nextIntent}`}>{intentIconMap[nextIntent]}</i>
+            : <i className="battle-devil__intent-icon intent--unknown">?</i>}
+          {nextActionLabel}
+        </strong>
       </div>
-      <small className="battle-devil__decode-summary">{decodeSummary}</small>
-      <div className="battle-devil__action">
-        <span>ACTION READ</span>
-        <div className="battle-devil__action-row">
-          <small>ACTION</small>
-          <strong>
-            {actionReadable
-              ? <i className={`battle-devil__intent-icon intent--${devil.intent}`}>{intentIconMap[devil.intent]}</i>
-              : <i className="battle-devil__intent-icon intent--unknown">?</i>}
-            {actionLabel}
-          </strong>
+      <details
+        className="battle-devil__details"
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+      >
+        <summary>INTEL DETAILS</summary>
+        <div className="battle-devil__decode" aria-label="Analyze decode state">
+          {decodeStatuses.map(([label, active]) => (
+            <span key={label} className={active ? 'is-active' : ''}>{label}</span>
+          ))}
         </div>
-        <div className="battle-devil__action-row battle-devil__action-row--next">
-          <small>NEXT</small>
-          <strong>
-            {actionReadable && nextIntent
-              ? <i className={`battle-devil__intent-icon intent--${nextIntent}`}>{intentIconMap[nextIntent]}</i>
-              : <i className="battle-devil__intent-icon intent--unknown">?</i>}
-            {nextActionLabel}
-          </strong>
+        <small className="battle-devil__decode-summary">{decodeSummary}</small>
+        <small className="battle-devil__outcome">{actionOutcome}</small>
+        <div className="battle-devil__tactic">
+          <span>TACTIC</span>
+          <small>{tacticalHint}</small>
         </div>
-        <em>{actionOutcome}</em>
-      </div>
-      <div className="battle-devil__tactic">
-        <span>TACTIC</span>
-        <small>{tacticalHint}</small>
-      </div>
+      </details>
     </aside>
     {showDebugBadge && (
       <span className={`battle-devil__debug ${canAnimate ? 'is-animated' : ''}`}>

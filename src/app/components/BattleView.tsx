@@ -5,11 +5,6 @@ import type { NaviRouteCandidate, NaviRouteIntelStatus } from '../state/routeGra
 import type { EncounterProfile } from '../../devilConfig';
 import type { CombatFxCue, Devil, EncounterId, ForecastMap, GamePhase, HitFxTone } from '../../game/types';
 
-type IngressStep = {
-  label: string;
-  done: boolean;
-};
-
 type BattleViewProps = {
   gamePhase: GamePhase;
   enemies: Devil[];
@@ -31,7 +26,6 @@ type BattleViewProps = {
   aliveEnemiesCount: number;
   forecast: ForecastMap;
   forecastUnstable: boolean;
-  ingressSteps: IngressStep[];
   windshieldThreatLabel: string;
   routeCandidates?: NaviRouteCandidate[];
   routeIntelStatus?: NaviRouteIntelStatus;
@@ -70,7 +64,6 @@ export const BattleView = ({
   aliveEnemiesCount,
   forecast,
   forecastUnstable,
-  ingressSteps,
   windshieldThreatLabel,
   routeCandidates = [],
   routeIntelStatus,
@@ -89,7 +82,7 @@ export const BattleView = ({
 }: BattleViewProps) => {
   return (
     <section
-    className={`battle-view ${isEncounterActive ? 'is-hot' : ''} ${isRoadMoving ? 'is-cruising' : ''} ${isRoadStopped ? 'is-stopped' : ''} ${isBossPhase ? 'is-boss' : ''} ${hitFxTone ? `is-hitfx-${hitFxTone}` : ''} ${isArmorCritical ? 'is-armor-critical' : ''} ${isWindshieldFolded ? 'is-folded' : ''}`}
+    className={`battle-view ${isEncounterActive ? 'is-hot' : ''} ${isRoadMoving ? 'is-cruising' : ''} ${isRoadStopped ? 'is-stopped' : ''} ${gamePhase === 'route_choice' ? 'is-route-choice' : ''} ${gamePhase === 'route_choice' || gamePhase === 'approach' ? 'is-road-perspective' : ''} ${isBossPhase ? 'is-boss' : ''} ${hitFxTone ? `is-hitfx-${hitFxTone}` : ''} ${isArmorCritical ? 'is-armor-critical' : ''} ${isWindshieldFolded ? 'is-folded' : ''}`}
     >
     <div className="battle-view__frame" aria-hidden="true">
       <span className="battle-view__pillar battle-view__pillar--left" />
@@ -103,7 +96,6 @@ export const BattleView = ({
       <span className="battle-view__viaduct" />
       <span className="battle-view__streetlights" />
       <span className="battle-view__city" />
-      <span className="battle-view__speedlines" />
       <span className="battle-view__mist" />
       <span className="battle-view__headlights" />
       <span className="battle-view__armor-crack" />
@@ -120,19 +112,6 @@ export const BattleView = ({
       <div className="battle-view__boss-alert">
         <span>BOSS SIGNAL</span>
         <strong>TOLL GATE SAINT</strong>
-      </div>
-    )}
-    {gamePhase === 'approach' && (
-      <div className="battle-view__ingress" aria-label="Approach progress">
-        {ingressSteps.map((step, idx) => (
-          <div
-            key={step.label}
-            className={`battle-view__ingress-step ${step.done ? 'is-done' : ''} ${idx === ingressSteps.length - 1 ? 'is-current' : ''}`}
-            aria-label={step.label}
-          >
-            <span aria-hidden="true" />
-          </div>
-        ))}
       </div>
     )}
     <div className="battle-view__devils">

@@ -24,13 +24,11 @@ import type {
   RunSummary,
   SfxCue,
   State,
-  StoryState,
   TerminalLogKind,
   VehicleUpgradeLevels,
 } from '../../game/types';
 import {
   affinityOrder,
-  defaultLoadout,
   defaultSkillLevels,
   defaultVehicleUpgrades,
   rewardCatalog,
@@ -56,14 +54,6 @@ export const pickRewardChoices = (pool: RewardOption[], count = 3): RewardOption
   }
   return shuffled.slice(0, Math.min(count, shuffled.length));
 };
-
-const createInitialStoryState = (): StoryState => ({
-  chapter: 1,
-  recoveredLogs: [],
-  moeMemory: 0,
-  previousDriverClues: 0,
-  recentRecoveredLogs: [],
-});
 
 export const hasAiNaviContract = (contracts: ContractModule[]) => contracts.some((module) => module.id === 'abandoned_ai_navi');
 
@@ -485,10 +475,12 @@ export const pickSfxCueFromLog = (log: string, phase: GamePhase): SfxCue | undef
 export const initState = (): State => {
   const saved = loadSaveData();
   const unlocks = saved.unlocks;
-  const selectedLoadout = sanitizeLoadoutForUnlocks(defaultLoadout, unlocks);
-  const start = getRunStartResources(selectedLoadout, defaultVehicleUpgrades, defaultSkillLevels);
+  const selectedLoadout = sanitizeLoadoutForUnlocks(saved.selectedLoadout, unlocks);
+  const skillLevels = { ...saved.skillLevels };
+  const vehicleUpgrades = { ...saved.vehicleUpgrades };
+  const start = getRunStartResources(selectedLoadout, vehicleUpgrades, skillLevels);
   return {
-    stage: 1,
+    stage: saved.stage,
     stageCount: 3,
     gamePhase: 'prologue',
     fuel: start.fuel,
@@ -520,15 +512,15 @@ export const initState = (): State => {
     previousRun: undefined,
     approach: undefined,
     encounterPrep: createEmptyEncounterPrep(),
-    skillLevels: { ...defaultSkillLevels },
-    vehicleUpgrades: { ...defaultVehicleUpgrades },
+    skillLevels,
+    vehicleUpgrades,
     unlocks,
-    driverXpBank: 1,
-    moeSyncBank: 0,
-    creditBank: 0,
+    driverXpBank: saved.driverXpBank,
+    moeSyncBank: saved.moeSyncBank,
+    creditBank: saved.creditBank,
     growthClaimed: false,
     analyzeSuccessCount: 0,
-    story: createInitialStoryState(),
+    story: { ...saved.story, recentRecoveredLogs: [] },
   };
 };
 

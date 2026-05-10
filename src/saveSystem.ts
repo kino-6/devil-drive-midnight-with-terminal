@@ -1,6 +1,16 @@
 import { MAX_DEBUG_SAVE_ENTRIES, limitStateLogs } from './runtimeLimits';
-import { getAllUnlocks, getInitialUnlocks, mergeUnlocks, normalizeUnlockState } from './game/progression';
-import type { UnlockState } from './game/types';
+import {
+  defaultLoadout,
+  defaultSkillLevels,
+  defaultVehicleUpgrades,
+  garageMainGunOrder,
+  garageSEOrder,
+  garageSubGunOrder,
+  garageSupportOrder,
+  storyLogById,
+} from './game/catalogs';
+import { getAllUnlocks, getInitialUnlocks, mergeUnlocks, normalizeUnlockState, sanitizeLoadoutForUnlocks } from './game/progression';
+import type { Loadout, SkillLevels, State, StoryLogId, StoryState, UnlockState, VehicleUpgradeLevels } from './game/types';
 import { getProgressionConfig } from './progressionConfig';
 
 export type SaveVersion = 1;
@@ -72,6 +82,14 @@ export type SaveData = {
   routeLog: Record<string, RouteLogEntry>;
   moeMemory: Record<string, MoeMemoryEntry>;
   unlocks: UnlockState;
+  selectedLoadout: Loadout;
+  skillLevels: SkillLevels;
+  vehicleUpgrades: VehicleUpgradeLevels;
+  driverXpBank: number;
+  moeSyncBank: number;
+  creditBank: number;
+  stage: number;
+  story: StoryState;
   settings: {
     audioMuted?: boolean;
     reducedMotion?: boolean;
@@ -130,8 +148,71 @@ const unlockStatesMatch = (left: UnlockState, right: UnlockState) =>
 const missingUnlockFallback = (fallback: UnlockState): UnlockState =>
   getProgressionConfig().fallbackMode === 'all' ? getAllUnlocks() : fallback;
 
+const createInitialStoryState = (): StoryState => ({
+  chapter: 1,
+  recoveredLogs: [],
+  moeMemory: 0,
+  previousDriverClues: 0,
+  recentRecoveredLogs: [],
+});
+
+const normalizeLoadout = (raw: unknown, unlocks: UnlockState, fallback: Loadout = defaultLoadout): Loadout => {
+  const source = asObject(raw);
+  const loadout: Loadout = {
+    mainGunId: garageMainGunOrder.includes(source.mainGunId as Loadout['mainGunId'])
+      ? source.mainGunId as Loadout['mainGunId']
+      : fallback.mainGunId,
+    subGunId: garageSubGunOrder.includes(source.subGunId as Loadout['subGunId'])
+      ? source.subGunId as Loadout['subGunId']
+      : fallback.subGunId,
+    specialEquipmentId: garageSEOrder.includes(source.specialEquipmentId as Loadout['specialEquipmentId'])
+      ? source.specialEquipmentId as Loadout['specialEquipmentId']
+      : fallback.specialEquipmentId,
+    contractSupportId: garageSupportOrder.includes(source.contractSupportId as Loadout['contractSupportId'])
+      ? source.contractSupportId as Loadout['contractSupportId']
+      : fallback.contractSupportId,
+  };
+  return sanitizeLoadoutForUnlocks(loadout, unlocks);
+};
+
+const normalizeSkillLevels = (raw: unknown): SkillLevels => {
+  const source = asObject(raw);
+  return Object.fromEntries(
+    Object.entries(defaultSkillLevels).map(([skillId, fallbackLevel]) => [
+      skillId,
+      Math.max(0, Math.floor(asNumber(source[skillId], fallbackLevel))),
+    ]),
+  ) as SkillLevels;
+};
+
+const normalizeVehicleUpgrades = (raw: unknown): VehicleUpgradeLevels => {
+  const source = asObject(raw);
+  return Object.fromEntries(
+    Object.entries(defaultVehicleUpgrades).map(([upgradeId, fallbackLevel]) => [
+      upgradeId,
+      Math.max(0, Math.floor(asNumber(source[upgradeId], fallbackLevel))),
+    ]),
+  ) as VehicleUpgradeLevels;
+};
+
+const normalizeStoryState = (raw: unknown): StoryState => {
+  const fallback = createInitialStoryState();
+  const source = asObject(raw);
+  const normalizeStoryLogIds = (value: unknown): StoryLogId[] =>
+    asStringArray(value).filter((id): id is StoryLogId => id in storyLogById);
+  const recoveredLogs = normalizeStoryLogIds(source.recoveredLogs);
+  return {
+    chapter: Math.max(1, Math.floor(asNumber(source.chapter, Math.max(fallback.chapter, recoveredLogs.length > 0 ? 2 : 1)))),
+    recoveredLogs,
+    moeMemory: Math.max(0, Math.floor(asNumber(source.moeMemory, fallback.moeMemory))),
+    previousDriverClues: Math.max(0, Math.floor(asNumber(source.previousDriverClues, fallback.previousDriverClues))),
+    recentRecoveredLogs: normalizeStoryLogIds(source.recentRecoveredLogs),
+  };
+};
+
 export const createInitialSaveData = (): SaveData => {
   const ts = now();
+  const unlocks = getInitialUnlocks();
   return {
     version: 1,
     createdAt: ts,
@@ -142,7 +223,15 @@ export const createInitialSaveData = (): SaveData => {
     demonArchive: {},
     routeLog: {},
     moeMemory: {},
-    unlocks: getInitialUnlocks(),
+    unlocks,
+    selectedLoadout: normalizeLoadout(defaultLoadout, unlocks),
+    skillLevels: { ...defaultSkillLevels },
+    vehicleUpgrades: { ...defaultVehicleUpgrades },
+    driverXpBank: 1,
+    moeSyncBank: 0,
+    creditBank: 0,
+    stage: 1,
+    story: createInitialStoryState(),
     settings: {},
   };
 };
@@ -269,6 +358,9 @@ export const sanitizeSaveData = (raw: unknown): SaveData => {
     && Object.keys(asObject(source.routeLog)).length === 0
     && Object.keys(asObject(source.moeMemory)).length === 0;
   const unlocks = looksLikeLegacyFullUnlockSave ? fallback.unlocks : normalizedUnlocks;
+  const selectedLoadout = 'selectedLoadout' in source
+    ? normalizeLoadout(source.selectedLoadout, unlocks, fallback.selectedLoadout)
+    : fallback.selectedLoadout;
   return {
     version: 1,
     createdAt,
@@ -280,6 +372,14 @@ export const sanitizeSaveData = (raw: unknown): SaveData => {
     routeLog: normalizeRouteLog(source.routeLog),
     moeMemory: normalizeMoeMemory(source.moeMemory),
     unlocks,
+    selectedLoadout,
+    skillLevels: normalizeSkillLevels(source.skillLevels),
+    vehicleUpgrades: normalizeVehicleUpgrades(source.vehicleUpgrades),
+    driverXpBank: Math.max(0, Math.floor(asNumber(source.driverXpBank, fallback.driverXpBank))),
+    moeSyncBank: Math.max(0, Math.floor(asNumber(source.moeSyncBank, fallback.moeSyncBank))),
+    creditBank: Math.max(0, Math.floor(asNumber(source.creditBank, fallback.creditBank))),
+    stage: Math.max(1, Math.floor(asNumber(source.stage, fallback.stage))),
+    story: normalizeStoryState(source.story),
     settings: {
       audioMuted: settingsRaw.audioMuted === undefined ? undefined : asBool(settingsRaw.audioMuted),
       reducedMotion: settingsRaw.reducedMotion === undefined ? undefined : asBool(settingsRaw.reducedMotion),
@@ -359,6 +459,36 @@ export const saveUnlockState = (unlocks: UnlockState): SaveData =>
     ...current,
     unlocks: mergeUnlocks(current.unlocks, unlocks),
   }));
+
+export const savePersistentProgression = (state: Pick<State,
+  | 'stage'
+  | 'selectedLoadout'
+  | 'skillLevels'
+  | 'vehicleUpgrades'
+  | 'unlocks'
+  | 'driverXpBank'
+  | 'moeSyncBank'
+  | 'creditBank'
+  | 'story'
+>): SaveData =>
+  updateSaveData((current) => {
+    const unlocks = mergeUnlocks(current.unlocks, state.unlocks);
+    return {
+      ...current,
+      stage: Math.max(1, Math.floor(state.stage)),
+      selectedLoadout: sanitizeLoadoutForUnlocks(state.selectedLoadout, unlocks),
+      skillLevels: normalizeSkillLevels(state.skillLevels),
+      vehicleUpgrades: normalizeVehicleUpgrades(state.vehicleUpgrades),
+      unlocks,
+      driverXpBank: Math.max(0, Math.floor(state.driverXpBank)),
+      moeSyncBank: Math.max(0, Math.floor(state.moeSyncBank)),
+      creditBank: Math.max(0, Math.floor(state.creditBank)),
+      story: {
+        ...normalizeStoryState(state.story),
+        recentRecoveredLogs: [],
+      },
+    };
+  });
 
 const safeJsonClone = <T>(value: T): T | null => {
   try {

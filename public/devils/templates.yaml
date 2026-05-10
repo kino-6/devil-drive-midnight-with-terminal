@@ -6,7 +6,7 @@ templates:
     contractable: true
     targetModuleId: "radio_voice"
     affinities:
-      ballistic: "resist"
+      ballistic: "normal"
       suppressive: "normal"
       impact: "normal"
       signal: "weak"
@@ -25,7 +25,7 @@ templates:
     contractable: true
     targetModuleId: "radio_voice"
     affinities:
-      ballistic: "resist"
+      ballistic: "normal"
       suppressive: "normal"
       impact: "normal"
       signal: "weak"
@@ -44,7 +44,7 @@ templates:
     contractable: true
     targetModuleId: "radio_voice"
     affinities:
-      ballistic: "resist"
+      ballistic: "normal"
       suppressive: "normal"
       impact: "normal"
       signal: "weak"
@@ -251,7 +251,7 @@ templates:
     contractable: true
     targetModuleId: "radio_voice"
     affinities:
-      ballistic: "resist"
+      ballistic: "normal"
       suppressive: "normal"
       impact: "normal"
       signal: "weak"
@@ -346,7 +346,7 @@ templates:
     targetModuleId: "radio_voice"
     armored: true
     affinities:
-      ballistic: "resist"
+      ballistic: "normal"
       suppressive: "normal"
       impact: "resist"
       signal: "weak"

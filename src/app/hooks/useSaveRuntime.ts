@@ -5,7 +5,7 @@ import {
   loadSaveData,
   recordRunResult,
   saveAutoSaveSnapshot,
-  saveUnlockState,
+  savePersistentProgression,
   unlockMoeMemory,
   updateSaveData,
   type RunRecord,
@@ -40,7 +40,27 @@ export const useSaveRuntime = ({ state, narrativeMoeLine }: UseSaveRuntimeParams
 
   const saveSnapshot = useMemo(() => loadSaveData(), [saveRefresh]);
   const autoSaveSnapshot = useMemo(() => loadAutoSaveSnapshot<AppRuntimeSaveSnapshot>(), [saveRefresh]);
-  const unlockHash = useMemo(() => JSON.stringify(state.unlocks), [state.unlocks]);
+  const persistentProgressionHash = useMemo(() => JSON.stringify({
+    stage: state.stage,
+    selectedLoadout: state.selectedLoadout,
+    skillLevels: state.skillLevels,
+    vehicleUpgrades: state.vehicleUpgrades,
+    unlocks: state.unlocks,
+    driverXpBank: state.driverXpBank,
+    moeSyncBank: state.moeSyncBank,
+    creditBank: state.creditBank,
+    story: state.story,
+  }), [
+    state.stage,
+    state.selectedLoadout,
+    state.skillLevels,
+    state.vehicleUpgrades,
+    state.unlocks,
+    state.driverXpBank,
+    state.moeSyncBank,
+    state.creditBank,
+    state.story,
+  ]);
 
   const refreshSaveSnapshot = () => setSaveRefresh((value) => value + 1);
   const refreshDebugHeaders = () => setDebugSaveHeaders(listDebugSaveHeaders());
@@ -141,9 +161,9 @@ export const useSaveRuntime = ({ state, narrativeMoeLine }: UseSaveRuntimeParams
   }, [state]);
 
   useEffect(() => {
-    saveUnlockState(state.unlocks);
+    savePersistentProgression(state);
     refreshSaveSnapshot();
-  }, [unlockHash]);
+  }, [persistentProgressionHash]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {

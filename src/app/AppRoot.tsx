@@ -152,12 +152,6 @@ export function App() {
   const liveMoeLine = state.gamePhase === 'garage' ? state.moeLine : narrativeMoeLine;
   const aliveEnemies = state.encounter.enemies.filter(isAlive);
   const approachLineup = state.approach?.lineup ?? [];
-  const ingressSteps = [
-    { label: 'ENTRY RAMP', done: true },
-    { label: 'MIDNIGHT GATE', done: true },
-    { label: 'NAVI SWEEP', done: state.gamePhase !== 'approach' || !!state.approach?.scanSuccess },
-    { label: 'CONTACT', done: state.gamePhase !== 'approach' || !!state.approach },
-  ];
   const runStatus = state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter'
     ? `STG ${String(state.stage).padStart(2, '0')} / WAVE ${String(state.encounterIndex + 1).padStart(2, '0')}`
     : state.gamePhase.toUpperCase();
@@ -545,7 +539,6 @@ const tacticalLinesCompact = tacticalLines
           aliveEnemiesCount={aliveEnemies.length}
           forecast={state.encounter.forecast}
           forecastUnstable={state.encounter.forecastUnstable}
-          ingressSteps={ingressSteps}
           windshieldThreatLabel={windshieldThreatLabel}
           routeCandidates={naviRouteCandidates}
           routeIntelStatus={naviRouteIntelStatus}

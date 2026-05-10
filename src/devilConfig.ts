@@ -85,17 +85,17 @@ export const defaultDevilConfig: DevilConfig = {
   devilTemplates: {
     whisper_broker: {
       name: 'Whisper Broker', maxHp: 6, temperament: 'hungry', contractable: true, profile: 'whisper_broker', targetModuleId: 'radio_voice',
-      affinities: { ...defaultAffinity, signal: 'weak', talk: 'weak', ballistic: 'resist' },
+      affinities: { ...defaultAffinity, signal: 'weak', talk: 'weak', ballistic: 'normal' },
       talkTendency: { successBias: 0.05, trustBonus: 0, interestBonus: 1, failPressure: 1, failIntent: 'bargain' },
     },
     roadside_phone: {
       name: 'Roadside Phone', maxHp: 6, temperament: 'lonely', contractable: true, profile: 'roadside_phone', targetModuleId: 'radio_voice',
-      affinities: { ...defaultAffinity, signal: 'weak', talk: 'weak', ballistic: 'resist' },
+      affinities: { ...defaultAffinity, signal: 'weak', talk: 'weak', ballistic: 'normal' },
       talkTendency: { successBias: 0.08, trustBonus: 1, interestBonus: 0, failPressure: 1, failIntent: 'curse' },
     },
     pixie_shibuya_glow: {
       name: 'Pixie', maxHp: 5, temperament: 'curious', contractable: true, profile: 'pixie_shibuya_glow', targetModuleId: 'radio_voice',
-      affinities: { ballistic: 'resist', suppressive: 'normal', impact: 'normal', signal: 'weak', talk: 'weak' },
+      affinities: { ballistic: 'normal', suppressive: 'normal', impact: 'normal', signal: 'weak', talk: 'weak' },
       talkTendency: { successBias: 0.12, trustBonus: 1, interestBonus: 1, failPressure: 0, failIntent: 'flee' },
     },
     foxfire_navi: {
@@ -150,7 +150,7 @@ export const defaultDevilConfig: DevilConfig = {
     },
     vending_spirit: {
       name: 'Vending Spirit', maxHp: 6, temperament: 'curious', contractable: true, profile: 'vending_spirit', targetModuleId: 'radio_voice',
-      affinities: { ballistic: 'resist', suppressive: 'normal', impact: 'normal', signal: 'weak', talk: 'weak' },
+      affinities: { ballistic: 'normal', suppressive: 'normal', impact: 'normal', signal: 'weak', talk: 'weak' },
       talkTendency: { successBias: 0.1, trustBonus: 1, interestBonus: 1, failPressure: 0, failIntent: 'flee' },
     },
     phantom_patrol: {
@@ -175,7 +175,7 @@ export const defaultDevilConfig: DevilConfig = {
     },
     fuel_tanker_saint: {
       name: 'Fuel Tanker Saint', maxHp: 10, temperament: 'hungry', contractable: true, profile: 'fuel_tanker_saint', targetModuleId: 'radio_voice', armored: true,
-      affinities: { ballistic: 'resist', suppressive: 'normal', impact: 'resist', signal: 'weak', talk: 'normal' },
+      affinities: { ballistic: 'normal', suppressive: 'normal', impact: 'resist', signal: 'weak', talk: 'normal' },
       talkTendency: { successBias: -0.02, trustBonus: 0, interestBonus: 2, failPressure: 2, failIntent: 'bargain' },
     },
     hearse_meridian: {

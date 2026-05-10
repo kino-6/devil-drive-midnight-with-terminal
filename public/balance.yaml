@@ -17,7 +17,7 @@ scan:
 
 affinity:
   weakMultiplier: 1.5
-  resistMultiplier: 0.5
+  resistMultiplier: 0.6
 
 talk:
   baseSuccess: 0.7

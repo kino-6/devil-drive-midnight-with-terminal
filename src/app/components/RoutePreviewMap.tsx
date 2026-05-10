@@ -1,4 +1,4 @@
-import { buildRouteCandidateTitle, routeLaneLabels, routeStepClass, routeStepToken } from './routePreviewHelpers';
+import { buildRouteCandidateTitle, routeLaneLabels, routeStepClass } from './routePreviewHelpers';
 import type { NaviRouteCandidate, NaviRouteIntelStatus } from '../state/routeGraph';
 
 type RoutePreviewMapProps = {
@@ -7,55 +7,67 @@ type RoutePreviewMapProps = {
   onRouteChoice?: (lane: NaviRouteCandidate['choiceId']) => void;
 };
 
+const RouteMapIcon = ({ step }: { step: string }) => (
+  <span className={`route-map__map-icon route-map__map-icon--${routeStepClass(step)}`} aria-hidden="true" />
+);
+
 export const RoutePreviewMap = ({ candidates, intelStatus, onRouteChoice }: RoutePreviewMapProps) => {
   const routePreviewCandidates = candidates.slice(0, 3);
+  const activeSignalBars = intelStatus?.level === 'high' ? 3 : intelStatus?.level === 'medium' ? 2 : 1;
   if (routePreviewCandidates.length === 0) return null;
 
   return (
     <div className="battle-view__route-preview" aria-label="Route candidates">
-      {intelStatus?.isLimited && (
-        <div className={`battle-view__route-status battle-view__route-status--${intelStatus.level}`} title={intelStatus.detail}>
-          <strong>{intelStatus.label}</strong>
-        </div>
-      )}
       <div className="battle-view__route-map" aria-label="Route map">
-        <span className="route-map__boss">BOSS</span>
-        <span className="route-map__origin">NOW</span>
-        <span className="route-map__trunk" />
-        <span className="route-map__branch route-map__branch--left" />
-        <span className="route-map__branch route-map__branch--straight" />
-        <span className="route-map__branch route-map__branch--right" />
+        {intelStatus?.isLimited && (
+          <div
+            className={`route-map__signal-state route-map__signal-state--${intelStatus.level}`}
+            title={`${intelStatus.label}: ${intelStatus.detail}`}
+            aria-label={`${intelStatus.label}: ${intelStatus.detail}`}
+          >
+            <span className="route-map__signal-bars" aria-hidden="true">
+              {[1, 2, 3].map((bar) => (
+                <i key={bar} className={bar <= activeSignalBars ? 'is-active' : ''} />
+              ))}
+            </span>
+            <span className="route-map__signal-mask" aria-hidden="true" />
+          </div>
+        )}
+        <span className="route-map__boss" title="Boss" aria-label="Boss">
+          <RouteMapIcon step="BOSS" />
+        </span>
+        <span className="route-map__origin" title="Current position" aria-label="Current position">
+          <RouteMapIcon step="ORIGIN" />
+        </span>
         {routePreviewCandidates.map((candidate, index) => {
           const laneLabel = routeLaneLabels[index] ?? 'LANE';
-          const primaryStep = candidate.forecast[0] ?? 'FORK';
-          const futureSteps = candidate.forecast.slice(1, 4);
+          const forecastSteps = candidate.forecast.length > 0 ? candidate.forecast.slice(0, 4) : ['FORK'];
           const routeTitle = buildRouteCandidateTitle(candidate, laneLabel);
           return (
-            <div key={`route-map-${candidate.nodeId}-${candidate.choiceId}`} className={`route-map__lane route-map__lane--${index}`}>
-              <button
-                className={`route-map__node route-map__node--${index}`}
-                type="button"
-                onClick={() => onRouteChoice?.(candidate.choiceId)}
-                disabled={!onRouteChoice}
-                aria-label={routeTitle}
-                title={routeTitle}
-              >
-                <span className={`route-map__node-token route-map__step--${routeStepClass(primaryStep)}`}>
-                  {routeStepToken(primaryStep)}
-                </span>
-              </button>
-              <div className="route-map__future" aria-hidden="true">
-                {futureSteps.map((step, stepIndex) => (
+            <button
+              key={`route-map-${candidate.nodeId}-${candidate.choiceId}`}
+              className={`route-map__lane route-map__lane--${index}`}
+              type="button"
+              onClick={() => onRouteChoice?.(candidate.choiceId)}
+              disabled={!onRouteChoice}
+              aria-label={routeTitle}
+              title={routeTitle}
+            >
+              <span className="route-map__path" aria-hidden="true">
+                {forecastSteps.map((step, stepIndex) => (
                   <span
                     key={`${candidate.nodeId}-${step}-${stepIndex}`}
-                    className={`route-map__step route-map__step--${routeStepClass(step)}`}
+                    className={`route-map__path-node route-map__path-node--${stepIndex} route-map__step--${routeStepClass(step)}`}
                   >
-                    {routeStepToken(step)}
+                    <RouteMapIcon step={step} />
                   </span>
                 ))}
-              </div>
-              <small className="route-map__boss-steps">B{candidate.bossSteps ?? '--'}</small>
-            </div>
+              </span>
+              <small className="route-map__boss-steps" title="Steps to boss">
+                <RouteMapIcon step="BOSS" />
+                <span>{candidate.bossSteps ?? '--'}</span>
+              </small>
+            </button>
           );
         })}
       </div>
