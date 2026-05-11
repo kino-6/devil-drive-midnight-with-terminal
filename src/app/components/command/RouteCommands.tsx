@@ -37,6 +37,18 @@ export const RouteCommands = ({
   onReturnExtract,
   onReturnToSurface,
 }: RouteCommandsProps) => {
+  const getRouteSignalMaskPreview = (level: 'low' | 'medium' | 'high') => {
+    if (level === 'high') return undefined;
+    if (level === 'medium') return 'MASKED: reward detail';
+    return state.signal <= 0 ? 'MASKED: tags / risk / reward' : 'MASKED: reward / effects';
+  };
+  const getSignalChoicePreview = (choiceId: SignalChoice['choiceId'], disabled?: boolean) => {
+    if (!disabled) return undefined;
+    if (choiceId === 'analyze_trace') return 'SIGNAL NEEDED: trace lost';
+    if (choiceId === 'open_radio') return 'SIGNAL NEEDED: radio closed';
+    return undefined;
+  };
+
   if (gamePhase === 'reward') {
     return <div className="command-window command-list">
       <button
@@ -61,27 +73,35 @@ export const RouteCommands = ({
             <span>{intelStatus.detail}</span>
           </div>
         )}
-        {naviCandidates.map((candidate) => (
-          <button
-            key={`${candidate.nodeId}-${candidate.choiceId}`}
-            className={candidate.choiceId === 'return_gate' ? 'command-button command-button--danger' : 'command-button command-button--route'}
-            onMouseEnter={() => setHoveredHint(candidate.body ?? `${candidate.title} / ${candidate.note} / risk: ${candidate.risk} / reward: ${candidate.reward}`)}
-            onMouseLeave={clearHoveredHint}
-            onClick={() => onRouteChoice(candidate.choiceId)}
-          >
-            <span className="command-button__label-stack">
-              <strong>{candidate.title}</strong>
-              <small>{candidate.tags}</small>
-              <small>Risk: {candidate.risk}</small>
-              <small>Reward: {candidate.reward}</small>
-              {candidate.resourceWarning && <small className="command-button__warning">{candidate.resourceWarning}</small>}
-            </span>
-            <span className="command-button__meta-stack">
-              <strong>{formatRouteForecast(candidate.forecast)}</strong>
-              <small>BOSS {candidate.bossSteps ?? '--'}</small>
-            </span>
-          </button>
-        ))}
+        {naviCandidates.map((candidate) => {
+          const signalMaskPreview = getRouteSignalMaskPreview(candidate.intelLevel);
+          const hoverHint = [
+            signalMaskPreview,
+            candidate.body ?? `${candidate.title} / ${candidate.note} / risk: ${candidate.risk} / reward: ${candidate.reward}`,
+          ].filter(Boolean).join(' / ');
+          return (
+            <button
+              key={`${candidate.nodeId}-${candidate.choiceId}`}
+              className={candidate.choiceId === 'return_gate' ? 'command-button command-button--danger' : 'command-button command-button--route'}
+              onMouseEnter={() => setHoveredHint(hoverHint)}
+              onMouseLeave={clearHoveredHint}
+              onClick={() => onRouteChoice(candidate.choiceId)}
+            >
+              <span className="command-button__label-stack">
+                <strong>{candidate.title}</strong>
+                <small>{candidate.tags}</small>
+                <small>RISK {candidate.risk}</small>
+                <small>GAIN {candidate.reward}</small>
+                {signalMaskPreview && <small className="command-button__warning">{signalMaskPreview}</small>}
+                {candidate.resourceWarning && <small className="command-button__warning">{candidate.resourceWarning}</small>}
+              </span>
+              <span className="command-button__meta-stack">
+                <strong>{formatRouteForecast(candidate.forecast)}</strong>
+                <small>BOSS {candidate.bossSteps ?? '--'}</small>
+              </span>
+            </button>
+          );
+        })}
       </div>;
     }
 
@@ -104,12 +124,17 @@ export const RouteCommands = ({
       {rewardOptions.map((option: RewardOption) => <button
         key={option.id}
         className={`command-button command-button--route ${option.salvagePriority ? `command-button--salvage-${option.salvagePriority}` : ''}`}
-        onMouseEnter={() => setHoveredHint(`回収候補: ${option.label} / ${option.detail}${option.salvageContext ? ` / ${option.salvageContext}` : ''}`)}
+        onMouseEnter={() => setHoveredHint(`回収候補: ${option.label} / ${option.detail}${option.salvageTags?.length ? ` / ${option.salvageTags.join(' / ')}` : ''}${option.salvageContext ? ` / ${option.salvageContext}` : ''}`)}
         onMouseLeave={clearHoveredHint}
         onClick={() => onSalvagePick(option.id)}
       >
         <span className="command-button__label-stack">
           <strong>{option.label}</strong>
+          {(option.salvageTags?.length ?? 0) > 0 && (
+            <span className="salvage-tag-row" aria-label="Salvage context tags">
+              {(option.salvageTags ?? []).map((tag) => <i key={tag}>{tag}</i>)}
+            </span>
+          )}
           {option.salvageContext && <small>{option.salvageContext}</small>}
         </span>
         <span className="command-button__meta-stack">
@@ -122,26 +147,45 @@ export const RouteCommands = ({
 
   if (gamePhase === 'signal') {
     return <div className="command-window command-list">
-      {signalChoices.map((choice) => (
-        <button
-          key={choice.id}
-          className={choice.choiceId === 'open_radio' ? 'command-button command-button--contract' : 'command-button command-button--route'}
-          onMouseEnter={() => setHoveredHint(choice.text || '')}
-          onMouseLeave={clearHoveredHint}
-          onClick={() => onSignalRouteChoice(choice.choiceId)}
-          disabled={choice.disabled}
-        >
-          {choice.label}
-        </button>
-      ))}
+      {signalChoices.map((choice) => {
+        const preview = getSignalChoicePreview(choice.choiceId, choice.disabled);
+        return (
+          <button
+            key={choice.id}
+            className={choice.choiceId === 'open_radio' ? 'command-button command-button--contract' : 'command-button command-button--route'}
+            onMouseEnter={() => setHoveredHint([choice.text, preview].filter(Boolean).join(' / '))}
+            onMouseLeave={clearHoveredHint}
+            onClick={() => onSignalRouteChoice(choice.choiceId)}
+            disabled={choice.disabled}
+          >
+            <span className="command-button__label-stack">
+              <span className="command-button__label">{choice.label}</span>
+              {preview && <small className="command-button__warning">{preview}</small>}
+            </span>
+          </button>
+        );
+      })}
     </div>;
   }
 
   if (gamePhase === 'boss_preview') {
+    const backtrackPrediction = state.routeState?.lastReturnCheckpointId
+      ? 'GAIN SAFE EXTRACT / COST BACKTRACK / RISK FUEL/ARMOR/SIGNAL'
+      : 'GAIN RETURN ATTEMPT / COST BACKTRACK / RISK NO CHECKPOINT';
     return <div className="command-window command-list">
       <button className="command-button command-button--danger" onMouseEnter={() => setHoveredHint(getDialogueLine('hint.hover.boss.challenge', '深層反応に挑む。高リスク高リターン。'))} onMouseLeave={clearHoveredHint} onClick={() => onBossPreviewChoice('challenge')}>Challenge Deep Signal</button>
       <button className="command-button command-button--route" onMouseEnter={() => setHoveredHint(getDialogueLine('hint.hover.boss.emergency_salvage', '応急補給してから突入。安定重視。'))} onMouseLeave={clearHoveredHint} onClick={() => onBossPreviewChoice('emergency_salvage')}>Emergency Salvage</button>
-      <button className="command-button command-button--route" onMouseEnter={() => setHoveredHint(getDialogueLine('hint.hover.boss.return_gate', '帰還ポイントまで戻る。途中で小さな撤退リスクがある。'))} onMouseLeave={clearHoveredHint} onClick={() => onBossPreviewChoice('return_gate')}>Backtrack</button>
+      <button
+        className="command-button command-button--route"
+        onMouseEnter={() => setHoveredHint(`${getDialogueLine('hint.hover.boss.return_gate', '帰還ポイントまで戻る。途中で小さな撤退リスクがある。')} / ${backtrackPrediction}`)}
+        onMouseLeave={clearHoveredHint}
+        onClick={() => onBossPreviewChoice('return_gate')}
+      >
+        <span className="command-button__label-stack">
+          <span className="command-button__label">Backtrack</span>
+          <small className="command-button__prediction">{backtrackPrediction}</small>
+        </span>
+      </button>
     </div>;
   }
 

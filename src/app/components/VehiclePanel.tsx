@@ -1,7 +1,7 @@
 import { ResourceMeter } from '../../components/DashboardWidgets';
 import { AssetFigure } from '../../components/EncounterVisuals';
 import { contractLabels } from '../../game/catalogs';
-import { resourceDescriptions } from '../../game/resourceGlossary';
+import { getResourceDescription } from '../../game/resourceGlossary';
 import { getSupportDaemonStability } from '../../game/runtimeHelpers';
 import type { State } from '../../game/types';
 
@@ -27,8 +27,14 @@ export const VehiclePanel = ({
   selectedMainGunName,
   selectedSubGunName,
   selectedSEName,
-}: VehiclePanelProps) => (
-  <section className="vehicle-panel vehicle-panel--inline panel">
+}: VehiclePanelProps) => {
+  const resourceLow = state.fuel / Math.max(1, dashboardFuelMax) <= 0.35
+    || state.armor / Math.max(1, dashboardArmorMax) <= 0.35
+    || state.signal / Math.max(1, dashboardSignalMax) <= 0.35
+    || state.mainAmmo / Math.max(1, state.maxMainAmmo) <= 0.35
+    || state.seAmmo / Math.max(1, state.maxSeAmmo) <= 0.35;
+
+  return <section className={`vehicle-panel vehicle-panel--inline panel ${resourceLow ? 'vehicle-panel--resource-low' : ''}`}>
     <div className="panel-title">
       <span>
         <AssetFigure
@@ -42,11 +48,11 @@ export const VehiclePanel = ({
       </span>
     </div>
     <div className="vehicle-panel__meters">
-      <ResourceMeter label="Fuel" value={state.fuel} max={dashboardFuelMax} tone="fuel" description={resourceDescriptions.fuel} />
-      <ResourceMeter label="Armor" value={state.armor} max={dashboardArmorMax} tone="armor" description={resourceDescriptions.armor} />
-      <ResourceMeter label="Signal" value={state.signal} max={dashboardSignalMax} tone="signal" description={resourceDescriptions.signal} />
-      <ResourceMeter label="Main Ammo" value={state.mainAmmo} max={state.maxMainAmmo} tone="ammo" description={resourceDescriptions.mainAmmo} />
-      <ResourceMeter label="S-E Ammo" value={state.seAmmo} max={state.maxSeAmmo} tone="seammo" description={resourceDescriptions.seAmmo} />
+      <ResourceMeter label="Fuel" value={state.fuel} max={dashboardFuelMax} tone="fuel" description={getResourceDescription('fuel', state.fuel, dashboardFuelMax)} />
+      <ResourceMeter label="Armor" value={state.armor} max={dashboardArmorMax} tone="armor" description={getResourceDescription('armor', state.armor, dashboardArmorMax)} />
+      <ResourceMeter label="Signal" value={state.signal} max={dashboardSignalMax} tone="signal" description={getResourceDescription('signal', state.signal, dashboardSignalMax)} />
+      <ResourceMeter label="Main Ammo" value={state.mainAmmo} max={state.maxMainAmmo} tone="ammo" description={getResourceDescription('mainAmmo', state.mainAmmo, state.maxMainAmmo)} />
+      <ResourceMeter label="S-E Ammo" value={state.seAmmo} max={state.maxSeAmmo} tone="seammo" description={getResourceDescription('seAmmo', state.seAmmo, state.maxSeAmmo)} />
     </div>
     <div className="contract-slots">
       <div className="panel-title panel-title--compact">
@@ -79,5 +85,5 @@ export const VehiclePanel = ({
       <div className="empty-slot">GUARD: {state.encounter.guardActive ? 'ACTIVE' : 'OFF'}</div>
       <div className="empty-slot">SALVAGE CREDIT: {state.salvageCredits}</div>
     </div>
-  </section>
-);
+  </section>;
+};

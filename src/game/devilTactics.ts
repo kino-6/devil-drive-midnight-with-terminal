@@ -2,7 +2,7 @@ import type { Devil } from './types';
 
 export const getDevilTacticalHint = (devil: Devil, identityKnown: boolean): string => {
   if (!identityKnown) return 'Analyze first: name, action, and weakness are masked.';
-  if (devil.armored) return 'Armored: Main/Ram lose bite. Use S-E, Signal, or Analyze lock.';
+  if (devil.armored) return 'Armored: Ram loses bite. Main still works; S-E/Signal opens cleaner turns.';
   switch (devil.temperament) {
     case 'hostile':
       return 'Hostile: Guard or jam intent before trading shots.';

@@ -213,6 +213,7 @@ export const buildDevil = (kind: EncounterId, index: number, stage = 1): Devil =
     intelProgress: persistedIntel,
     intelThreshold,
     analyzeVulnerableTurns: 0,
+    talkBreakTurns: 0,
     profile: t.profile,
     talkPersona: assignTalkPersona(t.profile, `${kind}-${index}`, stage),
     empDisabledTurns: 0,

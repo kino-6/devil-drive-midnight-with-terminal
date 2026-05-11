@@ -11,6 +11,7 @@ type BattleViewProps = {
   enemies: Devil[];
   selectedEnemyId: string;
   analyzedEnemyIds: string[];
+  signal: number;
   approachLineup: EncounterId[];
   approachScanSuccess: boolean;
   approachRevealIdentity: boolean;
@@ -51,6 +52,7 @@ export const BattleView = ({
   enemies,
   selectedEnemyId,
   analyzedEnemyIds,
+  signal,
   approachLineup,
   approachScanSuccess,
   approachRevealIdentity,
@@ -153,6 +155,7 @@ export const BattleView = ({
               damagePops={damagePops.filter((pop) => pop.enemyId === enemy.id)}
               intentForecast={forecast[enemy.id] ?? []}
               forecastUnstable={forecastUnstable}
+              signal={signal}
               onSelect={() => onSelectEnemy(enemy.id)}
               onHoverEnemy={onHoverEnemy}
               encounterProfiles={profiles}

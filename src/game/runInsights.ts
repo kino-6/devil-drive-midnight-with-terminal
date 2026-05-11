@@ -1,32 +1,62 @@
 import type { RunRecord } from '../saveSystem';
+import type { State } from './types';
+import { isWipeoutCarryback } from './carryback';
 
 export const resultLabel = (value?: string) => value ?? 'Unknown';
 
 export const buildMoeRunComment = (record: RunRecord): string => {
   const { fuel, armor, signal } = record.finalResources;
   if (armor <= 0) {
-    return 'Armor depletion detected. Consider Guard timing, Armor Patch rewards, or Silent Shape support.';
+    return 'Armor lost. Next: Guard timing or Armor reward.';
   }
   if (fuel <= 0) {
-    return 'Fuel loss terminated the route. Consider Safe Mainline or earlier Return Gate.';
+    return 'Fuel lost. Next: shorter lane or earlier Return.';
   }
   if (signal <= 0) {
-    return 'Signal dropped below safe threshold. Consider fewer Analyze calls or Signal Core rewards.';
+    return 'Signal lost. Next: fewer reads or Signal reward.';
   }
   if (record.analyzedEnemies.length === 0) {
-    return 'No Analyze record found. Revealing affinities may reduce unnecessary damage.';
+    return 'No Analyze. Next: read one target early.';
   }
   if (record.contractsAcquired.length === 0 && record.analyzedEnemies.length > 0) {
-    return 'No negotiation trace found. Contract modules may change the next run\'s route options.';
+    return 'No Contract. Next: try Talk window.';
   }
   if (!record.bossChallenged) {
-    return 'Boss route was avoided. Prepare fuel and armor before crossing the Deep Toll signal.';
+    return 'Boss avoided. Next: enter with Fuel/Armor margin.';
   }
   if (record.bossCleared) {
-    return 'Boss clear confirmed. Next objective: optimize contract route or uncover remaining memory logs.';
+    return 'Boss clear. Next: contract route or memory logs.';
   }
   if (record.returnGateUsed) {
-    return 'Return route completed. Next run: push one lane deeper before disengaging.';
+    return 'Return complete. Next: one lane deeper.';
   }
-  return 'Run data logged. Tune loadout based on weakest resource and re-enter the loop.';
+  return 'Run logged. Tune weakest resource.';
+};
+
+export const buildResultDecisionLines = (state: State): string[] => {
+  const returnLine = (() => {
+    if (state.resultType === 'Boss Cleared') return 'Extract: Boss toll clear';
+    if (isWipeoutCarryback(state)) return 'Carryback: Partial growth';
+    if (state.routeState?.returnIntent === 'backtracking') return 'Backtrack: Checkpoint reacquired';
+    if (state.resultType === 'Early Return' || state.resultType === 'Boss Avoided') {
+      return 'Extract: Growth secured';
+    }
+    return 'Risk End: No Return Point';
+  })();
+
+  const signalLine = (() => {
+    if (state.signal <= 0) return 'Signal 0: Reads constrained';
+    if (state.signal <= 2) return 'Signal Low: Forecast narrow';
+    return 'Signal OK: Reads available';
+  })();
+
+  const talkBreakCount = state.logs.filter((log) => log.includes('TALK BREAK: ACTION SHIFT')).length;
+  const actionReadableCount = state.logs.filter((log) => log.includes('ACTION READABLE')).length;
+  const actionLine = talkBreakCount > 0
+    ? `Talk Break x${talkBreakCount}: Action shifted`
+    : actionReadableCount > 0
+      ? `Action Read x${actionReadableCount}: Target window`
+      : 'Action Read: None';
+
+  return [returnLine, signalLine, actionLine];
 };

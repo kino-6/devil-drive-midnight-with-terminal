@@ -78,6 +78,7 @@ export type RewardOption = {
   salvageContext?: string;
   salvageConsequence?: string;
   salvagePriority?: 'critical' | 'useful' | 'prep' | 'event';
+  salvageTags?: string[];
 };
 export type MainGun = { id: MainGunId; name: string; damage: number; ammo: number; effect?: 'intel' | 'contract'; description: string };
 export type SubGun = { id: SubGunId; name: string; damage: number; mode: 'all' | 'random_hits'; hits?: number; softenChance?: number; pressureMode?: 'build' | 'cool'; description: string };
@@ -111,6 +112,7 @@ export type Devil = {
   intelProgress: number;
   intelThreshold: number;
   analyzeVulnerableTurns?: number;
+  talkBreakTurns?: number;
   profile: EncounterId;
   empDisabledTurns: number;
   exit?: 'defeated' | 'contracted' | 'fled';

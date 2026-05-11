@@ -32,33 +32,33 @@ const resourceCopy: Record<'fuel' | 'armor' | 'signal' | 'mainAmmo' | 'seAmmo' |
 }> = {
   fuel: {
     label: 'Fuel',
-    use: '進路選択、Escape、撤退の余裕を戻す。',
-    prep: '帰還や寄り道を残す保険。',
+    use: 'Route margin',
+    prep: 'Return margin',
   },
   armor: {
     label: 'Armor',
-    use: '被弾とRamの余裕を戻す。',
-    prep: '次接敵でGuardに頼り切らない保険。',
+    use: 'Hit margin',
+    prep: 'Guard buffer',
   },
   signal: {
     label: 'Signal',
-    use: 'Analyze、Talk支払い、進路予測を戻す。',
-    prep: 'UNKNOWN相手と分岐判断を読む保険。',
+    use: 'Read/Talk margin',
+    prep: 'Forecast buffer',
   },
   mainAmmo: {
     label: 'Main Ammo',
-    use: '単体撃破とBoss押し込みの弾を戻す。',
-    prep: '硬い敵を削り切るための保険。',
+    use: 'Kill pressure',
+    prep: 'Boss buffer',
   },
   seAmmo: {
     label: 'S-E Ammo',
-    use: 'Analyze補助、EMP、契約窓、Boss対策を戻す。',
-    prep: 'Signal寄りの戦術を残す保険。',
+    use: 'EMP/Contract',
+    prep: 'Signal tactic',
   },
   mixed: {
     label: 'Mixed',
-    use: '複数資源を少しずつ戻して事故を減らす。',
-    prep: '尖らない代わりに次区画の安定を取る。',
+    use: 'All-round buffer',
+    prep: 'Stable next lane',
   },
 };
 
@@ -68,15 +68,32 @@ export const buildSituationalSalvageChoices = (
   eventId: string | undefined,
 ): RewardOption[] => {
   const status = getResourceStatus(state);
-  const eventRewardId = getEventById(eventId)?.rewardId;
+  const event = getEventById(eventId);
+  const eventRewardId = event?.rewardId;
+  const eventTagLabels = (event?.tags ?? [])
+    .filter((tag) => tag !== 'one_pull')
+    .slice(0, 2)
+    .map((tag) => tag.toUpperCase());
+  const siteTag = event?.title ? event.title.toUpperCase() : 'SALVAGE SITE';
+  const buildTags = (resourceLabel: string, priority: RewardOption['salvagePriority']) => [
+    siteTag,
+    priority === 'critical' ? `${resourceLabel.toUpperCase()} LOW` : priority === 'event' ? 'SITE MATCH' : resourceLabel.toUpperCase(),
+    ...eventTagLabels,
+    'ONE PULL',
+  ].slice(0, 4);
+
   return rewards.map((reward) => {
     const primary = getPrimaryResource(reward);
     if (primary === 'mixed') {
+      const priority: RewardOption['salvagePriority'] = eventRewardId === reward.id ? 'event' : 'prep';
       return {
         ...reward,
-        salvageContext: resourceCopy.mixed.use,
-        salvageConsequence: '一つ拾うと、残りの補給反応は閉じる。',
-        salvagePriority: eventRewardId === reward.id ? 'event' : 'prep',
+        salvageContext: eventRewardId === reward.id
+          ? `SITE MATCH / ${resourceCopy.mixed.use}`
+          : resourceCopy.mixed.use,
+        salvageConsequence: 'ONE PULL',
+        salvagePriority: priority,
+        salvageTags: buildTags(resourceCopy.mixed.label, priority),
       };
     }
     const res = status[primary];
@@ -89,17 +106,18 @@ export const buildSituationalSalvageChoices = (
           ? 'useful'
           : 'prep';
     const needLine = res.critical
-      ? `${copy.label} ${res.current}/${res.max}。今いちばん事故りやすい不足。`
+      ? `${copy.label} ${res.current}/${res.max} LOW`
       : res.current < res.max
-        ? `${copy.label} ${res.current}/${res.max}。削れた分を戻せる。`
-        : `${copy.label} ${res.current}/${res.max}。満タン寄り、先の備え。`;
+        ? `${copy.label} ${res.current}/${res.max} REFILL`
+        : `${copy.label} ${res.current}/${res.max} PREP`;
     return {
       ...reward,
       salvageContext: eventRewardId === reward.id
-        ? `この地点の本命反応。${copy.use}`
-        : `${needLine} ${res.critical ? copy.use : copy.prep}`,
-      salvageConsequence: '一つ拾うと、残りの補給反応は閉じる。',
+        ? `SITE MATCH / ${copy.use}`
+        : `${needLine} / ${res.critical ? copy.use : copy.prep}`,
+      salvageConsequence: 'ONE PULL',
       salvagePriority: priority,
+      salvageTags: buildTags(copy.label, priority),
     };
   });
 };

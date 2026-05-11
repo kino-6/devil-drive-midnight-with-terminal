@@ -33,6 +33,20 @@ export const GarageStageSelect = ({
     () => getMoeLine('moe.garage.sortie_confirm', '準備完了なら、出る。まだならここで調整して。', undefined, 'soft'),
     [showGarageLaunchConfirm],
   );
+  const readiness = [
+    { id: 'fuel', icon: 'F', label: 'Fuel', value: nextRunPreview.fuel, status: nextRunPreview.fuel >= 6 ? 'ready' : 'tight' },
+    { id: 'armor', icon: 'A', label: 'Armor', value: nextRunPreview.armor, status: nextRunPreview.armor >= 6 ? 'ready' : 'tight' },
+    { id: 'signal', icon: 'S', label: 'Signal', value: nextRunPreview.signal, status: nextRunPreview.signal >= 2 ? 'ready' : 'tight' },
+    { id: 'main', icon: 'M', label: 'Main', value: nextRunPreview.mainAmmo, status: nextRunPreview.mainAmmo >= 4 ? 'ready' : 'tight' },
+    { id: 'se', icon: 'SE', label: 'S-E', value: nextRunPreview.seAmmo, status: nextRunPreview.seAmmo >= 1 ? 'ready' : 'tight' },
+    {
+      id: 'return',
+      icon: 'R',
+      label: 'Return',
+      value: nextRunPreview.fuel >= 4 && nextRunPreview.armor >= 4 ? 'OK' : 'TIGHT',
+      status: nextRunPreview.fuel >= 4 && nextRunPreview.armor >= 4 ? 'ready' : 'tight',
+    },
+  ] as const;
 
   return <>
     <div className="command-window">
@@ -55,6 +69,18 @@ export const GarageStageSelect = ({
         {selectedStageProfile.subtitle}
       </small>
       <small>戦力判定: {selectedStageAdvisory}</small>
+    </div>
+    <div className="command-window">
+      <strong>LAUNCH READINESS</strong>
+      <div className="launch-readiness-grid" aria-label="Launch readiness">
+        {readiness.map((item) => (
+          <div key={item.id} className={`launch-readiness-tile launch-readiness-tile--${item.status}`}>
+            <span>{item.icon}</span>
+            <small>{item.label}</small>
+            <strong>{item.value}</strong>
+          </div>
+        ))}
+      </div>
     </div>
     <div className="command-window command-list">
       {!showGarageLaunchConfirm

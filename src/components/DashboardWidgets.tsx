@@ -23,7 +23,7 @@ export function ResourceMeter({
 }) {
   const safeMax = Math.max(1, max);
   const pct = Math.max(0, Math.min(100, (value / safeMax) * 100));
-  const isLow = tone !== 'signal' && pct <= 35;
+  const isLow = pct <= 35;
   const blockCount = Math.min(12, safeMax);
   const filledBlocks = Math.min(blockCount, Math.max(0, value));
   const blocks = Array.from({ length: blockCount }, (_, index) => index < filledBlocks);

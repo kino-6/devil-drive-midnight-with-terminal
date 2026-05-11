@@ -130,7 +130,7 @@ export const defaultDialogueConfig: DialogueConfig = {
     'hint.command.sub_gun': '副砲で牽制。複数の敵に触って流れを作る。',
     'hint.command.se_harpoon': 'S-Eは切り札。契約狙いか妨害か、撃ちどころが命。',
     'hint.command.analyze': 'まず読む。相性を見れば無駄打ちを減らせる。',
-    'hint.command.talk': '会話は最短ルートになり得る。圧を上げすぎないで。',
+    'hint.command.talk': 'Talk成功でActionを曲げて、次の被害とRoute読みを少し楽にできる。',
     'hint.command.contract': '契約窓が開いたら一気に。迷うと閉じる。',
     'hint.command.ram': '体当たりは強いけど車体を削る。短期決戦向き。',
     'hint.command.guard': '防御姿勢。次の被害を抑えて立て直す手。',

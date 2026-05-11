@@ -170,7 +170,7 @@ export const defaultDevilConfig: DevilConfig = {
     },
     mirror_curve: {
       name: 'Mirror Curve', maxHp: 7, temperament: 'curious', contractable: true, profile: 'mirror_curve', targetModuleId: 'abandoned_ai_navi',
-      affinities: { ballistic: 'resist', suppressive: 'normal', impact: 'normal', signal: 'weak', talk: 'normal' },
+      affinities: { ballistic: 'normal', suppressive: 'normal', impact: 'normal', signal: 'weak', talk: 'normal' },
       talkTendency: { successBias: 0.02, trustBonus: 0, interestBonus: 1, failPressure: 1, failIntent: 'curse' },
     },
     fuel_tanker_saint: {

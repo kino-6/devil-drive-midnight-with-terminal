@@ -75,7 +75,7 @@ export const useCommandDerived = ({
         baseDamage,
         affinity,
         variance,
-        flatReduction: shield,
+        flatReduction: shield - talkBreakBonus,
         armored,
       }));
       const min = Math.min(...bounds.map((range) => range.min));
@@ -83,6 +83,7 @@ export const useCommandDerived = ({
       return `${target && !targetAnalyzed ? '~' : ''}${min}-${max}`;
     };
     const shield = target?.guardStacks && target.guardStacks > 0 ? 1 : 0;
+    const talkBreakBonus = target?.talkBreakTurns && target.talkBreakTurns > 0 ? 1 : 0;
     if (commandId === 'main_gun') {
       return estimateDamage({
         baseDamage: selectedMainGun.damage + state.skillLevels.gunnery,

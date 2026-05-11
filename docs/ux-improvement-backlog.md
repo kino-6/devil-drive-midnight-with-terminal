@@ -1,180 +1,63 @@
 # UX Improvement Backlog
 
-このメモは、ゲームとしての分かりやすさ、納得感、選択の気持ちよさを上げるためのUX改善候補です。実装理想論ではなく、現在の画面・状態・データ構造から自然に接続できる項目を優先します。
+このファイルは実装順のTodoだけを置く。背景、判断基準、過去の完了項目は `docs/ux-improvement-reference.md` を参照する。UIの文字量は `docs/steering.md` の方針を優先する。
 
-## 方針
+## Todo
 
-- 画面上の文字量を増やさず、まずは「判断に必要な情報」だけを残す。
-- 重要情報は hover だけに置かず、プレイヤーが行動前に見える場所へ出す。
-- NAVI / M.O.E. の説明は補助に留め、判断材料はUIで読めるようにする。
-- 戦闘、ルート、補給、帰還の各選択で「予測 -> 実行 -> 結果」がつながる見え方にする。
-- React側に長文や条件を増やさず、文言は dialogue / events / config へ寄せる。
+1. [x] 戦闘: `Action` 中心の敵カードに整理する
+   - [x] 敵カードの常時表示を `HP / Analyze / Action` に絞る。
+   - [x] `Next` 予測は hover / details / Analyze深度が高い時だけに畳む。
+   - [x] `Action` 行はアイコン + 行動名 + 影響チップ1つにする。
+   - [x] `Action` の危険度を色で分ける。防御/待機は中立、リソース消費は警告、Armor/HP被害は危険。
+   - [x] 未解析カードは `ACTION LOCKED` と不足理由を1行だけ出す。
+   - [x] M.O.E.の助言は `Action` を読む一文に寄せる。
 
-## P0: 直近で効く改善
+2. [x] 戦闘: Command hoverを `Action` への相性表示にする
+   - [x] 選択中コマンドが敵の `Action` にどう噛み合うかだけを短く出す。
+   - [x] 表示例は `Breaks Guard`, `Risk: Bargain cost`, `Safe into Guard` 程度に抑える。
+   - [x] 与ダメ詳細や計算内訳は hover details / Terminal Log へ送る。
 
-### 戦闘: ダメージの納得感
+3. [x] Signal不足の損失プレビューを行動前に出す
+   - [x] Route候補で伏せられる情報を短く表示する。
+   - [x] Analyzeで読めない情報を短く表示する。
+   - [x] Talkで増える支払い、または失う選択肢を短く表示する。
 
-現状:
-- 攻撃結果がログやHP変化で分かるが、画面上では「いつ、どれだけ入ったか」が弱い。
-- Damage Rangeは出始めたが、相性未解析時の不確実性とAnalyze後の確度差をもっと見せたい。
+4. [x] M.O.E. Skill強化のBefore/AfterをGarageに出す
+   - [x] `signal_tuning` などで改善される効果を明記する。
+   - [x] 表示は `Route read +1`, `Scan stability +`, `Analyze variance down` 程度の短いチップにする。
+   - [x] 文言はReactへ直書きせず、config / dialogue 側へ寄せる。
 
-改善:
-- [x] 敵カード上のダメージポップを維持しつつ、弱点/耐性時は色または短いタグで差を出す。
-- [x] Command上の固定 `DMG` 表示を抑え、与ダメ目安は hover / 詳細側へ逃がしてはみ出しを防ぐ。
-- [ ] Analyze完了時に `ACTION READABLE`, `WEAKNESS DECODED`, `FULL ANALYZE` を敵UI上で短時間だけ表示する。
+5. [x] Salvageを状況付き選択にする
+   - [x] Salvageイベントに場所、制約、危険、拾える理由を短く持たせる。
+   - [x] 候補カードは `効果 + 状況タグ` までに抑える。
+   - [x] 今困っている資源を優先して強調する。
 
-読むファイル:
-- `src/app/hooks/useCommandDerived.ts`
-- `src/app/hooks/useUiEffects.ts`
-- `src/components/EncounterVisuals.tsx`
-- `src/app/state/combatReducer.ts`
+6. [x] Command予測の形式を統一する
+   - [x] 攻撃、Talk、Route、Backtrackの行動前表示を `GAIN / COST / RISK` 系に揃える。
+   - [x] 常時表示は必要最小限にし、詳細は hover / Terminal Log へ畳む。
+   - [x] Commandボタンは選択中だけ短いサブラインを表示する。
 
-### 戦闘: 敵ごとの戦術差
+7. [x] Resultに今回の判断ログを短く出す
+   - [x] ResultPanelで3行程度の振り返りを表示する。
+   - [x] 例: `Signal shortage hid 2 routes`, `Backtrack cost: Fuel`, `Safe Extract reached`。
+   - [x] 詳細ログとは分け、次Runへの学びだけを残す。
 
-現状:
-- 名前と画像の違いに比べて、最適行動の違いがまだ薄い。
-- 「押し切る」以外の判断が見えにくい敵がいる。
+8. [x] Garage初期体験をLaunch Readiness化する
+   - [x] 初回Garageは `Fuel / Armor / Signal / Ammo / Return` の準備状態をアイコン中心で見せる。
+   - [x] 初回、帰還後、出撃確認、装備変更でM.O.E.文言プールを分ける。
+   - [x] Locked装備はカード面積を抑え、購入可能/未達成の違いだけ見せる。
+   - [x] Debug Save表示は起動debug時だけ見えるようにする。
 
-改善:
-- [x] 敵ごとに `Action`, `Next`, `Weak`, `Tactic` のうち最低1つは明確な判断差を持たせる。
-- [x] Analyze後の `Action` / `Next` に `ARMOR -2` など結果予測チップを出す。
-- [ ] 抵抗が多い Main Cannon 寄りの敵は一部調整し、Sub / S-E / Ram / Talk が刺さる場面を増やす。
+9. [x] Terminal / Dashboard の役割を整理する
+   - [x] Windshieldは敵/Map/状況の視覚情報に寄せる。
+   - [x] Commandは行動選択と必要最小限の結果予測に寄せる。
+   - [x] M.O.E.は重要な助言1文に寄せる。
+   - [x] Terminal Logは履歴と詳細に寄せる。
+   - [x] Vehicle Dashboardは残量と危険状態に寄せ、警告状態以外は主張を少し下げる。
 
-読むファイル:
-- `public/devils/templates.yaml`
-- `src/devilConfig.ts`
-- `public/balance.yaml`
-- `src/game/devilTactics.ts`
+## Done
 
-### Route: Mapで選ぶ楽しさ
-
-現状:
-- Route選択は改善されたが、文字情報がまだ多くなりやすい。
-- 3手先の見通しは面白いが、アイコン主体にしないと読み疲れする。
-
-改善:
-- [x] `SUP / SIG / CNT / GATE / BOSS` の文字列はコマンド一覧側に寄せ、WindshieldのMapはアイコン中心にする。
-- [x] Signal不足時は `UNKNOWN` ではなく、どの情報が伏せられているかをアイコン/マスクで示す。
-- [x] 左右/直進の候補Windowはクリック可能領域を明確にし、はみ出しを避ける。
-- [x] `routeState` とStage graphから現在位置起点のMapを生成し、選択可能ノードをクリックして進路決定できるようにする。
-
-読むファイル:
-- `src/app/components/RoutePreviewMap.tsx`
-- `src/app/components/routePreviewHelpers.ts`
-- `src/app/state/routeGraph.ts`
-- `src/styles.css`
-
-## P1: 次に効く改善
-
-### Signalの意味を行動前に見せる
-
-現状:
-- SignalはAnalyze、Talk支払い、Scan成功率、進路予測などに効くが、状況ごとの不足理由がまだ伝わりにくい。
-
-改善:
-- Signal 0/low時、Route候補・Analyze・Talkに「何が失われるか」を短く表示する。
-- Vehicle DashboardのSignal hoverには用途だけでなく、現在の状態による警告を追加する。
-- M.O.E. Skillの `signal_tuning` 強化で何が改善されたかをGarage上で明記する。
-
-読むファイル:
-- `src/game/resourceGlossary.ts`
-- `src/app/components/VehiclePanel.tsx`
-- `src/app/components/garage/GarageGrowthSection.tsx`
-- `src/game/signalSystem.ts`
-
-### 補給イベントを状況付き選択にする
-
-現状:
-- 補給候補は機能的だが、「なぜここに1つだけ拾えるのか」「どんな場所なのか」が弱い。
-
-改善:
-- Salvageイベントを「場所/制約/危険/拾える理由」の短い状況文にする。
-- 選択肢は `今困っている資源` を優先して強調する。
-- 文章を増やしすぎず、候補カードは `効果 + 状況タグ` までに抑える。
-
-読むファイル:
-- `public/events/salvage_events.yaml`
-- `src/game/salvageChoices.ts`
-- `src/app/components/command/RouteCommands.tsx`
-
-### 帰還判断を常時読めるようにする
-
-現状:
-- Safe Extract / Backtrack / Wipeout carryback は入っているが、Run中の判断材料としてまだ弱い。
-
-改善:
-- [x] Route/Encounter中に `Return Point: reached / not reached` を小さく常時表示する。
-- [x] Backtrack時のリスクを「Fuel/Armor/Encounterのどれか」として明示する。
-- [x] Resultでは `Safe Extract`, `Backtrack`, `Wipeout Carryback` の違いを短く表示する。
-
-読むファイル:
-- `src/game/returnDecision.ts`
-- `src/game/carryback.ts`
-- `src/app/state/routeReducer.ts`
-- `src/app/components/ResultPanel.tsx`
-
-## P2: 中期改善
-
-### Garage初期体験
-
-現状:
-- 初回Garageと帰還後Garageで同じようなM.O.E.文言が出ることがあり、状況とズレる可能性がある。
-- 装備が揃って見えるとアンロックの意味が薄れる。
-
-改善:
-- 初回、帰還後、出撃確認、装備変更でM.O.E.文言プールを分ける。
-- Locked装備はカード面積を抑え、購入可能/未達成の違いだけ見せる。
-- Debug Save表示は起動debug時だけ見えるようにし、通常導線から外す。
-
-読むファイル:
-- `public/dialogue.yaml`
-- `src/game/moeDialogue.ts`
-- `src/app/components/garage/*`
-- `src/progressionConfig.ts`
-
-### Terminal / Dashboard の役割整理
-
-現状:
-- Terminal, M.O.E., Vehicle Dashboard, Windshieldがそれぞれ情報を持つため、同じ場面で文字が多くなりやすい。
-
-改善:
-- Windshield: 敵/Map/状況の視覚情報
-- Command: 行動選択と必要最小限の結果予測
-- M.O.E.: 重要な助言を1文
-- Terminal Log: 履歴と詳細
-- Vehicle Dashboard: リソース残量と危険状態
-
-読むファイル:
-- `src/app/AppRoot.tsx`
-- `src/app/components/BattleView.tsx`
-- `src/app/components/CommandPanel.tsx`
-- `src/app/components/TerminalPanel.tsx`
-- `src/app/components/VehiclePanel.tsx`
-
-## 表示情報を絞る基準
-
-常時表示する:
-- HP / Analyze / Action / Next
-- 現在選べる行動のDMG Rangeまたはコスト
-- Fuel / Armor / Signal / Ammo
-- Route候補の3手先アイコンとBossまでの距離
-
-hover / detailsへ畳む:
-- 長い説明文
-- Tactic詳細
-- Contract mood/personaの補足
-- 過去ログ
-- 解放済みアーカイブ詳細
-
-ログへ送る:
-- 計算結果の詳細
-- 複数hitの内訳
-- Unlock履歴
-- Rare eventの長めの状況文
-
-## 実装時の注意
-
-- UI改善で `AppRoot.tsx` に条件分岐を増やしすぎない。
-- 表示用の整形は小さな helper に寄せる。
-- `public/events` / `public/dialogue.yaml` に置ける文言はReactへ直書きしない。
-- 大きな画面変更より、1画面ごとに「読む量を減らす」小さいcommitを優先する。
+- [x] 戦闘: ダメージポップ、Damage Range、Analyze完了表示を追加する。
+- [x] 戦闘: 敵ごとの戦術差とAnalyze後の予測チップを追加する。
+- [x] Route: アイコン中心のMap、Signal不足時のマスク、クリック可能ノード選択を追加する。
+- [x] 帰還: Return Point、Backtrackリスク、Resultでの帰還種別表示を追加する。

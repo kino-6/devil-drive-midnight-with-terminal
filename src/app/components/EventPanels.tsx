@@ -3,6 +3,7 @@ import { WIPEOUT_CARRYBACK_RATE, isWipeoutCarryback } from '../../game/carryback
 import { getMoeLine } from '../../game/moeDialogue';
 import { getReturnDecisionStatus } from '../../game/returnDecision';
 import { getDialogueLine } from '../../dialogueConfig';
+import { buildResultDecisionLines } from '../../game/runInsights';
 import { hasAiNaviContract } from '../state/stateReducer';
 import { isAlive } from '../../game/runtimeHelpers';
 import { getRouteEventScenario } from '../../scenario/scenarioLoader';
@@ -31,6 +32,9 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
   const wipeoutCarryback = isWipeoutCarryback(state);
   const wipeoutCarrybackPercent = Math.round(WIPEOUT_CARRYBACK_RATE * 100);
   const abyssLoopCleared = state.resultType === 'Boss Cleared' && state.stage >= 4;
+  const resultDecisionLines = (state.gamePhase === 'result' || state.gamePhase === 'game_over')
+    ? buildResultDecisionLines(state)
+    : [];
 
   return (
     <>
@@ -97,12 +101,12 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
           <span className="event-chip event-chip--route">ONE SAFE PULL</span>
         </div>
         <h2>{salvageEvent?.title ?? 'Salvage Window'}</h2>
-        <p>{salvageEvent?.body ?? 'The loop opens a short supply window. Only one safe extraction fits before the lane collapses.'}</p>
+        <p>{salvageEvent?.body ?? 'Supply window. One safe pull.'}</p>
         <div className="next-node-list">
           <div className="next-node">
             <span>◎</span>
             <strong>Why one?</strong>
-            <small>{salvageEvent?.effects ?? 'One safe extraction before the Night Loop notices the vehicle.'}</small>
+            <small>{salvageEvent?.effects ?? 'ONE PULL / THEN CLOSE'}</small>
           </div>
           <div className="next-node">
             <span>▲</span>
@@ -230,17 +234,30 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
           <p><span>Salvage Credit gained</span><strong>{runGrowth.salvageCreditGain}</strong></p>
         </div>
         <div className="command-window">
-          <p>次Run前に Garage で成長・改装できます。</p>
-          <p>見込み獲得: Driver XP +{runGrowth.driverXp} / M.O.E. Sync +{runGrowth.moeSync} / Credit +{runGrowth.salvageCreditGain}</p>
+          <p>GARAGE: GROWTH / TUNE / SORTIE</p>
+          <p>GAIN: XP +{runGrowth.driverXp} / SYNC +{runGrowth.moeSync} / CR +{runGrowth.salvageCreditGain}</p>
           {abyssLoopCleared && <p>ABYSS LOOP CLEAR BONUS: Driver XP +2 / M.O.E. Sync +2 / Credit +2</p>}
+        </div>
+        <div className="command-window">
+          <div className="panel-title panel-title--compact">
+            <span>RUN JUDGMENT</span>
+            <small>3 LINE REVIEW</small>
+          </div>
+          <div className="next-node-list">
+            {resultDecisionLines.map((line) => <div key={line} className="next-node">
+              <span>◎</span>
+              <strong>{line.split(':')[0]}</strong>
+              <small>{line.includes(':') ? line.slice(line.indexOf(':') + 1).trim() : line}</small>
+            </div>)}
+          </div>
         </div>
         {wipeoutCarryback && <div className="command-window command-window--danger">
           <div className="panel-title panel-title--compact">
             <span>WIPEOUT CARRYBACK</span>
             <small>{wipeoutCarrybackPercent}% RECOVERED</small>
           </div>
-          <p>全損時の持ち帰り量: Driver XP +{runGrowth.driverXp} / M.O.E. Sync +{runGrowth.moeSync} / Credit +{runGrowth.salvageCreditGain}</p>
-          <p>表示値は持ち帰り補正後です。帰還点からExtractできれば、通常どおり全量を確保できます。</p>
+          <p>CARRYBACK: XP +{runGrowth.driverXp} / SYNC +{runGrowth.moeSync} / CR +{runGrowth.salvageCreditGain}</p>
+          <p>EXTRACTなら全量確保。</p>
         </div>}
         <div className="command-window">
           <div className="panel-title panel-title--compact">
@@ -255,7 +272,7 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
                 <small>{storyLogById[id].text}</small>
               </div>)}
             </div>
-            : <p>No new story logs recovered this run.</p>}
+            : <p>NO NEW LOG</p>}
         </div>
       </section>}
     </>

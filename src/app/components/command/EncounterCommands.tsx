@@ -1,5 +1,7 @@
 import { commandDescriptions, commandOptions } from '../../../game/catalogs';
 import { getConversationLine } from '../../../conversationConfig';
+import { getCommandActionHint } from '../../../game/actionPresentation';
+import { getEnemyRevealState } from '../../../game/runtimeHelpers';
 import { canPayConversationChoiceCost } from '../../../game/talkRules';
 import type { CommandId, State } from '../../../game/types';
 
@@ -47,8 +49,78 @@ export const EncounterCommands = ({
   onSelectCommand,
   onTalkChoose,
   onTalkCancel,
-}: EncounterCommandsProps) => (
-  <>
+}: EncounterCommandsProps) => {
+  const selectedEnemy = state.encounter.enemies.find((enemy) => enemy.id === state.encounter.selectedEnemyId);
+  const selectedEnemyReveal = selectedEnemy
+    ? getEnemyRevealState(selectedEnemy, state.encounter.analyzedEnemyIds)
+    : undefined;
+  const buildCommandActionHint = (commandId: CommandId) => getCommandActionHint({
+    commandId,
+    intent: selectedEnemy?.intent,
+    actionReadable: !!selectedEnemyReveal?.showIntent,
+    targetKnown: !!selectedEnemyReveal?.showName,
+    signal: state.signal,
+    contractEnabled,
+  });
+  const buildFallbackCommandHint = (commandId: CommandId) => {
+    if (commandId === 'main_gun') {
+      return `主砲 ${selectedMainGunName}。与ダメ目安 ${getPredictedDamageLabel('main_gun')}、残弾 ${state.mainAmmo}。`;
+    }
+    if (commandId === 'sub_gun') {
+      return `副砲 ${selectedSubGunName}。与ダメ目安 ${getPredictedDamageLabel('sub_gun')} / ${selectedSubGunDescription}`;
+    }
+    if (commandId === 'se_harpoon') {
+      return `S-E ${selectedSEName}。与ダメ目安 ${getPredictedDamageLabel('se_harpoon')} / ${selectedSEDescription}（残弾 ${state.seAmmo}）`;
+    }
+    if (commandId === 'ram') return `Ram: hit range ${getPredictedDamageLabel('ram')} / ARMOR -1`;
+    if (commandId === 'contract') {
+      return contractEnabled
+        ? getDialogueLine('hint.contract.window_open', '契約窓が開いてる。今なら接続できる。')
+        : getDialogueLine('hint.contract.window_closed', '契約窓がまだ開いていない。TalkかS-Eを先に。');
+    }
+    return getMoeCommandGuide(commandId);
+  };
+  const buildCommandHint = (commandId: CommandId) => {
+    const actionHint = buildCommandActionHint(commandId);
+    const signalPreview = getSignalLossPreview(commandId);
+    return [actionHint || buildFallbackCommandHint(commandId), signalPreview].filter(Boolean).join(' / ');
+  };
+  const buildCommandDesc = (commandId: CommandId) => {
+    const actionHint = buildCommandActionHint(commandId);
+    const signalPreview = getSignalLossPreview(commandId);
+    if (actionHint) return [actionHint, signalPreview].filter(Boolean).join(' / ');
+    if (commandId === 'talk' && !commandEnabledMap[commandId]) {
+      return '未解析対象にはTalk不可。Analyzeで署名を掴んでから交信する。';
+    }
+    if (commandId === 'contract') return contractEnabled ? 'Window Open' : 'No contract window';
+    return commandDescriptions[commandId].description;
+  };
+  const buildCommandPrediction = (commandId: CommandId) => {
+    const risk = buildCommandActionHint(commandId);
+    if (commandId === 'main_gun') return `GAIN DMG ${getPredictedDamageLabel('main_gun')} / COST MAIN -1 / RISK ${risk}`;
+    if (commandId === 'sub_gun') return `GAIN SPREAD ${getPredictedDamageLabel('sub_gun')} / COST FREE / RISK ${risk}`;
+    if (commandId === 'se_harpoon') return `GAIN S-E ${getPredictedDamageLabel('se_harpoon')} / COST S-E / RISK ${risk}`;
+    if (commandId === 'analyze') return `GAIN ACTION READ / COST SIGNAL -1 / RISK ${getSignalLossPreview(commandId) ?? risk}`;
+    if (commandId === 'talk') return `GAIN ACTION SHIFT / ROUTE READ / COST VARIES / RISK ${getSignalLossPreview(commandId) ?? risk}`;
+    if (commandId === 'contract') return `GAIN CONTRACT / COST WINDOW / RISK ${risk}`;
+    if (commandId === 'ram') return `GAIN DMG ${getPredictedDamageLabel('ram')} / COST ARMOR -1 / RISK ${risk}`;
+    if (commandId === 'guard') return `GAIN DAMAGE CUT / COST TURN / RISK ${risk}`;
+    return `GAIN EXIT CHANCE / COST FUEL -1 / RISK ${risk}`;
+  };
+  function getSignalLossPreview(commandId: CommandId): string | undefined {
+    if (commandId === 'analyze') {
+      if (state.signal <= 0) return 'NO SIGNAL: Action/Weak stay locked';
+      if (state.signal === 1) return 'LAST SIGNAL: spend to read';
+    }
+    if (commandId === 'talk') {
+      if (!selectedEnemyReveal?.showName) return undefined;
+      if (state.signal <= 0) return 'NO SIGNAL: paid replies locked';
+      if (state.signal === 1) return 'LOW SIGNAL: paid replies narrow';
+    }
+    return undefined;
+  }
+
+  return <>
     {state.encounter.phase === 'conversation' && state.activeConversation && (
       <div className="command-window command-list">
         <div className="event-kicker">TALK CHANNEL</div>
@@ -86,6 +158,7 @@ export const EncounterCommands = ({
               <span className="command-button__label-stack">
                 <span className="command-button__label">{choice.label}</span>
                 {labelJa && <small>{labelJa}</small>}
+                <small className="command-button__prediction">GAIN ACTION SHIFT / ROUTE READ / WINDOW</small>
               </span>
               <span className="command-button__meta-stack">
                 {costText && <small>{costText.replace('Cost: ', '')}</small>}
@@ -129,41 +202,22 @@ export const EncounterCommands = ({
               disabled={!commandEnabledMap[command.id]}
               type="button"
               onMouseEnter={() => {
-                const hint = command.id === 'main_gun'
-                  ? `主砲 ${selectedMainGunName}。与ダメ目安 ${getPredictedDamageLabel('main_gun')}、残弾 ${state.mainAmmo}。`
-                  : command.id === 'sub_gun'
-                    ? `副砲 ${selectedSubGunName}。与ダメ目安 ${getPredictedDamageLabel('sub_gun')} / ${selectedSubGunDescription}`
-                    : command.id === 'se_harpoon'
-                      ? `S-E ${selectedSEName}。与ダメ目安 ${getPredictedDamageLabel('se_harpoon')} / ${selectedSEDescription}（残弾 ${state.seAmmo}）`
-                      : command.id === 'contract'
-                        ? (
-                            contractEnabled
-                              ? getDialogueLine('hint.contract.window_open', '契約窓が開いてる。今なら接続できる。')
-                              : getDialogueLine('hint.contract.window_closed', '契約窓がまだ開いていない。TalkかS-Eを先に。')
-                          )
-                        : getMoeCommandGuide(command.id);
-                setHoveredHint(hint);
+                setHoveredHint(buildCommandHint(command.id));
               }}
               onMouseLeave={clearHoveredHint}
-              onFocus={() => setHoveredHint(getMoeCommandGuide(command.id))}
+              onFocus={() => setHoveredHint(buildCommandHint(command.id))}
               onBlur={clearHoveredHint}
-              data-desc={
-                command.id === 'main_gun'
-                  ? `${selectedMainGunName}: hit range ${getPredictedDamageLabel('main_gun')} / AMMO ${state.mainAmmo}`
-                  : command.id === 'sub_gun'
-                    ? `${selectedSubGunName}: hit range ${getPredictedDamageLabel('sub_gun')} / ${selectedSubGunDescription}`
-                    : command.id === 'se_harpoon'
-                      ? `${selectedSEName}: hit range ${getPredictedDamageLabel('se_harpoon')} / ${selectedSEDescription} / S-E AMMO ${state.seAmmo}`
-                      : command.id === 'ram'
-                        ? `Ram: hit range ${getPredictedDamageLabel('ram')} / ARMOR -1`
-                        : command.id === 'talk' && !commandEnabledMap[command.id]
-                          ? '未解析対象にはTalk不可。Analyzeで署名を掴んでから交信する。'
-                        : command.id === 'contract'
-                          ? (contractEnabled ? 'Window Open' : 'No contract window')
-                          : commandDescriptions[command.id].description
-              }
+              data-desc={buildCommandDesc(command.id)}
             >
-              <span className="command-button__label">{command.label}</span>
+              <span className="command-button__label-stack">
+                <span className="command-button__label">{command.label}</span>
+                {getSignalLossPreview(command.id) && (
+                  <small className="command-button__warning">{getSignalLossPreview(command.id)}</small>
+                )}
+                <small className={`command-button__prediction ${state.encounter.selectedCommand === command.id ? '' : 'is-empty'}`}>
+                  {state.encounter.selectedCommand === command.id ? buildCommandPrediction(command.id) : 'GAIN / COST / RISK'}
+                </small>
+              </span>
               {command.id === 'talk' && !commandEnabledMap[command.id] && (
                 <span className="command-button__affinity command-button__affinity--resist">ANALYZE FIRST</span>
               )}
@@ -180,5 +234,5 @@ export const EncounterCommands = ({
         <div className="command-instant">Tap command to execute instantly</div>
       </div>
     </>}
-  </>
-);
+  </>;
+};

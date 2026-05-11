@@ -166,6 +166,12 @@ const applyIntelGain = (enemyIndex: number, gain: number, source: 'analyze' | 'c
     if (!wasFullyAnalyzed) logs.push('> FULL ANALYZE COMPLETE: TACTIC CONFIRMED');
   }
 };
+const consumeTalkBreak = (enemy: Devil) => {
+  if ((enemy.talkBreakTurns ?? 0) <= 0) return 0;
+  enemy.talkBreakTurns = Math.max(0, (enemy.talkBreakTurns ?? 0) - 1);
+  logs.push('> TALK BREAK HIT: DAMAGE +1');
+  return 1;
+};
 
 logs.push(`> COMMAND: ${command.toUpperCase()}${selectedEnemy ? ` / ${getMoeTargetName(selectedEnemy).toUpperCase()}` : ''}`);
 
@@ -174,12 +180,13 @@ if (command === 'main_gun' && selectedEnemy && mainAmmo > 0) {
   if (idx >= 0) {
     mainAmmo -= 1;
     const shield = encounter.enemies[idx].guardStacks > 0 ? 1 : 0;
+    const talkBreakBonus = consumeTalkBreak(encounter.enemies[idx]);
     const affinity = logAffinityReaction(encounter.enemies[idx], 'ballistic');
     const gunRoll = resolveDamageRoll({
       baseDamage: selectedMainGun.damage + state.skillLevels.gunnery,
       affinity,
       variance: damageVarianceByCommand.main_gun,
-      flatReduction: shield,
+      flatReduction: shield - talkBreakBonus,
       armored: !!encounter.enemies[idx].armored,
     });
     const damage = gunRoll.damage;
@@ -230,11 +237,12 @@ if (command === 'sub_gun') {
     if (!isAlive(encounter.enemies[enemyIndex])) return;
     const affinity = logAffinityReaction(encounter.enemies[enemyIndex], 'suppressive');
     const shield = encounter.enemies[enemyIndex].guardStacks > 0 ? 1 : 0;
+    const talkBreakBonus = consumeTalkBreak(encounter.enemies[enemyIndex]);
     const subRoll = resolveDamageRoll({
       baseDamage: selectedSubGun.damage,
       affinity,
       variance: damageVarianceByCommand.sub_gun,
-      flatReduction: shield,
+      flatReduction: shield - talkBreakBonus,
       armored: !!encounter.enemies[enemyIndex].armored,
     });
     const damage = subRoll.damage;
@@ -297,11 +305,12 @@ if (command === 'se_harpoon' && selectedEnemy && seAmmo >= selectedSE.seAmmoCost
         if (!isAlive(encounter.enemies[i])) continue;
         const affinity = logAffinityReaction(encounter.enemies[i], 'signal');
         const guardShield = encounter.enemies[i].guardStacks > 0 ? 1 : 0;
+        const talkBreakBonus = consumeTalkBreak(encounter.enemies[i]);
         const aoeRoll = resolveDamageRoll({
           baseDamage: selectedSE.damage,
           affinity,
           variance: damageVarianceByCommand.se_harpoon,
-          flatReduction: guardShield,
+          flatReduction: guardShield - talkBreakBonus,
           armored: !!encounter.enemies[i].armored,
         });
         const aoeDamage = aoeRoll.damage;
@@ -328,11 +337,12 @@ if (command === 'se_harpoon' && selectedEnemy && seAmmo >= selectedSE.seAmmoCost
     } else {
       const affinity = logAffinityReaction(encounter.enemies[idx], 'signal');
       const shield = encounter.enemies[idx].guardStacks > 0 ? 1 : 0;
+      const talkBreakBonus = consumeTalkBreak(encounter.enemies[idx]);
       const seRoll = resolveDamageRoll({
         baseDamage: selectedSE.damage,
         affinity,
         variance: damageVarianceByCommand.se_harpoon,
-        flatReduction: shield,
+        flatReduction: shield - talkBreakBonus,
       });
       const adjustedDamage = seRoll.damage;
       encounter.enemies[idx].hp = Math.max(0, encounter.enemies[idx].hp - adjustedDamage);
@@ -613,11 +623,12 @@ if (command === 'ram' && selectedEnemy && armor > 0) {
     const ramBase = encounter.enemies[idx].intent === 'guard' ? 2 : 3;
     const affinity = logAffinityReaction(encounter.enemies[idx], 'impact');
     const shield = encounter.enemies[idx].guardStacks > 0 ? 1 : 0;
+    const talkBreakBonus = consumeTalkBreak(encounter.enemies[idx]);
     const ramRoll = resolveDamageRoll({
       baseDamage: ramBase,
       affinity,
       variance: damageVarianceByCommand.ram,
-      flatReduction: shield,
+      flatReduction: shield - talkBreakBonus,
       armored: !!encounter.enemies[idx].armored,
     });
     const damage = ramRoll.damage;
@@ -899,6 +910,7 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
   let story = { ...state.story, recoveredLogs: [...state.story.recoveredLogs], recentRecoveredLogs: [...state.story.recentRecoveredLogs] };
   const negotiationRewards = [...state.negotiationRewards];
   const encounterPrep = { ...state.encounterPrep };
+  let tempForecastBoost = state.tempForecastBoost;
   const vehicleUtility = getVehicleUpgradeUtilityEffects(state.vehicleUpgrades);
   let moeLine = state.moeLine;
 
@@ -1014,6 +1026,22 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
     }
     return enemy.intent === 'attack' ? 'guard' : 'flee';
   };
+  const applyTalkBreak = (enemy: Devil, previousIntent: Devil['intent']) => {
+    enemy.revealed = true;
+    enemy.guardStacks = 0;
+    enemy.analyzeVulnerableTurns = Math.max(2, enemy.analyzeVulnerableTurns ?? 0);
+    enemy.talkBreakTurns = Math.max(1, enemy.talkBreakTurns ?? 0);
+    tempForecastBoost = Math.max(tempForecastBoost, state.tempForecastBoost + 1);
+    negotiationRewards.push('Talk Break: route read +1');
+    logs.push(`> TALK BREAK: ACTION SHIFT ${previousIntent.toUpperCase()} -> ${enemy.intent.toUpperCase()}`);
+    logs.push('> TALK BREAK: NEXT HIT +1');
+    logs.push('> TALK BREAK: NEXT IMPACT/CURSE -1');
+    logs.push('> TALK INTEL: ROUTE READ +1');
+    if (canOpenContractWindow(enemy)) {
+      enemy.contractWindow = true;
+      logs.push('> TALK STABILIZED: CONTRACT WINDOW OPEN');
+    }
+  };
 
   const hasCost = () => {
     const cost = choice.cost;
@@ -1117,9 +1145,11 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
     if (succeeded) {
       logs.push('> NEGOTIATION RESPONSE: ACCEPTED');
       logs.push(`> ${choice.successText}`);
+      const previousIntent = target.intent;
       applyEffects(choice.effectsOnSuccess, true);
       logs.push(`> ${getConversationLine('talk.effect.intent_softened', 'TALK DISRUPTION: INTENT SOFTENED')}`);
       target.intent = softenIntentByTemperament(target);
+      applyTalkBreak(target, previousIntent);
       const talkKey = `talk.success.${target.temperament}`;
       moeLine = getConversationLine(talkKey, getConversationLine('talk.success.default', choice.successText));
     } else {
@@ -1149,7 +1179,7 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
     hasAiNaviContract(state.contracts),
     state.selectedLoadout.contractSupportId,
     state.activeSupportDaemon?.profile,
-    state.tempForecastBoost,
+    tempForecastBoost,
   );
   encounter.forecast = forecast;
   encounter.forecastUnstable = unstable;
@@ -1172,5 +1202,6 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
     moeLine,
     moeSyncBank: newMoeSyncBank,
     salvageCredits,
+    tempForecastBoost,
   };
 };

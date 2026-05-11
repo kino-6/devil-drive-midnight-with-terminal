@@ -1,4 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import {
+  formatIntentLabel,
+  getActionLockedReason,
+  getIntentImpactLabel,
+  getIntentOutcome,
+  getIntentRisk,
+} from '../game/actionPresentation';
 import { getDevilTacticalHint } from '../game/devilTactics';
 import type { DamagePop, Devil, EncounterId, HitFxTone } from '../game/types';
 import type { EnemyRevealState } from '../game/runtimeHelpers';
@@ -222,25 +229,6 @@ const intentIconMap: Record<Devil['intent'], string> = {
   flee: '↯',
 };
 
-const intentOutcomeMap: Record<Devil['intent'], string> = {
-  attack: 'Armor damage incoming.',
-  curse: 'Signal or control noise.',
-  bargain: 'Talk window pressure.',
-  guard: 'Next damage reduced.',
-  flee: 'May leave the lane.',
-};
-
-const formatIntentLabel = (intent: Devil['intent']) => intent.toUpperCase();
-
-const getIntentThreatLabel = (intent?: Devil['intent'], vulnerable = false) => {
-  if (!intent) return '--';
-  if (intent === 'attack') return vulnerable ? 'ARMOR -1' : 'ARMOR -2';
-  if (intent === 'curse') return 'SIGNAL -1';
-  if (intent === 'bargain') return 'FUEL/SIGNAL -1';
-  if (intent === 'guard') return 'GUARD +1';
-  return 'FLEE';
-};
-
 const getDecodeSummary = (revealState: EnemyRevealState) => {
   if (revealState.showHint) return 'UNLOCKED: ID / ACTION / WEAK / TACTIC';
   if (revealState.showAffinity) return 'UNLOCKED: ID / ACTION / WEAK';
@@ -263,6 +251,7 @@ export function BattleDevilSprite({
   damagePops = [],
   intentForecast = [],
   forecastUnstable = false,
+  signal,
   encounterProfiles,
 }: {
   devil: Devil;
@@ -278,6 +267,7 @@ export function BattleDevilSprite({
   damagePops?: DamagePop[];
   intentForecast?: Devil['intent'][];
   forecastUnstable?: boolean;
+  signal: number;
   encounterProfiles: Record<EncounterId, EncounterProfile>;
 }) {
   const profile = encounterProfiles[devil.profile];
@@ -299,9 +289,12 @@ export function BattleDevilSprite({
     : actionReadable
       ? '--'
       : 'LOCKED';
-  const actionThreatLabel = actionReadable ? getIntentThreatLabel(devil.intent, (devil.analyzeVulnerableTurns ?? 0) > 0) : '--';
-  const nextThreatLabel = actionReadable && nextIntent ? getIntentThreatLabel(nextIntent) : '--';
-  const actionOutcome = actionReadable ? intentOutcomeMap[devil.intent] : 'Analyze to read action result.';
+  const actionRisk = actionReadable ? getIntentRisk(devil.intent) : 'neutral';
+  const actionThreatLabel = actionReadable
+    ? getIntentImpactLabel(devil.intent, (devil.analyzeVulnerableTurns ?? 0) > 0)
+    : getActionLockedReason({ targetKnown: revealState.showName, signal });
+  const nextThreatLabel = actionReadable && nextIntent ? getIntentImpactLabel(nextIntent) : '--';
+  const actionOutcome = actionReadable ? getIntentOutcome(devil.intent) : 'Analyze to read action result.';
   const decodeSummary = getDecodeSummary(revealState);
   const decodeStatuses = [
     ['ID', revealState.showName],
@@ -309,6 +302,33 @@ export function BattleDevilSprite({
     ['WEAK', revealState.showAffinity],
     ['FULL', revealState.showHint],
   ] as const;
+  const previousDecodeStateRef = useRef({
+    id: revealState.showName,
+    action: revealState.showIntent,
+    weak: revealState.showAffinity,
+    full: revealState.showHint,
+  });
+  const [decodePulseLabels, setDecodePulseLabels] = useState<string[]>([]);
+  useEffect(() => {
+    const previous = previousDecodeStateRef.current;
+    const next = {
+      id: revealState.showName,
+      action: revealState.showIntent,
+      weak: revealState.showAffinity,
+      full: revealState.showHint,
+    };
+    const unlocked = [
+      !previous.id && next.id ? 'IDENTITY DECODED' : '',
+      !previous.action && next.action ? 'ACTION READABLE' : '',
+      !previous.weak && next.weak ? 'WEAKNESS DECODED' : '',
+      !previous.full && next.full ? 'FULL ANALYZE' : '',
+    ].filter(Boolean);
+    previousDecodeStateRef.current = next;
+    if (unlocked.length === 0) return;
+    setDecodePulseLabels(unlocked);
+    const timer = window.setTimeout(() => setDecodePulseLabels([]), 1300);
+    return () => window.clearTimeout(timer);
+  }, [revealState.showName, revealState.showIntent, revealState.showAffinity, revealState.showHint]);
   const unknownAssetClassName = `battle-devil__asset ${revealState.showSilhouette ? 'is-silhouette' : ''}`.trim();
   return <article
     className={`battle-devil battle-devil--${lane} ${focused ? 'is-focused' : ''} ${profile.contractable ? 'is-contractable' : 'is-hostile'} ${devil.hp <= 0 ? 'is-defeated' : ''} ${hitFx ? `is-hitfx-${hitFx}` : ''}`}
@@ -367,22 +387,14 @@ export function BattleDevilSprite({
         <strong>{intelLabel}</strong>
         <div><i style={{ width: `${intelPct}%` }} /></div>
       </div>
-      <div className="battle-devil__action-compact" aria-label="Action forecast">
+      <div className={`battle-devil__action-compact battle-devil__action-compact--${actionReadable ? actionRisk : 'locked'}`} aria-label="Action forecast">
         <span>ACTION</span>
         <strong>
           {actionReadable
             ? <i className={`battle-devil__intent-icon intent--${devil.intent}`}>{intentIconMap[devil.intent]}</i>
             : <i className="battle-devil__intent-icon intent--unknown">?</i>}
           {actionLabel}
-          {actionReadable && <small className="battle-devil__threat-chip">{actionThreatLabel}</small>}
-        </strong>
-        <span>NEXT</span>
-        <strong>
-          {actionReadable && nextIntent
-            ? <i className={`battle-devil__intent-icon intent--${nextIntent}`}>{intentIconMap[nextIntent]}</i>
-            : <i className="battle-devil__intent-icon intent--unknown">?</i>}
-          {nextActionLabel}
-          {actionReadable && nextIntent && <small className="battle-devil__threat-chip">{nextThreatLabel}</small>}
+          <small className={`battle-devil__threat-chip battle-devil__threat-chip--${actionReadable ? actionRisk : 'locked'}`}>{actionThreatLabel}</small>
         </strong>
       </div>
       <details
@@ -398,6 +410,17 @@ export function BattleDevilSprite({
         </div>
         <small className="battle-devil__decode-summary">{decodeSummary}</small>
         <small className="battle-devil__outcome">{actionOutcome}</small>
+        {(devil.talkBreakTurns ?? 0) > 0 && <small className="battle-devil__outcome">TALK BREAK: next hit +1 / next impact-curse -1</small>}
+        {actionReadable && nextIntent && (
+          <div className="battle-devil__next-forecast" aria-label="Next action forecast">
+            <span>NEXT</span>
+            <strong>
+              <i className={`battle-devil__intent-icon intent--${nextIntent}`}>{intentIconMap[nextIntent]}</i>
+              {nextActionLabel}
+              <small className={`battle-devil__threat-chip battle-devil__threat-chip--${getIntentRisk(nextIntent)}`}>{nextThreatLabel}</small>
+            </strong>
+          </div>
+        )}
         <div className="battle-devil__tactic">
           <span>TACTIC</span>
           <small>{tacticalHint}</small>
@@ -407,6 +430,11 @@ export function BattleDevilSprite({
     {showDebugBadge && (
       <span className={`battle-devil__debug ${canAnimate ? 'is-animated' : ''}`}>
         {revealState.showName ? `ANIM ${animationFrames.length}F` : canAnimate ? `UNKNOWN ${animationFrames.length}F` : 'UNKNOWN STATIC'}
+      </span>
+    )}
+    {decodePulseLabels.length > 0 && (
+      <span className="battle-devil__decode-pop" aria-live="polite">
+        {decodePulseLabels.map((label) => <i key={label}>{label}</i>)}
       </span>
     )}
     {damagePops.map((pop) => (

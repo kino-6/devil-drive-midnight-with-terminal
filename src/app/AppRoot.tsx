@@ -525,6 +525,7 @@ const tacticalLinesCompact = tacticalLines
           enemies={state.encounter.enemies}
           selectedEnemyId={state.encounter.selectedEnemyId}
           analyzedEnemyIds={state.encounter.analyzedEnemyIds}
+          signal={state.signal}
           approachLineup={approachLineup}
           approachScanSuccess={!!state.approach?.scanSuccess}
           approachRevealIdentity={approachRevealIdentity}

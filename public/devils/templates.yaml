@@ -326,7 +326,7 @@ templates:
     contractable: true
     targetModuleId: "abandoned_ai_navi"
     affinities:
-      ballistic: "resist"
+      ballistic: "normal"
       suppressive: "normal"
       impact: "normal"
       signal: "weak"

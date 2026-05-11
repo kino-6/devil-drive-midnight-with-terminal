@@ -2072,6 +2072,18 @@ button.route-map__node:focus-visible {
   padding-top: 5px;
 }
 
+.battle-devil__action-compact--danger {
+  border-top-color: rgba(218, 87, 78, 0.5);
+}
+
+.battle-devil__action-compact--warning {
+  border-top-color: rgba(224, 168, 91, 0.46);
+}
+
+.battle-devil__action-compact--locked {
+  opacity: 0.78;
+}
+
 .battle-devil__action-compact > span {
   color: #9fb2bd;
   font-size: 0.5rem;
@@ -2167,6 +2179,14 @@ button.route-map__node:focus-visible {
   color: #92b2ca;
 }
 
+.battle-devil__intent-icon.intent--bargain {
+  color: #d4b77f;
+}
+
+.battle-devil__intent-icon.intent--flee {
+  color: #9fd3b0;
+}
+
 .battle-devil__intent-icon.intent--unknown {
   color: #73838f;
 }
@@ -2180,6 +2200,56 @@ button.route-map__node:focus-visible {
   line-height: 1;
   padding: 2px 4px;
   white-space: nowrap;
+}
+
+.battle-devil__threat-chip--neutral {
+  border-color: rgba(127, 161, 188, 0.42);
+  background: rgba(16, 24, 34, 0.72);
+  color: #c5d8e6;
+}
+
+.battle-devil__threat-chip--warning {
+  border-color: rgba(224, 168, 91, 0.48);
+  background: rgba(39, 28, 12, 0.72);
+  color: #f0d39d;
+}
+
+.battle-devil__threat-chip--danger {
+  border-color: rgba(218, 87, 78, 0.56);
+  background: rgba(41, 14, 16, 0.76);
+  color: #f1c9c0;
+}
+
+.battle-devil__threat-chip--locked {
+  border-color: rgba(115, 131, 143, 0.36);
+  background: rgba(16, 20, 26, 0.72);
+  color: #9ba8b2;
+}
+
+.battle-devil__next-forecast {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 4px 6px;
+  align-items: center;
+  border-top: 1px solid rgba(123, 165, 188, 0.18);
+  padding-top: 5px;
+}
+
+.battle-devil__next-forecast > span {
+  color: #9fb2bd;
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+}
+
+.battle-devil__next-forecast > strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  color: #d8dde2;
+  font-size: 0.6rem;
+  line-height: 1.1;
+  letter-spacing: 0.04em;
 }
 
 .battle-devil__window {
@@ -2214,6 +2284,31 @@ button.route-map__node:focus-visible {
   line-height: 1;
   animation: damagePopRise 900ms ease-out forwards;
   pointer-events: none;
+}
+
+.battle-devil__decode-pop {
+  position: absolute;
+  left: 50%;
+  top: 8%;
+  z-index: 6;
+  display: grid;
+  gap: 3px;
+  justify-items: center;
+  transform: translateX(-50%);
+  pointer-events: none;
+  animation: decodePopFade 1300ms ease-out forwards;
+}
+
+.battle-devil__decode-pop i {
+  border: 1px solid rgba(127, 192, 207, 0.72);
+  background: rgba(8, 16, 23, 0.94);
+  color: #bfeaf0;
+  box-shadow: 0 0 16px rgba(127, 192, 207, 0.2);
+  font-size: 0.55rem;
+  font-style: normal;
+  line-height: 1;
+  padding: 3px 7px;
+  white-space: nowrap;
 }
 
 .battle-devil__debug {
@@ -2372,6 +2467,13 @@ button.route-map__node:focus-visible {
   overflow: hidden auto;
 }
 
+.dashboard-shell.is-encounter .command-core {
+  border-color: rgba(224, 168, 91, 0.76);
+  box-shadow:
+    inset 0 0 0 1px rgba(224, 168, 91, 0.24),
+    0 0 18px rgba(224, 168, 91, 0.08);
+}
+
 .command-core--standby {
   opacity: 0.94;
 }
@@ -2499,6 +2601,19 @@ button.route-map__node:focus-visible {
   grid-column: 1;
   min-height: 0;
   overflow: hidden;
+}
+
+.dashboard-shell.is-encounter .terminal-stack {
+  opacity: 0.88;
+}
+
+.dashboard-shell.is-encounter .vehicle-panel--inline:not(.vehicle-panel--resource-low) {
+  opacity: 0.9;
+}
+
+.dashboard-shell.is-encounter .vehicle-panel--resource-low {
+  border-color: rgba(218, 87, 78, 0.52);
+  box-shadow: inset 0 0 0 1px rgba(218, 87, 78, 0.2);
 }
 
 .radio-panel {
@@ -3011,6 +3126,59 @@ button.route-map__node:focus-visible {
   min-height: 38px;
 }
 
+.garage-select-grid .command-button.is-locked {
+  min-height: 30px;
+  padding-block: 5px;
+}
+
+.garage-select-grid .command-button.is-locked .command-button__label,
+.garage-select-grid .command-button.is-locked > span {
+  font-size: 0.56rem;
+}
+
+.launch-readiness-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.launch-readiness-tile {
+  border: 1px solid rgba(89, 105, 119, 0.54);
+  background: rgba(13, 20, 29, 0.78);
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 6px 5px;
+  text-align: center;
+}
+
+.launch-readiness-tile > span {
+  color: #d39a4a;
+  font-size: 0.62rem;
+  line-height: 1;
+}
+
+.launch-readiness-tile small {
+  color: #9fb2bd;
+  font-size: 0.52rem;
+  line-height: 1.1;
+}
+
+.launch-readiness-tile strong {
+  color: #e7edf2;
+  font-size: 0.72rem;
+  line-height: 1.1;
+}
+
+.launch-readiness-tile--tight {
+  border-color: rgba(255, 176, 129, 0.54);
+}
+
+.launch-readiness-tile--tight strong {
+  color: #ffbf91;
+}
+
 .autoplay-controls {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3182,10 +3350,28 @@ button.route-map__node:focus-visible {
   line-height: 1.2;
 }
 
+.command-button__prediction {
+  color: #d4b77f;
+  font-size: 0.58rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.command-button__prediction.is-empty {
+  visibility: hidden;
+}
+
 .command-button__meta-stack {
   align-items: flex-end;
   max-width: 46%;
   text-align: right;
+}
+
+.command-button__meta-stack strong {
+  color: #f2d29a;
+  font-size: 0.72rem;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
 .command-button__meta-stack small {
@@ -3311,6 +3497,34 @@ button.route-map__node:focus-visible {
 
 .command-button--salvage-useful {
   border-color: #3d6972;
+}
+
+.salvage-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  min-width: 0;
+}
+
+.salvage-tag-row i {
+  border: 1px solid rgba(116, 143, 157, 0.42);
+  background: rgba(12, 19, 28, 0.74);
+  color: #b9c6ce;
+  font-size: 0.52rem;
+  font-style: normal;
+  line-height: 1.15;
+  padding: 1px 4px;
+  white-space: nowrap;
+}
+
+.command-button--salvage-critical .salvage-tag-row i {
+  border-color: rgba(255, 176, 129, 0.58);
+  color: #ffd0a6;
+}
+
+.command-button--salvage-event .salvage-tag-row i {
+  border-color: rgba(212, 183, 127, 0.58);
+  color: #f2d29a;
 }
 
 .command-button--contract {
@@ -3670,8 +3884,8 @@ button.route-map__node:focus-visible {
 }
 
 .terminal--anomaly {
-  border-color: #6a2f2b;
-  box-shadow: inset 0 0 0 1px rgba(182, 77, 72, 0.35);
+  border-color: rgba(106, 47, 43, 0.7);
+  box-shadow: inset 0 0 0 1px rgba(182, 77, 72, 0.18);
 }
 
 .terminal--anomaly::before {
@@ -3681,8 +3895,8 @@ button.route-map__node:focus-visible {
   right: 6px;
   z-index: 2;
   font-size: 0.62rem;
-  color: #dc817d;
-  border: 1px solid #7d3834;
+  color: #c77875;
+  border: 1px solid rgba(125, 56, 52, 0.72);
   padding: 1px 6px;
   background: rgba(27, 14, 15, 0.84);
 }
@@ -3958,6 +4172,21 @@ button.route-map__node:focus-visible {
   }
 }
 
+@keyframes decodePopFade {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+  15%, 70% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .run-beat-overlay,
   .run-beat-overlay::before {
@@ -3980,7 +4209,8 @@ button.route-map__node:focus-visible {
   .battle-view__combat-fx,
   .battle-view__combat-fx::before,
   .battle-view__combat-fx::after,
-  .battle-devil__damage-pop {
+  .battle-devil__damage-pop,
+  .battle-devil__decode-pop {
     animation: none !important;
   }
 }
@@ -4321,6 +4551,10 @@ button.route-map__node:focus-visible {
 
   .garage-select-grid {
     grid-template-columns: 1fr;
+  }
+
+  .launch-readiness-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .target-detail-panel--overlay {

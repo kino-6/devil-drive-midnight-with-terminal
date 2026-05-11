@@ -5,6 +5,11 @@ import {
   vehicleUpgradeLabels,
 } from '../../../game/catalogs';
 import { getSkillCost, getVehicleUpgradeCost } from '../../state/stateReducer';
+import {
+  getSkillUpgradeChips,
+  skillEffectText,
+  vehicleUpgradeEffectText,
+} from '../../../game/upgradePresentation';
 import type {
   AutoPlayReport,
   AutoPlayStrategy,
@@ -33,22 +38,6 @@ type GarageGrowthSectionProps = {
 
 const skillOrder: UpgradeId[] = ['ram_control', 'gunnery', 'scan_boost', 'translation_assist', 'signal_tuning'];
 const vehicleUpgradeOrder: VehicleUpgradeId[] = ['fuel_tank', 'armor_plating', 'ammo_rack', 'se_rack', 'signal_antenna', 'noise_filter', 'daemon_bus'];
-const skillEffectText: Record<UpgradeId, string> = {
-  ram_control: 'Approach ram stability',
-  gunnery: 'Main Gun damage stability',
-  scan_boost: 'NAVI scan chance',
-  translation_assist: 'Talk success support',
-  signal_tuning: 'Start Signal +1 / Signal Lane +1',
-};
-const vehicleUpgradeEffectText: Record<VehicleUpgradeId, string> = {
-  fuel_tank: 'Start Fuel +1',
-  armor_plating: 'Start Armor +1',
-  ammo_rack: 'Start Main Ammo +1',
-  se_rack: 'Start S-E Ammo +1',
-  signal_antenna: 'Analyze Intel gain',
-  noise_filter: 'Talk failure pressure damp',
-  daemon_bus: 'Support daemon backlash reduction',
-};
 
 export const GarageGrowthSection = ({
   state,
@@ -126,14 +115,22 @@ export const GarageGrowthSection = ({
             const level = state.skillLevels[skillId];
             const cost = getSkillCost(level);
             const canBuy = state.moeSyncBank >= cost;
+            const upgradeChips = getSkillUpgradeChips(skillId, level);
             return <button
               key={skillId}
               className={`command-button ${level > 0 ? 'is-selected' : ''}`}
               disabled={!canBuy}
               onClick={() => onPurchaseSkill(skillId)}
-              data-desc={`${skillEffectText[skillId]} / Lv${level} -> Lv${level + 1} / COST ${cost} SYNC`}
+              data-desc={`${skillEffectText[skillId]} / ${upgradeChips.join(' / ')} / COST ${cost} SYNC`}
             >
-              {skillLabels[skillId]} <span>Lv{level}</span>
+              <span className="command-button__label-stack">
+                <span className="command-button__label">{skillLabels[skillId]}</span>
+                {upgradeChips.map((chip) => <small key={chip}>{chip}</small>)}
+              </span>
+              <span className="command-button__meta-stack">
+                <strong>Lv{level}</strong>
+                <small>{cost} SYNC</small>
+              </span>
             </button>;
           })}
         </div>
