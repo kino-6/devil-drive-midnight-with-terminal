@@ -3,7 +3,7 @@ import { getEnemyRevealState } from '../../game/runtimeHelpers';
 import { RoutePreviewMap } from './RoutePreviewMap';
 import type { NaviRouteCandidate, NaviRouteIntelStatus } from '../state/routeGraph';
 import type { EncounterProfile } from '../../devilConfig';
-import type { CombatFxCue, Devil, EncounterId, ForecastMap, GamePhase, HitFxTone } from '../../game/types';
+import type { CombatFxCue, DamagePop, Devil, EncounterId, ForecastMap, GamePhase, HitFxTone } from '../../game/types';
 
 type BattleViewProps = {
   gamePhase: GamePhase;
@@ -23,6 +23,7 @@ type BattleViewProps = {
   hitFxPulse: number;
   combatFxCue: CombatFxCue | null;
   combatFxPulse: number;
+  damagePops: DamagePop[];
   aliveEnemiesCount: number;
   forecast: ForecastMap;
   forecastUnstable: boolean;
@@ -61,6 +62,7 @@ export const BattleView = ({
   hitFxPulse,
   combatFxCue,
   combatFxPulse,
+  damagePops,
   aliveEnemiesCount,
   forecast,
   forecastUnstable,
@@ -140,6 +142,7 @@ export const BattleView = ({
               imageFrames={imageFrames}
               showDebugBadge={showDebugBadges}
               hitFx={enemy.id === selectedEnemyId ? hitFxTone ?? undefined : undefined}
+              damagePops={damagePops.filter((pop) => pop.enemyId === enemy.id)}
               intentForecast={forecast[enemy.id] ?? []}
               forecastUnstable={forecastUnstable}
               onSelect={() => onSelectEnemy(enemy.id)}

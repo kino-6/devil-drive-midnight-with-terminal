@@ -324,25 +324,32 @@ export const getRollBounds = (adjustedBase: number, variance: number) => {
 const rollInt = (min: number, max: number) =>
   min + Math.floor(Math.random() * (max - min + 1));
 
-export const resolveDamageRoll = ({
-  baseDamage,
-  affinity,
-  variance,
-  flatReduction = 0,
-  armored = false,
-}: {
+type DamageBoundsInput = {
   baseDamage: number;
   affinity: AffinityRating;
   variance: number;
   flatReduction?: number;
   armored?: boolean;
-}) => {
+};
+
+export const resolveDamageBounds = ({
+  baseDamage,
+  affinity,
+  variance,
+  flatReduction = 0,
+  armored = false,
+}: DamageBoundsInput) => {
   const adjustedBase = computeAffinityDamage(baseDamage, affinity);
   const rawBounds = getRollBounds(adjustedBase, variance);
   const armorReduction = armored ? 1 : 0;
   const totalReduction = flatReduction + armorReduction;
   const min = Math.max(0, rawBounds.min - totalReduction);
   const max = Math.max(min, rawBounds.max - totalReduction);
+  return { min, max };
+};
+
+export const resolveDamageRoll = (input: DamageBoundsInput) => {
+  const { min, max } = resolveDamageBounds(input);
   const damage = max > min ? rollInt(min, max) : min;
   return { min, max, damage };
 };

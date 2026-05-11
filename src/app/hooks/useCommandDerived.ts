@@ -1,7 +1,7 @@
 import { commandAffinityMap } from '../../game/catalogs';
 import type { AffinityRating, AffinityType, CommandId, Devil, SpecialEquipment, State, SubGun, MainGun } from '../../game/types';
 import { getEnemyRevealState, isAlive } from '../../game/runtimeHelpers';
-import { damageVarianceByCommand, getAffinityTag, getRollBounds, resolveDamageRoll } from '../state/stateReducer';
+import { damageVarianceByCommand, getAffinityTag, getRollBounds, resolveDamageBounds } from '../state/stateReducer';
 
 type UseCommandDerivedArgs = {
   state: State;
@@ -57,45 +57,62 @@ export const useCommandDerived = ({
     const targetAnalyzed = !!target && getEnemyRevealState(target, state.encounter.analyzedEnemyIds).showAffinity;
     const getAffinityFor = (affinity: AffinityType): AffinityRating =>
       target && targetAnalyzed ? target.affinities[affinity] : 'normal';
+    const estimateDamage = ({
+      baseDamage,
+      affinityType,
+      variance,
+      armored = false,
+    }: {
+      baseDamage: number;
+      affinityType: AffinityType;
+      variance: number;
+      armored?: boolean;
+    }) => {
+      const ratings: AffinityRating[] = target && !targetAnalyzed
+        ? ['resist', 'normal', 'weak']
+        : [getAffinityFor(affinityType)];
+      const bounds = ratings.map((affinity) => resolveDamageBounds({
+        baseDamage,
+        affinity,
+        variance,
+        flatReduction: shield,
+        armored,
+      }));
+      const min = Math.min(...bounds.map((range) => range.min));
+      const max = Math.max(...bounds.map((range) => range.max));
+      return `${target && !targetAnalyzed ? '~' : ''}${min}-${max}`;
+    };
     const shield = target?.guardStacks && target.guardStacks > 0 ? 1 : 0;
     if (commandId === 'main_gun') {
-      const roll = resolveDamageRoll({
+      return estimateDamage({
         baseDamage: selectedMainGun.damage + state.skillLevels.gunnery,
-        affinity: getAffinityFor('ballistic'),
+        affinityType: 'ballistic',
         variance: damageVarianceByCommand.main_gun,
-        flatReduction: shield,
-        armored: !!target?.armored,
+        armored: !!target?.armored && targetAnalyzed,
       });
-      return `${roll.min}-${roll.max}`;
     }
     if (commandId === 'sub_gun') {
-      const roll = resolveDamageRoll({
+      return estimateDamage({
         baseDamage: selectedSubGun.damage,
-        affinity: getAffinityFor('suppressive'),
+        affinityType: 'suppressive',
         variance: damageVarianceByCommand.sub_gun,
-        flatReduction: shield,
-        armored: !!target?.armored,
+        armored: !!target?.armored && targetAnalyzed,
       });
-      return `${roll.min}-${roll.max}`;
     }
     if (commandId === 'se_harpoon') {
-      const roll = resolveDamageRoll({
+      return estimateDamage({
         baseDamage: selectedSE.damage,
-        affinity: getAffinityFor('signal'),
+        affinityType: 'signal',
         variance: damageVarianceByCommand.se_harpoon,
-        flatReduction: shield,
       });
-      return `${roll.min}-${roll.max}`;
     }
     const ramBase = target?.intent === 'guard' ? 2 : 3;
-    const roll = resolveDamageRoll({
+    return estimateDamage({
       baseDamage: ramBase,
-      affinity: getAffinityFor('impact'),
+      affinityType: 'impact',
       variance: damageVarianceByCommand.ram,
-      flatReduction: shield,
-      armored: !!target?.armored,
+      armored: !!target?.armored && targetAnalyzed,
     });
-    return `${roll.min}-${roll.max}`;
   };
 
   const approachMainGunDesc = `先制主砲。予測DMG ${getRollBounds(selectedMainGun.damage + state.skillLevels.gunnery, damageVarianceByCommand.approach_main_gun).min}-${getRollBounds(selectedMainGun.damage + state.skillLevels.gunnery, damageVarianceByCommand.approach_main_gun).max} / MainAmmo-1 / 交渉難化`;

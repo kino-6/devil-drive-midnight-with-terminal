@@ -2232,6 +2232,25 @@ body {
   padding: 1px 5px;
 }
 
+.battle-devil__damage-pop {
+  position: absolute;
+  left: 50%;
+  top: 19%;
+  z-index: 5;
+  min-width: 36px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(218, 87, 78, 0.78);
+  background: rgba(34, 13, 14, 0.92);
+  color: #ffd0c7;
+  box-shadow: 0 0 16px rgba(218, 87, 78, 0.32);
+  padding: 3px 8px;
+  text-align: center;
+  font-size: 0.78rem;
+  line-height: 1;
+  animation: damagePopRise 900ms ease-out forwards;
+  pointer-events: none;
+}
+
 .battle-devil__debug {
   position: absolute;
   top: -8px;
@@ -3227,6 +3246,17 @@ body {
   color: #df8c82;
 }
 
+.command-button__predict {
+  border: 1px solid rgba(211, 154, 74, 0.48);
+  background: rgba(25, 18, 12, 0.72);
+  color: #f0d3a4;
+  font-size: 0.56rem;
+  letter-spacing: 0.04em;
+  padding: 1px 4px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 .command-button::before {
   content: "> ";
   color: #d0a063;
@@ -3952,6 +3982,21 @@ body {
   }
 }
 
+@keyframes damagePopRise {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 8px) scale(0.94);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.04);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -34px) scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .run-beat-overlay,
   .run-beat-overlay::before {
@@ -3973,7 +4018,8 @@ body {
 
   .battle-view__combat-fx,
   .battle-view__combat-fx::before,
-  .battle-view__combat-fx::after {
+  .battle-view__combat-fx::after,
+  .battle-devil__damage-pop {
     animation: none !important;
   }
 }

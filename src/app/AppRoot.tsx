@@ -364,7 +364,7 @@ const tacticalLinesCompact = tacticalLines
     () => buildPlaytestReport(telemetryEvents, persistentProgression),
     [telemetryEvents, persistentProgression],
   );
-  const { hitFxTone, hitFxPulse, combatFxCue, combatFxPulse } = useUiEffects({
+  const { hitFxTone, hitFxPulse, combatFxCue, combatFxPulse, damagePops } = useUiEffects({
     state,
     dispatch,
     playCombatEffects: animationMode === 'play',
@@ -536,6 +536,7 @@ const tacticalLinesCompact = tacticalLines
           hitFxPulse={hitFxPulse}
           combatFxCue={combatFxCue}
           combatFxPulse={combatFxPulse}
+          damagePops={damagePops}
           aliveEnemiesCount={aliveEnemies.length}
           forecast={state.encounter.forecast}
           forecastUnstable={state.encounter.forecastUnstable}

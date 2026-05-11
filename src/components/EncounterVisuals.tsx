@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getDevilTacticalHint } from '../game/devilTactics';
-import type { Devil, EncounterId, HitFxTone } from '../game/types';
+import type { DamagePop, Devil, EncounterId, HitFxTone } from '../game/types';
 import type { EnemyRevealState } from '../game/runtimeHelpers';
 
 const transparencyCache = new Map<string, string>();
@@ -251,6 +251,7 @@ export function BattleDevilSprite({
   imageFrames,
   showDebugBadge = false,
   hitFx,
+  damagePops = [],
   intentForecast = [],
   forecastUnstable = false,
   encounterProfiles,
@@ -265,6 +266,7 @@ export function BattleDevilSprite({
   imageFrames?: string[];
   showDebugBadge?: boolean;
   hitFx?: HitFxTone;
+  damagePops?: DamagePop[];
   intentForecast?: Devil['intent'][];
   forecastUnstable?: boolean;
   encounterProfiles: Record<EncounterId, EncounterProfile>;
@@ -394,6 +396,9 @@ export function BattleDevilSprite({
         {revealState.showName ? `ANIM ${animationFrames.length}F` : canAnimate ? `UNKNOWN ${animationFrames.length}F` : 'UNKNOWN STATIC'}
       </span>
     )}
+    {damagePops.map((pop) => (
+      <span key={pop.id} className="battle-devil__damage-pop">-{pop.amount}</span>
+    ))}
     {focused && <span className="battle-devil__target">TARGET LOCK</span>}
   </article>;
 }

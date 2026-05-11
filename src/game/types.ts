@@ -241,6 +241,11 @@ export type SfxCue =
   | 'garage_enter';
 
 export type HitFxTone = 'weak' | 'resist' | 'hit';
+export type DamagePop = {
+  id: number;
+  enemyId: string;
+  amount: number;
+};
 export type CombatFxCue =
   | 'player_shot'
   | 'subgun_spray'

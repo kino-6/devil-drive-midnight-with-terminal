@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from 'react';
 import { commandOptions } from '../../game/catalogs';
 import { collectCombatFxCues } from '../../game/combatFx';
-import type { Action, CombatFxCue, GamePhase, HitFxTone, State } from '../../game/types';
+import type { Action, CombatFxCue, DamagePop, GamePhase, HitFxTone, State } from '../../game/types';
 import { isAlive } from '../../game/runtimeHelpers';
 
 type UseUiEffectsParams = {
@@ -30,7 +30,10 @@ export const useUiEffects = ({
   const [combatFxCue, setCombatFxCue] = useState<CombatFxCue | null>(null);
   const [combatFxPulse, setCombatFxPulse] = useState(0);
   const [combatFxQueue, setCombatFxQueue] = useState<CombatFxCue[]>([]);
+  const [damagePops, setDamagePops] = useState<DamagePop[]>([]);
   const previousLogLengthRef = useRef(state.logs.length);
+  const previousEnemyHpRef = useRef(new Map(state.encounter.enemies.map((enemy) => [enemy.id, enemy.hp])));
+  const damagePopIdRef = useRef(0);
 
   useEffect(() => {
     if (state.gamePhase !== 'garage' && showGarageLaunchConfirm) {
@@ -92,6 +95,29 @@ export const useUiEffects = ({
   }, [combatFxCue, combatFxPulse]);
 
   useEffect(() => {
+    const previousHp = previousEnemyHpRef.current;
+    const nextHp = new Map(state.encounter.enemies.map((enemy) => [enemy.id, enemy.hp]));
+    previousEnemyHpRef.current = nextHp;
+    if (!playCombatEffects) {
+      setDamagePops([]);
+      return;
+    }
+    const nextPops = state.encounter.enemies.flatMap((enemy) => {
+      const before = previousHp.get(enemy.id);
+      if (typeof before !== 'number' || enemy.hp >= before) return [];
+      damagePopIdRef.current += 1;
+      return [{ id: damagePopIdRef.current, enemyId: enemy.id, amount: before - enemy.hp }];
+    });
+    if (nextPops.length > 0) setDamagePops((current) => [...current, ...nextPops].slice(-8));
+  }, [playCombatEffects, state.encounter.enemies]);
+
+  useEffect(() => {
+    if (damagePops.length === 0) return;
+    const timer = setTimeout(() => setDamagePops([]), 900);
+    return () => clearTimeout(timer);
+  }, [damagePops]);
+
+  useEffect(() => {
     if (!terminalLogRef.current) return;
     terminalLogRef.current.scrollTop = terminalLogRef.current.scrollHeight;
   }, [state.logs.length, terminalLogRef]);
@@ -145,6 +171,7 @@ export const useUiEffects = ({
     hitFxPulse,
     combatFxCue,
     combatFxPulse,
+    damagePops,
   };
 };
 

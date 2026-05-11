@@ -167,6 +167,9 @@ export const EncounterCommands = ({
               {command.id === 'talk' && !commandEnabledMap[command.id] && (
                 <span className="command-button__affinity command-button__affinity--resist">ANALYZE FIRST</span>
               )}
+              {(command.id === 'main_gun' || command.id === 'sub_gun' || command.id === 'se_harpoon' || command.id === 'ram') && (
+                <span className="command-button__predict">DMG {getPredictedDamageLabel(command.id)}</span>
+              )}
               {commandAffinityTagMap[command.id] && <span className={`command-button__affinity command-button__affinity--${commandAffinityTagMap[command.id]?.toLowerCase()}`}>{commandAffinityTagMap[command.id]}</span>}
             </button>)}
           </div>
