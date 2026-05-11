@@ -130,11 +130,11 @@ export const EncounterCommands = ({
               type="button"
               onMouseEnter={() => {
                 const hint = command.id === 'main_gun'
-                  ? `主砲 ${selectedMainGunName}。予測DMG ${getPredictedDamageLabel('main_gun')}、残弾 ${state.mainAmmo}。`
+                  ? `主砲 ${selectedMainGunName}。与ダメ目安 ${getPredictedDamageLabel('main_gun')}、残弾 ${state.mainAmmo}。`
                   : command.id === 'sub_gun'
-                    ? `副砲 ${selectedSubGunName}。予測DMG ${getPredictedDamageLabel('sub_gun')} / ${selectedSubGunDescription}`
+                    ? `副砲 ${selectedSubGunName}。与ダメ目安 ${getPredictedDamageLabel('sub_gun')} / ${selectedSubGunDescription}`
                     : command.id === 'se_harpoon'
-                      ? `S-E ${selectedSEName}。予測DMG ${getPredictedDamageLabel('se_harpoon')} / ${selectedSEDescription}（残弾 ${state.seAmmo}）`
+                      ? `S-E ${selectedSEName}。与ダメ目安 ${getPredictedDamageLabel('se_harpoon')} / ${selectedSEDescription}（残弾 ${state.seAmmo}）`
                       : command.id === 'contract'
                         ? (
                             contractEnabled
@@ -149,13 +149,13 @@ export const EncounterCommands = ({
               onBlur={clearHoveredHint}
               data-desc={
                 command.id === 'main_gun'
-                  ? `${selectedMainGunName}: PRED DMG ${getPredictedDamageLabel('main_gun')} / AMMO ${state.mainAmmo}`
+                  ? `${selectedMainGunName}: hit range ${getPredictedDamageLabel('main_gun')} / AMMO ${state.mainAmmo}`
                   : command.id === 'sub_gun'
-                    ? `${selectedSubGunName}: PRED DMG ${getPredictedDamageLabel('sub_gun')} / ${selectedSubGunDescription}`
+                    ? `${selectedSubGunName}: hit range ${getPredictedDamageLabel('sub_gun')} / ${selectedSubGunDescription}`
                     : command.id === 'se_harpoon'
-                      ? `${selectedSEName}: PRED DMG ${getPredictedDamageLabel('se_harpoon')} / ${selectedSEDescription} / S-E AMMO ${state.seAmmo}`
+                      ? `${selectedSEName}: hit range ${getPredictedDamageLabel('se_harpoon')} / ${selectedSEDescription} / S-E AMMO ${state.seAmmo}`
                       : command.id === 'ram'
-                        ? `Ram: PRED DMG ${getPredictedDamageLabel('ram')} / ARMOR -1`
+                        ? `Ram: hit range ${getPredictedDamageLabel('ram')} / ARMOR -1`
                         : command.id === 'talk' && !commandEnabledMap[command.id]
                           ? '未解析対象にはTalk不可。Analyzeで署名を掴んでから交信する。'
                         : command.id === 'contract'
@@ -167,10 +167,11 @@ export const EncounterCommands = ({
               {command.id === 'talk' && !commandEnabledMap[command.id] && (
                 <span className="command-button__affinity command-button__affinity--resist">ANALYZE FIRST</span>
               )}
-              {(command.id === 'main_gun' || command.id === 'sub_gun' || command.id === 'se_harpoon' || command.id === 'ram') && (
-                <span className="command-button__predict">DMG {getPredictedDamageLabel(command.id)}</span>
+              {commandAffinityTagMap[command.id] && (
+                <span className="command-button__badges">
+                  <span className={`command-button__affinity command-button__affinity--${commandAffinityTagMap[command.id]?.toLowerCase()}`}>{commandAffinityTagMap[command.id]}</span>
+                </span>
               )}
-              {commandAffinityTagMap[command.id] && <span className={`command-button__affinity command-button__affinity--${commandAffinityTagMap[command.id]?.toLowerCase()}`}>{commandAffinityTagMap[command.id]}</span>}
             </button>)}
           </div>
         </div>)}

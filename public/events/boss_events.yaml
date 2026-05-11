@@ -39,7 +39,7 @@ events:
       effects: "Boss prep S-E favored / sensor wake risk."
       rewardId: "se_kit"
       log: "BOSS PREP EVENT: BATTERY RACK"
-      moeLine: "S-Eセル、一本だけ抜ける。料金所に気づかれる前に。"
+      moeLine: "S-Eセル、一本だけ抜ける。関門に気づかれる前に。"
     lane_barrier_patch:
       title: "Lane Barrier Patch"
       pool: "salvage.boss_prep"

@@ -232,6 +232,15 @@ const intentOutcomeMap: Record<Devil['intent'], string> = {
 
 const formatIntentLabel = (intent: Devil['intent']) => intent.toUpperCase();
 
+const getIntentThreatLabel = (intent?: Devil['intent'], vulnerable = false) => {
+  if (!intent) return '--';
+  if (intent === 'attack') return vulnerable ? 'ARMOR -1' : 'ARMOR -2';
+  if (intent === 'curse') return 'SIGNAL -1';
+  if (intent === 'bargain') return 'FUEL/SIGNAL -1';
+  if (intent === 'guard') return 'GUARD +1';
+  return 'FLEE';
+};
+
 const getDecodeSummary = (revealState: EnemyRevealState) => {
   if (revealState.showHint) return 'UNLOCKED: ID / ACTION / WEAK / TACTIC';
   if (revealState.showAffinity) return 'UNLOCKED: ID / ACTION / WEAK';
@@ -290,6 +299,8 @@ export function BattleDevilSprite({
     : actionReadable
       ? '--'
       : 'LOCKED';
+  const actionThreatLabel = actionReadable ? getIntentThreatLabel(devil.intent, (devil.analyzeVulnerableTurns ?? 0) > 0) : '--';
+  const nextThreatLabel = actionReadable && nextIntent ? getIntentThreatLabel(nextIntent) : '--';
   const actionOutcome = actionReadable ? intentOutcomeMap[devil.intent] : 'Analyze to read action result.';
   const decodeSummary = getDecodeSummary(revealState);
   const decodeStatuses = [
@@ -363,6 +374,7 @@ export function BattleDevilSprite({
             ? <i className={`battle-devil__intent-icon intent--${devil.intent}`}>{intentIconMap[devil.intent]}</i>
             : <i className="battle-devil__intent-icon intent--unknown">?</i>}
           {actionLabel}
+          {actionReadable && <small className="battle-devil__threat-chip">{actionThreatLabel}</small>}
         </strong>
         <span>NEXT</span>
         <strong>
@@ -370,6 +382,7 @@ export function BattleDevilSprite({
             ? <i className={`battle-devil__intent-icon intent--${nextIntent}`}>{intentIconMap[nextIntent]}</i>
             : <i className="battle-devil__intent-icon intent--unknown">?</i>}
           {nextActionLabel}
+          {actionReadable && nextIntent && <small className="battle-devil__threat-chip">{nextThreatLabel}</small>}
         </strong>
       </div>
       <details

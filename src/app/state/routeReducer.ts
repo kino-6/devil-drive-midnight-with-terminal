@@ -199,7 +199,7 @@ const enterRouteNode = (state: State, nodeId: string): State => {
       ...graphState,
       gamePhase: 'boss_preview',
       logs: [...graphState.logs, '> DEEP SIGNAL DETECTED: TOLL GATE SAINT'],
-      moeLine: getMoeLine('moe.run.boss_preview', '料金所型の反応。無理なら引き返そ。', undefined, 'serious'),
+      moeLine: getMoeLine('moe.run.boss_preview', '関門級の反応。無理なら引き返そ。', undefined, 'serious'),
     };
   }
 
@@ -267,7 +267,7 @@ export function reduceRoute(state: State, action: Action): State {
       ...graphState,
       gamePhase: 'boss_preview',
       logs: [...graphState.logs, '> DEEP SIGNAL DETECTED: TOLL GATE SAINT'],
-      moeLine: getMoeLine('moe.run.boss_preview', '料金所型の強い反応。無理なら引き返そ。', undefined, 'serious'),
+      moeLine: getMoeLine('moe.run.boss_preview', '関門級の強い反応。無理なら引き返そ。', undefined, 'serious'),
     };
   }
 
@@ -477,7 +477,7 @@ export function reduceRoute(state: State, action: Action): State {
       bossChallenged: true,
       tempForecastBoost: 0,
       logs: bossRoute.logs,
-      moeLine: getMoeLine('moe.run.boss_start', '深層料金所、突入。主砲を温存しすぎないで。', undefined, 'serious'),
+      moeLine: getMoeLine('moe.run.boss_start', '深層関門、突入。主砲を温存しすぎないで。', undefined, 'serious'),
     }, 'boss');
   }
 
@@ -496,7 +496,7 @@ export function reduceRoute(state: State, action: Action): State {
     const graphState = withReturnIntent(moveRouteStateToNode(state, getRouteNextNodeId(state) ?? 'result'), 'extracting');
     const resultType = state.resultType ?? 'Boss Cleared';
     const disconnectLogs = appendSupportDaemonDisconnectLogs(graphState.logs, graphState.activeSupportDaemon, 'return_gate');
-    const unlockedAbyssLoop = resultType === 'Boss Cleared' && graphState.stageCount < 4 && graphState.stage >= 3;
+    const unlockedAbyssLoop = resultType === 'Boss Cleared' && graphState.stageCount < 4 && graphState.stage === 3;
     if (resultType === 'Boss Cleared' && graphState.stage < graphState.stageCount) {
       const growth = getRunGrowth(graphState);
       const story = resolveStoryFromRun(graphState, resultType);
@@ -527,6 +527,7 @@ export function reduceRoute(state: State, action: Action): State {
       };
     }
     const story = resolveStoryFromRun(graphState, resultType);
+    const clearedAbyssLoop = resultType === 'Boss Cleared' && graphState.stage >= 4;
     return {
       ...graphState,
       gamePhase: 'result',
@@ -537,12 +538,20 @@ export function reduceRoute(state: State, action: Action): State {
       logs: appendRecoveredStoryLogLines([
         ...disconnectLogs,
         ...(graphState.routeState?.returnIntent === 'extracting' ? ['> SAFE EXTRACT USED'] : []),
+        ...(clearedAbyssLoop
+          ? [
+              '> ABYSS LOOP CLEARED',
+              '> FINAL CLEAR BONUS: DRIVER XP +2 / M.O.E. SYNC +2 / CREDIT +2',
+            ]
+          : []),
         ...(unlockedAbyssLoop ? ['> ABYSS LOOP UNLOCKED: STAGE 4'] : []),
         '> RUN COMPLETE',
       ], story),
-      moeLine: unlockedAbyssLoop
-        ? getMoeLine('moe.run.abyss_unlocked', '深層封鎖鍵が外れた。次から最深層、Abyss Loopに入れる。', undefined, 'serious')
-        : getMoeLine('moe.run.result', '帰れたね。積んだもの、確認しよっか。', undefined, 'soft'),
+      moeLine: clearedAbyssLoop
+        ? getMoeLine('moe.run.abyss_cleared', 'Abyss Loop突破。Stage4解放じゃない、ここが終点。報酬を積んで戻ろう。', undefined, 'proud')
+        : unlockedAbyssLoop
+          ? getMoeLine('moe.run.abyss_unlocked', '深層封鎖鍵が外れた。次から最深層、Abyss Loopに入れる。', undefined, 'serious')
+          : getMoeLine('moe.run.result', '帰れたね。積んだもの、確認しよっか。', undefined, 'soft'),
     };
   }
 

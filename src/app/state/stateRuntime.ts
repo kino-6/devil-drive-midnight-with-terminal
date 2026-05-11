@@ -139,8 +139,8 @@ export const stageProfiles: StageProfile[] = [
   {
     id: 3,
     label: 'STAGE 3 // TOLL SHADOW',
-    subtitle: '料金所外縁 / Toll Gate Saint封鎖予兆',
-    hoverHint: '料金所外縁。主砲弾、S-E、帰還ポイントの管理が重要。',
+    subtitle: '深層関門 / Toll Gate Saint封鎖予兆',
+    hoverHint: '深層関門。主砲弾、S-E、帰還ポイントの管理が重要。',
     recommendedScore: 36,
   },
   {
@@ -343,8 +343,8 @@ export const resolveDamageBounds = ({
   const rawBounds = getRollBounds(adjustedBase, variance);
   const armorReduction = armored ? 1 : 0;
   const totalReduction = flatReduction + armorReduction;
-  const min = Math.max(0, rawBounds.min - totalReduction);
-  const max = Math.max(min, rawBounds.max - totalReduction);
+  const min = adjustedBase > 0 ? Math.max(1, rawBounds.min - totalReduction) : 0;
+  const max = adjustedBase > 0 ? Math.max(min, rawBounds.max - totalReduction) : 0;
   return { min, max };
 };
 

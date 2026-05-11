@@ -70,7 +70,7 @@ export const specialEquipmentCatalog: Record<SpecialEquipmentId, SpecialEquipmen
   binding_flare: { id: 'binding_flare', name: 'Binding Flare', damage: 1, seAmmoCost: 1, ammo: 3, effect: 'contract_window', description: '契約窓を押し開く拘束信号。低ダメージの交渉補助S-E。' },
   jammer_pulse: { id: 'jammer_pulse', name: 'Jammer Pulse', damage: 2, seAmmoCost: 1, ammo: 5, effect: 'emp', description: '妨害寄りS-E。命中時に意図阻害しやすい。' },
   decoy_beacon: { id: 'decoy_beacon', name: 'Decoy Beacon', damage: 1, seAmmoCost: 1, ammo: 6, effect: 'interest', description: '疑似信号で注意を逸らし、交渉窓を作る。' },
-  saint_anchor: { id: 'saint_anchor', name: 'Saint Anchor', damage: 2, seAmmoCost: 2, ammo: 2, effect: 'boss_breaker', description: 'Boss級信号に強い固定杭。通常敵には重いが、料金所型に刺さる。' },
+  saint_anchor: { id: 'saint_anchor', name: 'Saint Anchor', damage: 2, seAmmoCost: 2, ammo: 2, effect: 'boss_breaker', description: 'Boss級信号に強い固定杭。通常敵には重いが、関門級に刺さる。' },
 };
 
 export const garageMainGunOrder: MainGunId[] = ['light_cannon', 'needle_cannon', 'heavy_cannon', 'siege_cannon', 'burst_cannon', 'rail_cannon', 'sigil_driver', 'rusted_cannon'];

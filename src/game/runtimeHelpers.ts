@@ -392,7 +392,7 @@ export const getNarrativeMoeLine = (state: State): string => {
   if (state.story.recoveredLogs.includes('LOG_01') && state.gamePhase === 'boss_preview') {
     return getScenarioMoeLine(
       'boss_preview.toll_gate',
-      getDialogueLine('moe.story.boss_preview_log01', '料金所の反応、前よりは読める。通行料を払う相手を間違えないで。'),
+      getDialogueLine('moe.story.boss_preview_log01', '深層関門の反応、前よりは読める。通行料を払う相手を間違えないで。'),
     );
   }
   if (state.story.recoveredLogs.includes('LOG_00') && state.gamePhase === 'garage') {

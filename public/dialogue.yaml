@@ -18,7 +18,7 @@ lines:
   # 利用場面: ストーリー進行後のGarage台詞（LOG_00回収後）
   moe.story.after_log00: "前任者の声……記録には残ってない。でも、知ってる気がする。"
   # 利用場面: ボスプレビュー時、LOG_01回収後の補足
-  moe.story.boss_preview_log01: "料金所の反応、前よりは読める。通行料を払う相手を間違えないで。"
+  moe.story.boss_preview_log01: "深層関門の反応、前よりは読める。通行料を払う相手を間違えないで。"
 
   # 利用場面: NAVIスキャン成功（通常）
   moe.run.scan_success: "先に見つけた。どう入る？"
@@ -121,14 +121,14 @@ lines:
   run.milestone.contract_lonely: "DEMON MILESTONE: LONELY CONTRACT"
 
   # 利用場面: ボスプレビュー表示
-  moe.run.boss_preview: "料金所型の強い反応。無理なら引き返そ。"
-  moe.run.boss_preview.1: "深層料金所、反応強い。強がるのは好きだけど、車は正直だよ。"
+  moe.run.boss_preview: "関門級の強い反応。無理なら引き返そ。"
+  moe.run.boss_preview.1: "深層関門、反応強い。強がるのは好きだけど、車は正直だよ。"
   moe.run.boss_preview.2: "Boss前。主砲弾、S-E、装甲。足りないなら戻るのも手。"
   moe.run.boss_preview.3: "Toll Gate Saint接近。勝つ準備か、帰る判断。どっちもちゃんと見てる。"
   # 利用場面: ボス突入
-  moe.run.boss_start: "深層料金所、突入。主砲を温存しすぎないで。"
+  moe.run.boss_start: "深層関門、突入。主砲を温存しすぎないで。"
   moe.run.boss_start.1: "突入する。火力もSignalも、出し惜しみなしで。"
-  moe.run.boss_start.2: "料金所に入るよ。怖い？ わたしも少し。でも読めてる。"
+  moe.run.boss_start.2: "関門に入るよ。怖い？ わたしも少し。でも読めてる。"
   # 利用場面: ボスプレビューで撤退
   moe.run.boss_return: "引き返す判断、正解。持ち帰ることが最優先。"
   moe.run.boss_return.1: "撤退判断、了解。悔しいのはあと。今は戻る。"
@@ -154,6 +154,7 @@ lines:
   moe.run.encounter_clear.3: "Hostile反応、沈黙。リソースを見て次の車線を選ぼう。"
   moe.run.stage_clear: "ステージ{stage}突破。次は深くなる、装備を組み直そう。"
   moe.run.abyss_unlocked: "深層封鎖鍵が外れた。次から最深層、Abyss Loopに入れる。"
+  moe.run.abyss_cleared: "Abyss Loop突破。Stage4解放じゃない、ここが終点。報酬を積んで戻ろう。"
 
   # 利用場面: 短い演出beat（フェーズ遷移スタンプ）
   run.beat.entry: "NIGHT LOOP ENTRY"
@@ -226,7 +227,7 @@ lines:
   moe.garage.memory: "断片が増えるほど、わたしの地図も変わる。"
   moe.garage.memory.1: "Archive更新。記録が増えるほど、夜環の癖が読める。"
   # 利用場面: Garage深層反応プレビュー
-  moe.garage.boss_tip: "料金所型の強い反応。主砲弾かS-E弾、どっちかは残しておきたいね。"
+  moe.garage.boss_tip: "関門級の強い反応。主砲弾かS-E弾、どっちかは残しておきたいね。"
   moe.garage.unlock_purchase: "アンロック完了。選択肢が増えたよ。"
   moe.garage.unlock_purchase.1: "Unlock完了。Garage候補に追加した。選べるって強いね。"
   moe.garage.ready_check: "積み替え、終わった？ このまま夜環へ入る。"

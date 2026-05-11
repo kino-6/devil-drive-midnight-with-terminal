@@ -2217,6 +2217,17 @@ body {
   color: #73838f;
 }
 
+.battle-devil__threat-chip {
+  margin-left: auto;
+  border: 1px solid rgba(218, 87, 78, 0.46);
+  background: rgba(31, 14, 16, 0.72);
+  color: #f1c9c0;
+  font-size: 0.5rem;
+  line-height: 1;
+  padding: 2px 4px;
+  white-space: nowrap;
+}
+
 .battle-devil__window {
   color: #cfa6de;
 }
@@ -3174,7 +3185,10 @@ body {
   font: inherit;
   display: inline-flex;
   justify-content: space-between;
+  align-items: center;
   gap: 10px;
+  min-width: 0;
+  overflow: hidden;
   transition: border-color 120ms ease, transform 120ms ease, background 120ms ease;
   position: relative;
 }
@@ -3190,6 +3204,9 @@ body {
 .command-button__label {
   display: inline-flex;
   align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-wrap: anywhere;
 }
 
 .command-button__label-stack,
@@ -3231,6 +3248,17 @@ body {
   line-height: 1.2;
 }
 
+.command-button__badges {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  gap: 3px;
+  min-width: 0;
+  max-width: 82px;
+}
+
 .command-button__affinity--weak {
   border-color: #67e4ff;
   background: linear-gradient(180deg, rgba(26, 74, 92, 0.95), rgba(14, 44, 59, 0.95));
@@ -3244,17 +3272,6 @@ body {
 .command-button__affinity--resist {
   border-color: #6c3d39;
   color: #df8c82;
-}
-
-.command-button__predict {
-  border: 1px solid rgba(211, 154, 74, 0.48);
-  background: rgba(25, 18, 12, 0.72);
-  color: #f0d3a4;
-  font-size: 0.56rem;
-  letter-spacing: 0.04em;
-  padding: 1px 4px;
-  line-height: 1.2;
-  white-space: nowrap;
 }
 
 .command-button::before {
@@ -3714,7 +3731,6 @@ body {
   border: 1px solid #7d3834;
   padding: 1px 6px;
   background: rgba(27, 14, 15, 0.84);
-  animation: anomalyBlink 850ms steps(1, end) infinite;
 }
 
 .terminal-status__chips {
@@ -3950,15 +3966,6 @@ body {
   }
   100% {
     opacity: 0;
-  }
-}
-
-@keyframes anomalyBlink {
-  0%, 45% {
-    opacity: 1;
-  }
-  46%, 100% {
-    opacity: 0.35;
   }
 }
 

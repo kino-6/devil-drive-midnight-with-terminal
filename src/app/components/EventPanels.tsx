@@ -30,6 +30,7 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
   const returnStatus = getReturnDecisionStatus(state);
   const wipeoutCarryback = isWipeoutCarryback(state);
   const wipeoutCarrybackPercent = Math.round(WIPEOUT_CARRYBACK_RATE * 100);
+  const abyssLoopCleared = state.resultType === 'Boss Cleared' && state.stage >= 4;
 
   return (
     <>
@@ -151,7 +152,7 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
           <div className="next-node"><span>▲</span><strong>Suggested Weakness</strong><small>{bossIntel.likelyWeaknesses}</small></div>
           <div className="next-node"><span>▲</span><strong>Risk / Reward</strong><small>{bossIntel.riskTags} / {bossIntel.rewardTags}</small></div>
         </div>
-        <p>M.O.E.: 「{getMoeLine('moe.run.boss_preview', '料金所型の強い反応。無理なら引き返そ。', undefined, 'serious')}」</p>
+        <p>M.O.E.: 「{getMoeLine('moe.run.boss_preview', '関門級の強い反応。無理なら引き返そ。', undefined, 'serious')}」</p>
       </section>}
 
       {(state.gamePhase === 'encounter' || state.gamePhase === 'boss_encounter') && <section className="event-card">
@@ -231,6 +232,7 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
         <div className="command-window">
           <p>次Run前に Garage で成長・改装できます。</p>
           <p>見込み獲得: Driver XP +{runGrowth.driverXp} / M.O.E. Sync +{runGrowth.moeSync} / Credit +{runGrowth.salvageCreditGain}</p>
+          {abyssLoopCleared && <p>ABYSS LOOP CLEAR BONUS: Driver XP +2 / M.O.E. Sync +2 / Credit +2</p>}
         </div>
         {wipeoutCarryback && <div className="command-window command-window--danger">
           <div className="panel-title panel-title--compact">

@@ -19,9 +19,10 @@ export const makePreviousRunSummary = (state: State, resultType: ResultType): Pr
 
 export const getRunGrowth = (state: State) => {
   const isReturned = state.gamePhase === 'result';
-  const driverXp = state.runSummary.cleared + ((state.resultType ?? 'Early Return') === 'Boss Cleared' ? 2 : 0);
-  const moeSync = state.runSummary.contracted + state.analyzeSuccessCount;
-  const salvageCreditGain = state.salvageCredits + (isReturned ? 1 : 0);
+  const isAbyssLoopCleared = (state.resultType ?? 'Early Return') === 'Boss Cleared' && state.stage >= 4;
+  const driverXp = state.runSummary.cleared + ((state.resultType ?? 'Early Return') === 'Boss Cleared' ? 2 : 0) + (isAbyssLoopCleared ? 2 : 0);
+  const moeSync = state.runSummary.contracted + state.analyzeSuccessCount + (isAbyssLoopCleared ? 2 : 0);
+  const salvageCreditGain = state.salvageCredits + (isReturned ? 1 : 0) + (isAbyssLoopCleared ? 2 : 0);
   const growth = { driverXp, moeSync, salvageCreditGain };
   return isWipeoutCarryback(state) ? applyWipeoutCarryback(growth) : growth;
 };
