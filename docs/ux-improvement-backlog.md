@@ -56,6 +56,7 @@
 - [x] `SUP / SIG / CNT / GATE / BOSS` の文字列はコマンド一覧側に寄せ、WindshieldのMapはアイコン中心にする。
 - [x] Signal不足時は `UNKNOWN` ではなく、どの情報が伏せられているかをアイコン/マスクで示す。
 - [x] 左右/直進の候補Windowはクリック可能領域を明確にし、はみ出しを避ける。
+- [x] `routeState` とStage graphから現在位置起点のMapを生成し、選択可能ノードをクリックして進路決定できるようにする。
 
 読むファイル:
 - `src/app/components/RoutePreviewMap.tsx`

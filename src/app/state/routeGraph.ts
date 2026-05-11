@@ -3,7 +3,7 @@ import { routeIntelCatalog } from '../../game/catalogs';
 import { getStageConfig, isStageConfigRuntimeLoaded, type StageDefinition, type StageRouteNode } from '../../stageConfig';
 import type { RouteState, State } from '../../game/types';
 
-type RouteLaneChoice = 'salvage' | 'signal' | 'push_forward' | 'return_gate';
+export type RouteLaneChoice = 'salvage' | 'signal' | 'push_forward' | 'return_gate';
 
 export type NaviIntelLevel = 'low' | 'medium' | 'high';
 
@@ -47,7 +47,7 @@ export const getActiveStageRoute = (stage: number): StageDefinition | undefined 
   return getStageConfig().stages[stageRouteIdForStage(stage)];
 };
 
-const getCurrentStageRoute = (state: State): StageDefinition | undefined => {
+export const getCurrentStageRoute = (state: State): StageDefinition | undefined => {
   const routeId = state.routeState?.stageRouteId ?? stageRouteIdForStage(state.stage);
   const route = getActiveStageRoute(state.stage);
   return route?.id === routeId ? route : undefined;
@@ -239,7 +239,7 @@ const maskIntel = (
   return lowFallback;
 };
 
-const routeStepLabel = (node: StageRouteNode): string => {
+export const getRouteStepLabel = (node: StageRouteNode): string => {
   if (node.type === 'encounter') return 'CONTACT';
   if (node.type === 'salvage') return 'SUPPLY';
   if (node.type === 'signal') return 'SIGNAL';
@@ -270,13 +270,13 @@ const getRouteForecast = (route: StageDefinition, startNodeId: string, limit = 3
     visited.add(nodeId);
     const node = route.nodes[nodeId];
     if (!node) break;
-    out.push(routeStepLabel(node));
+    out.push(getRouteStepLabel(node));
     nodeId = preferredNextNodeId(node);
   }
   return out;
 };
 
-const getBossSteps = (route: StageDefinition, startNodeId: string): number | undefined => {
+export const getRouteBossSteps = (route: StageDefinition, startNodeId: string): number | undefined => {
   const queue: Array<{ nodeId: string; steps: number }> = [{ nodeId: startNodeId, steps: 1 }];
   const visited = new Set<string>();
   while (queue.length > 0) {
@@ -336,7 +336,7 @@ export const getNaviRouteCandidates = (state: State): NaviRouteCandidate[] => {
       reward: maskIntel(intel.rewardTags, intelLevel, 'high', lowSignalRouteHints[choiceId].reward),
       note: getRouteCandidateNote(state, choiceId, intelLevel),
       forecast: getRouteForecast(route, nodeId),
-      bossSteps: getBossSteps(route, nodeId),
+      bossSteps: getRouteBossSteps(route, nodeId),
       effects: intelLevel === 'high' ? event.effects : undefined,
       eventId: event.id,
       resourceWarning: getRouteResourceWarning(state, choiceId, intelLevel),
@@ -362,7 +362,7 @@ export const getNaviRouteCandidates = (state: State): NaviRouteCandidate[] => {
         reward: maskIntel(intel.rewardTags, intelLevel, 'high', lowSignalRouteHints[lane].reward),
         note: getRouteCandidateNote(state, lane, intelLevel),
         forecast: getRouteForecast(route, nodeId),
-        bossSteps: getBossSteps(route, nodeId),
+        bossSteps: getRouteBossSteps(route, nodeId),
         resourceWarning: getRouteResourceWarning(state, lane, intelLevel),
         intelLevel,
       };

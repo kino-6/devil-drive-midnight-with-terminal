@@ -2,6 +2,7 @@ import { ApproachContactMarker, BattleDevilSprite } from '../../components/Encou
 import { getEnemyRevealState } from '../../game/runtimeHelpers';
 import { RoutePreviewMap } from './RoutePreviewMap';
 import type { NaviRouteCandidate, NaviRouteIntelStatus } from '../state/routeGraph';
+import type { NaviRouteMap } from '../state/routeMap';
 import type { EncounterProfile } from '../../devilConfig';
 import type { CombatFxCue, DamagePop, Devil, EncounterId, ForecastMap, GamePhase, HitFxTone } from '../../game/types';
 
@@ -30,6 +31,7 @@ type BattleViewProps = {
   windshieldThreatLabel: string;
   routeCandidates?: NaviRouteCandidate[];
   routeIntelStatus?: NaviRouteIntelStatus;
+  routeMap?: NaviRouteMap;
   profiles: Record<EncounterId, EncounterProfile>;
   isBossProfile: (profile: EncounterId) => boolean;
   resolveUnknownEnemyAsset: (index: number) => string | undefined;
@@ -69,6 +71,7 @@ export const BattleView = ({
   windshieldThreatLabel,
   routeCandidates = [],
   routeIntelStatus,
+  routeMap,
   profiles,
   isBossProfile,
   resolveUnknownEnemyAsset,
@@ -108,7 +111,12 @@ export const BattleView = ({
       <strong>{windshieldThreatLabel}</strong>
     </div>
     {gamePhase === 'route_choice' && (
-      <RoutePreviewMap candidates={routeCandidates} intelStatus={routeIntelStatus} onRouteChoice={onRouteChoice} />
+      <RoutePreviewMap
+        candidates={routeCandidates}
+        intelStatus={routeIntelStatus}
+        routeMap={routeMap}
+        onRouteChoice={onRouteChoice}
+      />
     )}
     {isBossPhase && (
       <div className="battle-view__boss-alert">

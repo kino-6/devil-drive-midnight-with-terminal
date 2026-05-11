@@ -79,6 +79,7 @@ import { useSaveTools } from './hooks/useSaveTools';
 import { useTelemetryEffects } from './hooks/useTelemetryEffects';
 import { useRunBeatQueue } from './hooks/useRunBeatQueue';
 import { getNaviRouteCandidates, getNaviRouteIntelStatus } from './state/routeGraph';
+import { getNaviRouteMap } from './state/routeMap';
 import { CockpitHeader } from './components/CockpitHeader';
 import { PrologueOverlay } from './components/PrologueOverlay';
 import { BattleView } from './components/BattleView';
@@ -249,6 +250,7 @@ const tacticalLinesCompact = tacticalLines
   })();
   const naviRouteCandidates = state.gamePhase === 'route_choice' ? getNaviRouteCandidates(state) : [];
   const naviRouteIntelStatus = state.gamePhase === 'route_choice' ? getNaviRouteIntelStatus(state) : undefined;
+  const naviRouteMap = state.gamePhase === 'route_choice' ? getNaviRouteMap(state, naviRouteCandidates) : undefined;
   const signalTunnelScenario = getRouteEventScenario('signal_tunnel_01');
   const signalChoices: SignalChoice[] = (signalTunnelScenario?.choices && signalTunnelScenario.choices.length > 0
     ? signalTunnelScenario.choices
@@ -543,6 +545,7 @@ const tacticalLinesCompact = tacticalLines
           windshieldThreatLabel={windshieldThreatLabel}
           routeCandidates={naviRouteCandidates}
           routeIntelStatus={naviRouteIntelStatus}
+          routeMap={naviRouteMap}
           profiles={encounterProfileMap}
           isBossProfile={isBossProfile}
           resolveUnknownEnemyAsset={resolveUnknownEnemyAsset}
