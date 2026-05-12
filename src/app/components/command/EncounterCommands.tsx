@@ -125,6 +125,15 @@ export const EncounterCommands = ({
       if (choiceId === 'listen') return 'SAFE / TRUST +2 / WINDOW';
       if (choiceId === 'offer_signal') return 'SIGNAL -1 / SIGNAL +1 / WINDOW';
       if (choiceId === 'threaten') return 'FORCE LEAVE / NO CONTRACT';
+      if (choiceId === 'pixie_listen_dawn') return 'BEST / TRUST + WINDOW';
+      if (choiceId === 'pixie_listen_engine') return 'SAFE / INTENT + WINDOW';
+      if (choiceId === 'pixie_listen_joke') return 'FUN / INTEREST + WINDOW';
+      if (choiceId === 'pixie_signal_blue') return 'BEST / SIGNAL CLEAN + WINDOW';
+      if (choiceId === 'pixie_signal_share') return 'ROUTE READ + WINDOW';
+      if (choiceId === 'pixie_signal_take_back') return 'RECOVER / NO WINDOW';
+      if (choiceId === 'pixie_threat_apologize') return 'RECOVER TRUST / RISK';
+      if (choiceId === 'pixie_threat_double') return 'LEAVE / HIGH RISK';
+      if (choiceId === 'pixie_threat_leave') return 'END TALK / SAFE';
     }
     if (profile === 'road_reaper') {
       if (choiceId === 'ask_detour') return 'ROUTE READ / RISK ARMOR';
@@ -143,6 +152,16 @@ export const EncounterCommands = ({
     {state.encounter.phase === 'conversation' && state.activeConversation && (
       <div className="command-window command-list">
         <div className="event-kicker">TALK CHANNEL</div>
+        {state.activeConversation.history && state.activeConversation.history.length > 1 && (
+          <div className="talk-rally">
+            {state.activeConversation.history.slice(-4).map((entry, index) => (
+              <p key={`${entry.speaker}-${index}`}>
+                <span>{entry.speaker}</span>
+                {entry.line}
+              </p>
+            ))}
+          </div>
+        )}
         <strong>{state.activeConversation.introLine}</strong>
         {state.activeConversation.choices.map((choice) => {
           const disabled = !canPayConversationChoiceCost(choice, state);

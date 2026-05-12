@@ -521,14 +521,9 @@ if (command === 'talk' && selectedEnemy) {
       },
     });
     activeConversation = {
-      enemyId: encounter.enemies[idx].id,
-      enemyProfile: encounter.enemies[idx].profile,
-      introLine: profile.introLine,
+      ...profile,
       choices: profile.choices.slice(0, 3),
-      mood: profile.mood,
-      persona: profile.persona,
-      demand: profile.demand,
-      seed: profile.seed,
+      history: [{ speaker: targetName.toUpperCase(), line: profile.introLine }],
     };
     logs.push(`> TALK CHANNEL OPEN: ${targetName.toUpperCase()}`);
     const scenarioTalkLine = getScenarioLine(getEncounterScenario(encounter.enemies[idx].profile)?.talk?.curious);
@@ -989,6 +984,7 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
   const moeSyncBank = state.moeSyncBank;
   let newMoeSyncBank = moeSyncBank;
   let story = { ...state.story, recoveredLogs: [...state.story.recoveredLogs], recentRecoveredLogs: [...state.story.recentRecoveredLogs] };
+  let activeConversation = state.activeConversation;
   const negotiationRewards = [...state.negotiationRewards];
   const addNegotiationReward = (reward: string) => {
     if (!negotiationRewards.includes(reward)) negotiationRewards.push(reward);
@@ -1175,6 +1171,76 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
     if (cost.salvageCredits) salvageCredits = Math.max(0, salvageCredits - cost.salvageCredits);
   };
 
+  if (choice.followUp) {
+    logs.push(`> PLAYER RESPONSE: ${choice.label.toUpperCase()}`);
+    logs.push(`> ${choice.playerLine}`);
+    if (!hasCost()) {
+      logs.push('> NEGOTIATION RESPONSE: COST DENIED');
+      logs.push(`> ${choice.failText}`);
+      const pressureGain = Math.max(0, 1 - vehicleUtility.talkFailurePressureReduction);
+      target.pressure += pressureGain;
+      if (pressureGain === 0) logs.push('> NOISE FILTER: PRESSURE SPIKE DAMPED');
+      encounter.phase = 'command';
+      encounterPrep.firstTalkPending = false;
+      return {
+        ...state,
+        fuel,
+        armor,
+        signal,
+        mainAmmo,
+        seAmmo,
+        encounter,
+        encounterPrep,
+        logs,
+        activeConversation: undefined,
+        negotiationRewards,
+        story,
+        moeLine: choice.failText,
+        moeSyncBank: newMoeSyncBank,
+        salvageCredits,
+        tempForecastBoost,
+      };
+    }
+    payCost();
+    if (target.profile === 'pixie_shibuya_glow' && choice.id === 'threaten') {
+      target.pressure += 1;
+      logs.push('> PIXIE MOOD: OFFENDED');
+    }
+    logs.push('> TALK RALLY: CONTINUE');
+    logs.push(`> ${choice.successText}`);
+    activeConversation = {
+      ...conversation,
+      introLine: choice.followUp.introLine,
+      choices: choice.followUp.choices.slice(0, 3),
+      history: [
+        ...(conversation.history ?? [{ speaker: target.name.toUpperCase(), line: conversation.introLine }]),
+        { speaker: 'YOU', line: choice.playerLine },
+        { speaker: target.name.toUpperCase(), line: choice.successText },
+      ],
+      seed: `${conversation.seed ?? target.id}:followup:${choice.id}`,
+    };
+    encounter.phase = 'conversation';
+    moeLine = choice.followUp.moeLine ?? '会話が続いてる。返し方で窓が開くか決まる。';
+    return {
+      ...state,
+      fuel,
+      armor,
+      signal,
+      mainAmmo,
+      seAmmo,
+      encounter,
+      encounterPrep,
+      logs,
+      activeConversation,
+      negotiationRewards,
+      story,
+      moeLine,
+      moeSyncBank: newMoeSyncBank,
+      salvageCredits,
+      tempForecastBoost,
+    };
+  }
+
   const applyEffects = (effects: ConversationEffect[] | undefined, success: boolean) => {
     if (!effects) return;
     for (const effect of effects) {
@@ -1261,11 +1327,16 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
       logs.push(`> ${choice.successText}`);
       const previousIntent = target.intent;
       applyEffects(choice.effectsOnSuccess, true);
-      if (target.profile === 'pixie_shibuya_glow' && choice.id === 'listen') {
-        logs.push('> ACTION RESULT: Pixie listened. Contract Window opened.');
+      if (target.profile === 'pixie_shibuya_glow' && (choice.id === 'listen' || choice.id.startsWith('pixie_listen_'))) {
+        logs.push('> ACTION RESULT: Pixie kept talking. Contract Window opened.');
       }
-      if (target.profile === 'pixie_shibuya_glow' && choice.id === 'offer_signal') {
+      if (target.profile === 'pixie_shibuya_glow' && (choice.id === 'offer_signal' || choice.id === 'pixie_signal_blue' || choice.id === 'pixie_signal_share')) {
         logs.push('> ACTION RESULT: Pixie accepted the signal. Contract Window opened.');
+      }
+      if (target.profile === 'pixie_shibuya_glow' && choice.id.startsWith('pixie_threat_')) {
+        logs.push(target.exit === 'fled'
+          ? '> ACTION RESULT: Pixie cut the channel and left.'
+          : '> ACTION RESULT: Pixie mood unstable. Contract chance reduced.');
       }
       if (target.profile === 'toll_gate_saint' && choice.id === 'pay_fuel') {
         addNegotiationReward('Paid Passage');

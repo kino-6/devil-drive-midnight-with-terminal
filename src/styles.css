@@ -3375,6 +3375,28 @@ button.route-map__node:focus-visible {
   padding: 1px 4px;
 }
 
+.talk-rally {
+  border-left: 2px solid rgba(114, 184, 205, 0.55);
+  padding-left: 8px;
+  display: grid;
+  gap: 3px;
+}
+
+.talk-rally p {
+  margin: 0;
+  color: #c4d2d6;
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
+.talk-rally span {
+  color: #f0b45e;
+  display: inline-block;
+  font-size: 0.62rem;
+  margin-right: 6px;
+  min-width: 42px;
+}
+
 .command-alert {
   border: 1px solid rgba(147, 92, 74, 0.58);
   background: linear-gradient(180deg, rgba(36, 20, 20, 0.86), rgba(16, 20, 27, 0.86));

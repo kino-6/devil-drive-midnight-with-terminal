@@ -157,6 +157,11 @@ export type ConversationChoice = {
   cost?: ResourceCost;
   effectsOnSuccess?: ConversationEffect[];
   effectsOnFail?: ConversationEffect[];
+  followUp?: {
+    introLine: string;
+    choices: ConversationChoice[];
+    moeLine?: string;
+  };
 };
 
 export type DevilConversationProfile = {
@@ -186,6 +191,7 @@ export type ActiveConversation = {
   enemyProfile: EncounterId;
   introLine: string;
   choices: ConversationChoice[];
+  history?: Array<{ speaker: string; line: string }>;
   mood?: TalkMood;
   persona?: TalkPersona;
   demand?: ConversationDemand;
