@@ -14,6 +14,7 @@ export type CommandId = 'main_gun' | 'sub_gun' | 'se_harpoon' | 'analyze' | 'tal
 export type AffinityType = 'ballistic' | 'suppressive' | 'impact' | 'signal' | 'talk';
 export type AffinityRating = 'weak' | 'normal' | 'resist';
 export type DevilAffinity = Record<AffinityType, AffinityRating>;
+export type ConversationTone = 'friendly' | 'playful' | 'cautious' | 'apologetic' | 'firm' | 'curious';
 export type MainGunId =
   | 'rusted_cannon'
   | 'light_cannon'
@@ -145,6 +146,7 @@ export type ConversationEffect =
 export type ConversationChoice = {
   id: string;
   label: string;
+  tone?: ConversationTone;
   playerLine: string;
   successText: string;
   failText: string;

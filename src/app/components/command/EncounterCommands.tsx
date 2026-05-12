@@ -122,15 +122,15 @@ export const EncounterCommands = ({
   const getTalkChoicePreview = (choiceId: string): string => {
     const profile = state.activeConversation?.enemyProfile;
     if (profile === 'pixie_shibuya_glow') {
-      if (choiceId === 'listen') return 'SAFE / TRUST +2 / WINDOW';
-      if (choiceId === 'offer_signal') return 'SIGNAL -1 / SIGNAL +1 / WINDOW';
-      if (choiceId === 'threaten') return 'FORCE LEAVE / NO CONTRACT';
+      if (choiceId === 'answer_kindly') return 'FRIENDLY / TALK RALLY';
+      if (choiceId === 'play_along') return 'PLAYFUL / LIGHT REQUEST';
+      if (choiceId === 'warn_gently') return 'CAUTION / MOOD RISK';
       if (choiceId === 'pixie_listen_dawn') return 'BEST / TRUST + WINDOW';
       if (choiceId === 'pixie_listen_engine') return 'SAFE / INTENT + WINDOW';
       if (choiceId === 'pixie_listen_joke') return 'FUN / INTEREST + WINDOW';
-      if (choiceId === 'pixie_signal_blue') return 'BEST / SIGNAL CLEAN + WINDOW';
+      if (choiceId === 'pixie_signal_cabin_light') return 'SIGNAL -1/+1 / WINDOW';
       if (choiceId === 'pixie_signal_share') return 'ROUTE READ + WINDOW';
-      if (choiceId === 'pixie_signal_take_back') return 'RECOVER / NO WINDOW';
+      if (choiceId === 'pixie_signal_no_gift') return 'NO COST / TRUST CHECK';
       if (choiceId === 'pixie_threat_apologize') return 'RECOVER TRUST / RISK';
       if (choiceId === 'pixie_threat_double') return 'LEAVE / HIGH RISK';
       if (choiceId === 'pixie_threat_leave') return 'END TALK / SAFE';
@@ -178,7 +178,8 @@ export const EncounterCommands = ({
           const hintText = choice.hintKey ? getConversationLine(choice.hintKey, '') : '';
           const moodText = state.activeConversation?.mood ? `Mood: ${state.activeConversation.mood}` : '';
           const personaText = state.activeConversation?.persona ? `Persona: ${state.activeConversation.persona}` : '';
-          const descText = [labelJa, helpText, choice.playerLine, hintText, moodText, personaText, costText].filter(Boolean).join(' / ');
+          const toneText = choice.tone ? `Tone: ${choice.tone}` : '';
+          const descText = [labelJa, helpText, choice.playerLine, hintText, toneText, moodText, personaText, costText].filter(Boolean).join(' / ');
 
           return (
             <button

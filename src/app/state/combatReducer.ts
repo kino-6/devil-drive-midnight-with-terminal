@@ -1202,9 +1202,8 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
       };
     }
     payCost();
-    if (target.profile === 'pixie_shibuya_glow' && choice.id === 'threaten') {
-      target.pressure += 1;
-      logs.push('> PIXIE MOOD: OFFENDED');
+    if (target.profile === 'pixie_shibuya_glow' && choice.id === 'warn_gently') {
+      logs.push('> PIXIE MOOD: SULKING');
     }
     logs.push('> TALK RALLY: CONTINUE');
     logs.push(`> ${choice.successText}`);
@@ -1327,10 +1326,10 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
       logs.push(`> ${choice.successText}`);
       const previousIntent = target.intent;
       applyEffects(choice.effectsOnSuccess, true);
-      if (target.profile === 'pixie_shibuya_glow' && (choice.id === 'listen' || choice.id.startsWith('pixie_listen_'))) {
+      if (target.profile === 'pixie_shibuya_glow' && choice.id.startsWith('pixie_listen_')) {
         logs.push('> ACTION RESULT: Pixie kept talking. Contract Window opened.');
       }
-      if (target.profile === 'pixie_shibuya_glow' && (choice.id === 'offer_signal' || choice.id === 'pixie_signal_blue' || choice.id === 'pixie_signal_share')) {
+      if (target.profile === 'pixie_shibuya_glow' && (choice.id === 'pixie_signal_cabin_light' || choice.id === 'pixie_signal_share')) {
         logs.push('> ACTION RESULT: Pixie accepted the signal. Contract Window opened.');
       }
       if (target.profile === 'pixie_shibuya_glow' && choice.id.startsWith('pixie_threat_')) {

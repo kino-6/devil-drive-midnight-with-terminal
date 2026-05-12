@@ -123,9 +123,9 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
     if (state.funTestMode.id === 'pixie_talk') {
       return [
         ['Talk first', 'Talk weak / safe reward route'],
-        ['Listen', 'safe / opens trust / reveals intent'],
-        ['Offer Signal', 'Signal cost / high contract chance / signal returns clean'],
-        ['Threaten', 'forces escape / loses contract chance'],
+        ['Answer Kindly', 'friendly reply / trust route'],
+        ['Play Along', 'Pixie asks for light before Signal cost'],
+        ['Warn Gently', 'cautious route / mood may sour'],
       ];
     }
     if (state.funTestMode.id === 'road_reaper_combat') {
