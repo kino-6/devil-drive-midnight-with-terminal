@@ -17,4 +17,14 @@ export default defineConfig({
   define: {
     __APP_COMMIT_HASH__: JSON.stringify(resolveCommitHash()),
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) return 'vendor';
+          return undefined;
+        },
+      },
+    },
+  },
 });
