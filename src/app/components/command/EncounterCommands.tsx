@@ -119,6 +119,25 @@ export const EncounterCommands = ({
     }
     return undefined;
   }
+  const getTalkChoicePreview = (choiceId: string): string => {
+    const profile = state.activeConversation?.enemyProfile;
+    if (profile === 'pixie_shibuya_glow') {
+      if (choiceId === 'listen') return 'SAFE / TRUST +2 / WINDOW';
+      if (choiceId === 'offer_signal') return 'SIGNAL -1 / SIGNAL +1 / WINDOW';
+      if (choiceId === 'threaten') return 'FORCE LEAVE / NO CONTRACT';
+    }
+    if (profile === 'road_reaper') {
+      if (choiceId === 'ask_detour') return 'ROUTE READ / RISK ARMOR';
+      if (choiceId === 'flash_headlights') return 'INTENT CUT / SIGNAL LINE';
+      if (choiceId === 'force_through') return 'PASS CHANCE / HIGH RISK';
+    }
+    if (profile === 'toll_gate_saint') {
+      if (choiceId === 'pay_fuel') return 'PAY FUEL / SAFE PASS';
+      if (choiceId === 'present_signal') return 'SIGNAL -1 / CONTRACT ROUTE';
+      if (choiceId === 'refuse_toll') return 'FORCE / CANCEL INTENT';
+    }
+    return 'GAIN ACTION SHIFT / ROUTE READ / WINDOW';
+  };
 
   return <>
     {state.encounter.phase === 'conversation' && state.activeConversation && (
@@ -158,7 +177,7 @@ export const EncounterCommands = ({
               <span className="command-button__label-stack">
                 <span className="command-button__label">{choice.label}</span>
                 {labelJa && <small>{labelJa}</small>}
-                <small className="command-button__prediction">GAIN ACTION SHIFT / ROUTE READ / WINDOW</small>
+                <small className="command-button__prediction">{getTalkChoicePreview(choice.id)}</small>
               </span>
               <span className="command-button__meta-stack">
                 {costText && <small>{costText.replace('Cost: ', '')}</small>}

@@ -466,6 +466,13 @@ if (command === 'analyze' && selectedEnemy) {
     moeLine = getMoeLine('moe.dynamic.battle.analyze.success', '{target}の解析完了。気質と相性を掴んだ。交渉の順番を合わせよう。', {
       target: getMoeTargetName(selectedEnemy),
     }, 'proud');
+    if (analyzedTarget?.profile === 'pixie_shibuya_glow') {
+      moeLine = '撃つより話す方が早い。信号の光、見てるよ。';
+    } else if (analyzedTarget?.profile === 'road_reaper') {
+      moeLine = 'Talkは通りにくい。主砲、使うなら今。';
+    } else if (analyzedTarget?.profile === 'toll_gate_saint') {
+      moeLine = 'Fuelで通るか、Signalで交渉するか、主砲で割るか。どれも正解にはできる。';
+    }
   }
 }
 
@@ -582,23 +589,25 @@ if (command === 'contract' && selectedEnemy) {
       const contractCfg = getBalanceConfig().contract;
       const analyzedBonus = isEnemyIdentityKnown(target, encounter.analyzedEnemyIds) ? contractCfg.analyzeBonus : 0;
       const baseSuccess = target.profile === 'toll_gate_saint' ? contractCfg.bossBaseSuccess : contractCfg.normalBaseSuccess;
+      const funTestContractBonus = state.funTestMode ? 0.18 : 0;
       const successRate = clamp(
-        baseSuccess + analyzedBonus - target.pressure * contractCfg.pressurePenaltyPerStack,
+        baseSuccess + analyzedBonus + funTestContractBonus - target.pressure * contractCfg.pressurePenaltyPerStack,
         contractCfg.minSuccess,
         contractCfg.maxSuccess,
       );
       logs.push(`> CONTRACT PROTOCOL START: ${target.name.toUpperCase()}`);
       if (Math.random() < successRate) {
-        logs.push('> ENTITY SIGNATURE CAPTURED');
-        if (target.targetModuleId && !contracts.some((module) => module.id === target.targetModuleId)) {
-          contracts = [...contracts, contractModules[target.targetModuleId]];
-          logs.push(`> MODULE SLOT UPDATED: ${contractModules[target.targetModuleId].name.toUpperCase()}`);
-        }
         const contractDisplayName = target.profile === 'pixie_shibuya_glow'
           ? 'PIXIE LINK'
           : target.profile === 'toll_gate_saint'
             ? 'TOLL BLESSING'
             : target.name.toUpperCase();
+        logs.push('> CONTRACT PROTOCOL ACCEPTED');
+        logs.push('> ENTITY SIGNATURE CAPTURED');
+        if (target.targetModuleId && !contracts.some((module) => module.id === target.targetModuleId)) {
+          contracts = [...contracts, contractModules[target.targetModuleId]];
+          logs.push(`> MODULE SLOT UPDATED: ${contractDisplayName}`);
+        }
         if (target.profile === 'toll_gate_saint') logs.push('> TOLL TOKEN ACCEPTED');
         logs.push(`> CONTRACT REGISTERED: ${contractDisplayName}`);
         if (target.temperament === 'machine') logs.push(`> ${getDialogueLine('run.milestone.contract_machine', 'DEMON MILESTONE: MACHINE CONTRACT')}`);
