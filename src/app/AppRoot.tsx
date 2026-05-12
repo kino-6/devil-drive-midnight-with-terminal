@@ -26,6 +26,7 @@ import {
   type Action,
   type AutoPlayReport,
   type AutoPlayStrategy,
+  type FunTestId,
   type UpgradeId,
   type VehicleUpgradeId,
 } from '../game/types';
@@ -92,12 +93,42 @@ import { RunBeatOverlay } from './components/RunBeatOverlay';
 const hasBootDebugFlag = () => {
   if (typeof window === 'undefined') return false;
   const params = new URLSearchParams(window.location.search);
-  return params.has('debug') || params.has('debugSave') || params.has('devtools') || window.location.hash.includes('debug');
+  return params.has('debug')
+    || params.has('debugSave')
+    || params.has('devtools')
+    || params.has('debugState')
+    || params.has('funTest')
+    || window.location.hash.includes('debug');
+};
+
+type BootDebugPreset =
+  | { type: 'garage' }
+  | { type: 'funTest'; id: FunTestId };
+
+const normalizeFunTestId = (value: string | null): FunTestId | undefined => {
+  const key = value?.trim().toLowerCase().replace(/[-\s]/g, '_');
+  if (!key) return undefined;
+  if (key === 'pixie' || key === 'fun_pixie' || key === 'pixie_talk' || key === 'test_pixie_talk') return 'pixie_talk';
+  if (key === 'reaper' || key === 'road_reaper' || key === 'fun_reaper' || key === 'road_reaper_combat') return 'road_reaper_combat';
+  if (key === 'toll' || key === 'boss' || key === 'fun_toll' || key === 'toll_gate' || key === 'toll_gate_boss') return 'toll_gate_boss';
+  return undefined;
+};
+
+const getBootDebugPreset = (): BootDebugPreset | undefined => {
+  if (typeof window === 'undefined') return undefined;
+  const params = new URLSearchParams(window.location.search);
+  const funTestId = normalizeFunTestId(params.get('funTest')) ?? normalizeFunTestId(params.get('debugState'));
+  if (funTestId) return { type: 'funTest', id: funTestId };
+  const debugState = params.get('debugState')?.trim().toLowerCase();
+  if (debugState === 'garage') return { type: 'garage' };
+  return undefined;
 };
 
 export function App() {
   const bootDebugEnabled = import.meta.env.DEV && hasBootDebugFlag();
+  const bootDebugPreset = useMemo(() => import.meta.env.DEV ? getBootDebugPreset() : undefined, []);
   const [state, rawDispatch] = useReducer(reducer, undefined, initState);
+  const bootDebugPresetAppliedRef = useRef(false);
   const stateBeforeDispatchRef = useRef(state);
   useEffect(() => {
     stateBeforeDispatchRef.current = state;
@@ -105,6 +136,15 @@ export function App() {
   const dispatch = useCallback((action: Action) => {
     dispatchWithReproLog(stateBeforeDispatchRef.current, action, () => rawDispatch(action));
   }, [rawDispatch]);
+  useEffect(() => {
+    if (!bootDebugPreset || bootDebugPresetAppliedRef.current) return;
+    bootDebugPresetAppliedRef.current = true;
+    if (bootDebugPreset.type === 'garage') {
+      dispatch({ type: 'OPEN_GARAGE' });
+      return;
+    }
+    dispatch({ type: 'START_FUN_TEST', id: bootDebugPreset.id });
+  }, [bootDebugPreset, dispatch]);
   const [balanceConfig, setBalanceConfig] = useState<BalanceConfig>(defaultBalanceConfig);
   const [devilConfigVersion, setDevilConfigVersion] = useState(getDevilConfig().version);
   const [dialogueConfigVersion, setDialogueConfigVersion] = useState(getDialogueConfig().version);

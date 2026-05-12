@@ -47,6 +47,23 @@ npm run dev
 
 通常は `http://localhost:5173` で確認できます。
 
+## Debug Mode（検証用）
+
+開発起動中はURLクエリで初期状態を指定できます。Fun Test ModeやGarageの確認に使います。
+
+- `http://localhost:5173/?debugState=garage`
+- `http://localhost:5173/?debugState=fun_pixie`
+- `http://localhost:5173/?debugState=fun_reaper`
+- `http://localhost:5173/?debugState=fun_toll`
+
+`funTest` でも同じテストEncounterへ直行できます。
+
+- `http://localhost:5173/?funTest=pixie_talk`
+- `http://localhost:5173/?funTest=road_reaper_combat`
+- `http://localhost:5173/?funTest=toll_gate_boss`
+
+`debugState` または `funTest` が付いている場合は、Debug/Utility panelsも初期表示されます。
+
 ## 本番ビルド
 
 ```bash
