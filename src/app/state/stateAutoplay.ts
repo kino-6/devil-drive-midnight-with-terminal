@@ -120,6 +120,7 @@ export const runAutoplayBatchWithDeps = (loadout: Loadout, runs: number, strateg
     'Boss Cleared': 0,
     'Boss Avoided': 0,
     'Vehicle Disabled': 0,
+    'Fun Test Complete': 0,
   };
   let sumEncounters = 0;
   let sumContracts = 0;

@@ -1,4 +1,4 @@
-import { bossIntel, routeIntelCatalog, routeScenarioIdMap, storyLogById } from '../../game/catalogs';
+import { bossIntel, storyLogById } from '../../game/catalogs';
 import { WIPEOUT_CARRYBACK_RATE, isWipeoutCarryback } from '../../game/carryback';
 import { getMoeLine } from '../../game/moeDialogue';
 import { getReturnDecisionStatus } from '../../game/returnDecision';
@@ -8,7 +8,7 @@ import { hasAiNaviContract } from '../state/stateReducer';
 import { isAlive } from '../../game/runtimeHelpers';
 import { getRouteEventScenario } from '../../scenario/scenarioLoader';
 import { getEventById } from '../../eventConfig';
-import { getCurrentNaviRouteBriefing, getNaviRouteCandidates, getNaviRouteIntelStatus } from '../state/routeGraph';
+import { getCurrentNaviRouteBriefing, getNaviRouteIntelStatus } from '../state/routeGraph';
 import type { State } from '../../game/types';
 
 type RunGrowth = {
@@ -25,7 +25,6 @@ type EventPanelsProps = {
 export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
   const aliveEnemies = state.encounter.enemies.filter(isAlive);
   const naviRouteBriefing = state.gamePhase === 'route_choice' ? getCurrentNaviRouteBriefing(state) : undefined;
-  const naviRouteCandidates = state.gamePhase === 'route_choice' ? getNaviRouteCandidates(state) : [];
   const naviRouteIntelStatus = state.gamePhase === 'route_choice' ? getNaviRouteIntelStatus(state) : undefined;
   const salvageEvent = state.gamePhase === 'salvage' ? getEventById(state.routeState?.currentEventId) : undefined;
   const returnStatus = getReturnDecisionStatus(state);
@@ -35,6 +34,17 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
   const resultDecisionLines = (state.gamePhase === 'result' || state.gamePhase === 'game_over')
     ? buildResultDecisionLines(state)
     : [];
+  const funTestRewards = state.funTestMode
+    ? [
+      state.salvageCredits > 0 ? `salvage +${state.salvageCredits}` : '',
+      state.contracts.length > 0 ? state.contracts.map((module) => module.name).join(' / ') : '',
+      ...state.negotiationRewards,
+    ].filter(Boolean)
+    : [];
+  const funTestWeakHits = state.logs.filter((line) => line.includes('WEAK POINT DETECTED')).length;
+  const funTestTalkSuccesses = state.logs.filter((line) => line.includes('NEGOTIATION RESPONSE: ACCEPTED')).length;
+  const funTestContractWindowOpened = state.logs.some((line) => line.includes('CONTRACT WINDOW'));
+  const funTestPassed = state.logs.some((line) => line.includes('Paid Passage') || line.includes('Toll paid'));
 
   return (
     <>
@@ -56,43 +66,21 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
       {state.gamePhase === 'route_choice' && <section className="event-card">
         <div className="event-header">
           <div className="event-kicker">NIGHT LOOP ROUTE</div>
-          <span className="event-chip event-chip--route">CHOOSE NEXT LANE</span>
+          <span className="event-chip event-chip--route">MAP SELECT</span>
         </div>
-        {naviRouteBriefing && <div className="command-window">
+        {naviRouteBriefing && <div className="command-window command-window--compact">
           <strong>{naviRouteBriefing.title}</strong>
-          <p>{naviRouteBriefing.body ?? 'NAVI signal is noisy. Details partially masked.'}</p>
           {naviRouteBriefing.effects && <p>{naviRouteBriefing.effects}</p>}
         </div>}
         {naviRouteIntelStatus?.isLimited && <div className={`command-alert command-alert--${naviRouteIntelStatus.level}`}>
           <strong>{naviRouteIntelStatus.label}</strong>
-          <span>{naviRouteIntelStatus.detail}</span>
+          <span>MASKED PATHS</span>
         </div>}
-        {naviRouteCandidates.length > 0
-          ? <div className="next-node-list">
-            {naviRouteCandidates.map((candidate) => <div key={`${candidate.nodeId}-${candidate.choiceId}`} className="next-node">
-              <span>◎</span>
-              <strong>{candidate.title}</strong>
-              <small>tags: {candidate.tags}</small>
-              <small>route: {candidate.forecast.join(' > ')} / boss: {candidate.bossSteps ?? '--'} steps</small>
-              <small>risk: {candidate.risk} / reward: {candidate.reward}</small>
-              {candidate.resourceWarning && <small className="next-node__warning">{candidate.resourceWarning}</small>}
-              {candidate.body && <small>{candidate.body}</small>}
-              {candidate.effects && <small>effects: {candidate.effects}</small>}
-            </div>)}
-          </div>
-          : <div className="next-node-list">
-            {(['salvage', 'signal', 'push_forward', 'return_gate'] as const).map((lane) => {
-              const scenario = routeScenarioIdMap[lane] ? getRouteEventScenario(routeScenarioIdMap[lane] ?? '') : undefined;
-              return <div key={lane} className="next-node">
-                <span>◎</span>
-                <strong>{routeIntelCatalog[lane].label}</strong>
-                <small>likely: {routeIntelCatalog[lane].likelyEnemyTags}</small>
-                <small>suggested: {routeIntelCatalog[lane].likelyWeaknesses}</small>
-                <small>risk: {routeIntelCatalog[lane].riskTags} / reward: {routeIntelCatalog[lane].rewardTags}</small>
-                {scenario?.body && <small>{scenario.body}</small>}
-              </div>;
-            })}
-          </div>}
+        <div className="route-map-legend" aria-label="Route map legend">
+          <span>○ selectable</span>
+          <span>● current</span>
+          <span>？ masked</span>
+        </div>
       </section>}
 
       {state.gamePhase === 'salvage' && <section className="event-card">
@@ -187,6 +175,19 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
         {state.encounter.forecastUnstable && <p className="event-layer__system">WARNING: FORECAST RELIABILITY UNSTABLE</p>}
       </section>}
 
+      {state.funTestMode?.id === 'toll_gate_boss' && state.gamePhase === 'boss_encounter' && <section className="event-card">
+        <div className="event-header">
+          <div className="event-kicker">BOSS PREVIEW</div>
+          <span className="event-chip event-chip--danger">VISIBLE</span>
+        </div>
+        <div className="next-node-list">
+          <div className="next-node"><span>▲</span><strong>Traits</strong><small>armored / bargain / toll demand</small></div>
+          <div className="next-node"><span>▲</span><strong>Options</strong><small>Fuel / Signal / Main Gun / Contract</small></div>
+          <div className="next-node"><span>▲</span><strong>Weakness</strong><small>{bossIntel.likelyWeaknesses}</small></div>
+          <div className="next-node"><span>▲</span><strong>Risk</strong><small>{bossIntel.riskTags}</small></div>
+        </div>
+      </section>}
+
       {state.gamePhase === 'reward' && <section className="event-card">
         <div className="event-header">
           <div className="event-kicker">SALVAGE RESULT</div>
@@ -233,6 +234,39 @@ export const EventPanels = ({ state, runGrowth }: EventPanelsProps) => {
           <p><span>M.O.E. Sync gained</span><strong>{runGrowth.moeSync}</strong></p>
           <p><span>Salvage Credit gained</span><strong>{runGrowth.salvageCreditGain}</strong></p>
         </div>
+        {state.funTestMode && <div className="command-window">
+          <div className="panel-title panel-title--compact">
+            <span>FUN TEST RESULT</span>
+            <small>{state.funTestMode.target}</small>
+          </div>
+          <div className="negotiation-grid">
+            <p><span>Test Target</span><strong>{state.funTestMode.target}</strong></p>
+            <p><span>Turns Used</span><strong>{state.encounter.turn}</strong></p>
+            <p><span>Defeated</span><strong>{state.lastReport?.defeated ?? 0}</strong></p>
+            <p><span>Contracted</span><strong>{state.lastReport?.contracted ?? 0}</strong></p>
+            <p><span>Left / Passed</span><strong>{state.lastReport?.fled ?? 0} / {funTestPassed ? 'YES' : 'NO'}</strong></p>
+            <p><span>Escaped</span><strong>{state.lastReport?.escaped ? 'YES' : 'NO'}</strong></p>
+            <p><span>Contract Window</span><strong>{funTestContractWindowOpened ? 'OPENED' : 'NO'}</strong></p>
+            <p><span>Weak Hits</span><strong>{funTestWeakHits}</strong></p>
+            <p><span>Talk Successes</span><strong>{funTestTalkSuccesses}</strong></p>
+            <p><span>Rewards</span><strong>{funTestRewards.length > 0 ? funTestRewards.join(' / ') : 'none'}</strong></p>
+            <p><span>Resources</span><strong>{state.fuel} / {state.armor} / {state.signal} / {state.mainAmmo} / {state.seAmmo}</strong></p>
+            <p><span>M.O.E.</span><strong>{state.moeLine}</strong></p>
+          </div>
+        </div>}
+        {state.negotiationRewards.length > 0 && <div className="command-window">
+          <div className="panel-title panel-title--compact">
+            <span>NEGOTIATION REWARD</span>
+            <small>{state.negotiationRewards.length}</small>
+          </div>
+          <div className="next-node-list">
+            {state.negotiationRewards.map((reward) => <div key={`negotiation-${reward}`} className="next-node">
+              <span>◎</span>
+              <strong>{reward.split(':')[0]}</strong>
+              <small>{reward.includes(':') ? reward.slice(reward.indexOf(':') + 1).trim() : reward}</small>
+            </div>)}
+          </div>
+        </div>}
         <div className="command-window">
           <p>GARAGE: GROWTH / TUNE / SORTIE</p>
           <p>GAIN: XP +{runGrowth.driverXp} / SYNC +{runGrowth.moeSync} / CR +{runGrowth.salvageCreditGain}</p>

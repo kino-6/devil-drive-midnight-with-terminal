@@ -23,6 +23,15 @@ export const chooseNextIntent = (profile?: EncounterId): Intent => {
       ['curse', 14],
     ]);
   }
+  if (profile === 'road_reaper') {
+    return pickWeightedIntent([
+      ['attack', 58],
+      ['guard', 24],
+      ['curse', 10],
+      ['bargain', 6],
+      ['flee', 2],
+    ]);
+  }
   if (template?.armored) {
     return pickWeightedIntent([
       ['guard', 34],

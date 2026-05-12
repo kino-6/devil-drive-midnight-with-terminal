@@ -70,7 +70,7 @@ export const RouteCommands = ({
         {intelStatus.isLimited && (
           <div className={`command-alert command-alert--${intelStatus.level}`}>
             <strong>{intelStatus.label}</strong>
-            <span>{intelStatus.detail}</span>
+            <span>MAP MASKED</span>
           </div>
         )}
         {naviCandidates.map((candidate) => {
@@ -89,9 +89,6 @@ export const RouteCommands = ({
             >
               <span className="command-button__label-stack">
                 <strong>{candidate.title}</strong>
-                <small>{candidate.tags}</small>
-                <small>RISK {candidate.risk}</small>
-                <small>GAIN {candidate.reward}</small>
                 {signalMaskPreview && <small className="command-button__warning">{signalMaskPreview}</small>}
                 {candidate.resourceWarning && <small className="command-button__warning">{candidate.resourceWarning}</small>}
               </span>

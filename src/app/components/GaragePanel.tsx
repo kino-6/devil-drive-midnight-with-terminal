@@ -3,6 +3,7 @@ import type {
   AutoPlayReport,
   AutoPlayStrategy,
   ContractSupportId,
+  FunTestId,
   MainGunId,
   SpecialEquipmentId,
   State,
@@ -56,6 +57,7 @@ type GaragePanelProps = {
   onSetAutoplayRuns: (runs: number) => void;
   onSetAutoplayStrategy: (strategy: AutoPlayStrategy) => void;
   onRunAutoplay: () => void;
+  onStartFunTest: (id: FunTestId) => void;
 };
 
 export const GaragePanel = ({
@@ -97,6 +99,7 @@ export const GaragePanel = ({
   onSetAutoplayRuns,
   onSetAutoplayStrategy,
   onRunAutoplay,
+  onStartFunTest,
 }: GaragePanelProps) => {
   if (!visible) return null;
 
@@ -134,6 +137,24 @@ export const GaragePanel = ({
         onGarageLaunchConfirm={onGarageLaunchConfirm}
         onGarageLaunchCancel={onGarageLaunchCancel}
       />
+
+      <div className="garage-block garage-fun-test">
+        <div className="event-header">
+          <div className="event-kicker">FUN TEST MODE</div>
+          <span className="event-chip event-chip--route">1 ENCOUNTER</span>
+        </div>
+        <div className="garage-fun-test__buttons">
+          <button className="command-button command-button--contract" type="button" onClick={() => onStartFunTest('pixie_talk')}>
+            Test Pixie Talk
+          </button>
+          <button className="command-button command-button--danger" type="button" onClick={() => onStartFunTest('road_reaper_combat')}>
+            Test Road Reaper Combat
+          </button>
+          <button className="command-button command-button--route" type="button" onClick={() => onStartFunTest('toll_gate_boss')}>
+            Test Toll Gate Boss
+          </button>
+        </div>
+      </div>
 
       <div className="garage-columns">
         <GaragePreviousRunSection

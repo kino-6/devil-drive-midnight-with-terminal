@@ -72,6 +72,9 @@ const maxSignalCap = getBalanceConfig().resources.baseSignal;
 let moeLine = getMoeLine('moe.dynamic.battle.idle', '次の手を選んで。');
 let skipEnemyResolution = false;
 let escaped = false;
+const addNegotiationReward = (reward: string) => {
+  if (!negotiationRewards.includes(reward)) negotiationRewards.push(reward);
+};
 const selectedMainGun = getMainGunSpec(state.selectedLoadout.mainGunId);
 const selectedSubGun = getSubGunSpec(state.selectedLoadout.subGunId);
 const selectedSE = getSpecialEquipmentSpec(state.selectedLoadout.specialEquipmentId);
@@ -220,6 +223,14 @@ if (command === 'main_gun' && selectedEnemy && mainAmmo > 0) {
       : affinity === 'resist'
         ? getConversationLineWithVars('moe.dynamic.battle.main_gun.resist', { target: targetName })
         : getConversationLineWithVars('moe.dynamic.battle.main_gun.normal', { target: targetName });
+    if (encounter.enemies[idx].profile === 'road_reaper' && affinity === 'weak') {
+      encounter.enemies[idx].intent = 'guard';
+      encounter.enemies[idx].analyzeVulnerableTurns = Math.max(1, encounter.enemies[idx].analyzeVulnerableTurns ?? 0);
+      logs.push('> MAIN GUN IMPACT: WARNING BATON BROKEN');
+      logs.push('> ENEMY INTENT DISRUPTED');
+      logs.push('> ACTION RESULT: Road Reaper weak point hit. Next intent disrupted.');
+      moeLine = '通った。標識の制御、割れてる。';
+    }
     if (encounter.enemies[idx].hp <= 0 && !encounter.enemies[idx].exit) {
       applyIntelGain(idx, 28, 'defeat');
       encounter.enemies[idx].exit = 'defeated';
@@ -516,9 +527,11 @@ if (command === 'talk' && selectedEnemy) {
     const scenarioTalkLine = getScenarioLine(getEncounterScenario(encounter.enemies[idx].profile)?.talk?.curious);
     if (scenarioTalkLine) logs.push(`> ${scenarioTalkLine}`);
     encounter.phase = 'conversation';
-    moeLine = getMoeLine('moe.dynamic.battle.talk.success.normal', '会話に乗った。反応を見て選んで。', {
-      target: targetName,
-    });
+    moeLine = encounter.enemies[idx].profile === 'pixie_shibuya_glow'
+      ? getMoeLine('moe.dynamic.battle.talk.pixie_hint', '好奇心で近づいてる。怖がらせないで。', undefined, 'soft')
+      : getMoeLine('moe.dynamic.battle.talk.success.normal', '会話に乗った。反応を見て選んで。', {
+        target: targetName,
+      });
     return {
       ...state,
       fuel,
@@ -574,18 +587,33 @@ if (command === 'contract' && selectedEnemy) {
         contractCfg.minSuccess,
         contractCfg.maxSuccess,
       );
-      logs.push('> CONTRACT PROTOCOL START');
+      logs.push(`> CONTRACT PROTOCOL START: ${target.name.toUpperCase()}`);
       if (Math.random() < successRate) {
         logs.push('> ENTITY SIGNATURE CAPTURED');
         if (target.targetModuleId && !contracts.some((module) => module.id === target.targetModuleId)) {
           contracts = [...contracts, contractModules[target.targetModuleId]];
           logs.push(`> MODULE SLOT UPDATED: ${contractModules[target.targetModuleId].name.toUpperCase()}`);
         }
-        logs.push(`> CONTRACT REGISTERED: ${target.name.toUpperCase()}`);
+        const contractDisplayName = target.profile === 'pixie_shibuya_glow'
+          ? 'PIXIE LINK'
+          : target.profile === 'toll_gate_saint'
+            ? 'TOLL BLESSING'
+            : target.name.toUpperCase();
+        if (target.profile === 'toll_gate_saint') logs.push('> TOLL TOKEN ACCEPTED');
+        logs.push(`> CONTRACT REGISTERED: ${contractDisplayName}`);
         if (target.temperament === 'machine') logs.push(`> ${getDialogueLine('run.milestone.contract_machine', 'DEMON MILESTONE: MACHINE CONTRACT')}`);
         if (target.temperament === 'lonely') logs.push(`> ${getDialogueLine('run.milestone.contract_lonely', 'DEMON MILESTONE: LONELY CONTRACT')}`);
         const contractSuccessLine = getScenarioLine(getEncounterScenario(target.profile)?.contract?.success);
         if (contractSuccessLine) logs.push(`> ${contractSuccessLine}`);
+        if (target.profile === 'pixie_shibuya_glow') {
+          logs.push('> PIXIE LINK: NEXT TALK SUCCESS +15%');
+          logs.push('> PIXIE LINK: APPROACH SCAN +5%');
+          addNegotiationReward('Pixie Link: Talk +15% / Scan +5%');
+        }
+        if (target.profile === 'toll_gate_saint') {
+          logs.push('> TOLL BLESSING: SALVAGE CLAIM +1');
+          addNegotiationReward('Toll Blessing acquired');
+        }
         applyContractBoon(target);
         logs.push(`> ${getConversationLine('contract.success.default', '契約成立。短期恩恵を受領した。')}`);
         activeSupportDaemon = makeActiveSupportDaemon(target);
@@ -597,7 +625,11 @@ if (command === 'contract' && selectedEnemy) {
         if (activeSupportDaemon.profile === 'silent_shape') {
           encounter.supportArmorGuardReady = true;
         }
-        moeLine = getMoeLine('moe.dynamic.battle.contract.support_linked', 'Support daemon accepted. I will monitor corruption drift.');
+        moeLine = target.profile === 'pixie_shibuya_glow'
+          ? getMoeLine('moe.dynamic.battle.contract.pixie_link', '契約できる。……この子、車内ライトに住む気かも。', undefined, 'soft')
+          : target.profile === 'toll_gate_saint'
+            ? getMoeLine('moe.dynamic.battle.contract.toll_blessing', '契約成立。……通行許可じゃなくて、徴収権を積んだのかも。', undefined, 'serious')
+            : getMoeLine('moe.dynamic.battle.contract.support_linked', 'Support daemon accepted. I will monitor corruption drift.');
       } else {
         encounter.enemies[idx].contractWindow = false;
         logs.push('> CONTRACT FAILED: SIGNAL REJECTED');
@@ -760,7 +792,43 @@ if (!skipEnemyResolution) {
   });
 }
 
+const completeFunTestResult = (resultLogs: string[], escapedForReport = escaped): State => {
+  const report = makeEncounterReport(state.encounterIndex + 1, encounter.enemies, escapedForReport);
+  return {
+    ...state,
+    gamePhase: 'result',
+    fuel,
+    armor,
+    signal,
+    mainAmmo,
+    seAmmo,
+    contracts,
+    activeSupportDaemon,
+    activeConversation: undefined,
+    negotiationRewards,
+    tempForecastBoost,
+    moeSyncBank,
+    story,
+    salvageCredits,
+    logs: [...logs, ...resultLogs, '> TEST RESULT READY'],
+    encounter: { ...encounter, phase: 'finished' },
+    lastReport: report,
+    runSummary: accumulateSummary(state.runSummary, report),
+    resultType: 'Fun Test Complete',
+    bossChallenged: state.bossChallenged,
+    encounterPrep,
+    analyzeSuccessCount,
+    growthClaimed: true,
+    moeLine: state.funTestMode
+      ? getMoeLine('moe.garage.enter', `${state.funTestMode.label}、結果を見よっか。`, undefined, 'soft')
+      : moeLine,
+  };
+};
+
 if (armor <= 0 || fuel <= 0) {
+  if (state.funTestMode) {
+    return completeFunTestResult(['> FUN TEST END: VEHICLE LIMIT']);
+  }
   const report = makeEncounterReport(state.encounterIndex + 1, encounter.enemies, escaped);
   const resultType: ResultType = 'Vehicle Disabled';
   const story = resolveStoryFromRun(state, resultType);
@@ -794,6 +862,10 @@ if (cleared) {
   const report = makeEncounterReport(state.encounterIndex + 1, encounter.enemies, escaped);
   const summary = accumulateSummary(state.runSummary, report);
   const logsWithClear = [...logs, '> ENCOUNTER CLEARED'];
+
+  if (state.funTestMode) {
+    return completeFunTestResult(['> ENCOUNTER CLEARED']);
+  }
 
   if (state.gamePhase === 'boss_encounter') {
     return {
@@ -909,6 +981,9 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
   let newMoeSyncBank = moeSyncBank;
   let story = { ...state.story, recoveredLogs: [...state.story.recoveredLogs], recentRecoveredLogs: [...state.story.recentRecoveredLogs] };
   const negotiationRewards = [...state.negotiationRewards];
+  const addNegotiationReward = (reward: string) => {
+    if (!negotiationRewards.includes(reward)) negotiationRewards.push(reward);
+  };
   const encounterPrep = { ...state.encounterPrep };
   let tempForecastBoost = state.tempForecastBoost;
   const vehicleUtility = getVehicleUpgradeUtilityEffects(state.vehicleUpgrades);
@@ -921,6 +996,31 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
     const report = makeEncounterReport(state.encounterIndex + 1, encounter.enemies, false);
     const summary = accumulateSummary(state.runSummary, report);
     const logsWithClear = [...logs, '> ENCOUNTER CLEARED'];
+
+    if (state.funTestMode) {
+      return {
+        ...state,
+        gamePhase: 'result',
+        fuel,
+        armor,
+        signal,
+        mainAmmo,
+        seAmmo,
+        encounter: { ...encounter, phase: 'finished' },
+        encounterPrep,
+        logs: [...logsWithClear, '> TEST RESULT READY'],
+        activeConversation: undefined,
+        negotiationRewards,
+        story,
+        moeLine: getMoeLine('moe.garage.enter', `${state.funTestMode.label}、結果を見よっか。`, undefined, 'soft'),
+        moeSyncBank: newMoeSyncBank,
+        salvageCredits,
+        lastReport: report,
+        runSummary: summary,
+        resultType: 'Fun Test Complete',
+        growthClaimed: true,
+      };
+    }
 
     if (state.gamePhase === 'boss_encounter') {
       return {
@@ -1002,8 +1102,9 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
   const affinityBonus = affinityRating === 'weak' ? 0.15 : affinityRating === 'resist' ? -0.2 : 0;
   const pressurePenalty = target.pressure * 0.05;
   const firstTalkBonus = encounterPrep.firstTalkPending ? encounterPrep.firstTalkBonus : 0;
+  const pixieLinkBonus = state.contracts.some((module) => module.id === 'radio_voice') ? 0.15 : 0;
   const choiceBias = choice.successBias ?? 0;
-  const baseSuccess = 0.65 + (analyzed ? 0.1 : 0) + preferredMatch + affinityBonus + translationBonus + firstTalkBonus + choiceBias - pressurePenalty;
+  const baseSuccess = 0.65 + (analyzed ? 0.1 : 0) + preferredMatch + affinityBonus + translationBonus + firstTalkBonus + pixieLinkBonus + choiceBias - pressurePenalty;
   const successRate = clamp(baseSuccess, 0.15, 0.95);
 
   const applyResourceDelta = (resource: 'fuel' | 'armor' | 'signal' | 'mainAmmo', amount: number) => {
@@ -1032,7 +1133,7 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
     enemy.analyzeVulnerableTurns = Math.max(2, enemy.analyzeVulnerableTurns ?? 0);
     enemy.talkBreakTurns = Math.max(1, enemy.talkBreakTurns ?? 0);
     tempForecastBoost = Math.max(tempForecastBoost, state.tempForecastBoost + 1);
-    negotiationRewards.push('Talk Break: route read +1');
+    addNegotiationReward('Talk Break: route read +1');
     logs.push(`> TALK BREAK: ACTION SHIFT ${previousIntent.toUpperCase()} -> ${enemy.intent.toUpperCase()}`);
     logs.push('> TALK BREAK: NEXT HIT +1');
     logs.push('> TALK BREAK: NEXT IMPACT/CURSE -1');
@@ -1086,18 +1187,22 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
       } else if (effect.type === 'revealIntent') {
         target.revealed = true;
         logs.push(`> INTENT REVEAL: ${target.intent.toUpperCase()}`);
+        if (target.profile === 'pixie_shibuya_glow') addNegotiationReward('Pixie: next intent reveal');
       } else if (effect.type === 'routeHint') {
         const hint = 'Route hint acquired';
-        negotiationRewards.push(hint);
+        addNegotiationReward(hint);
         logs.push('> ROUTE HINT RECEIVED');
       } else if (effect.type === 'bossTraitHint') {
         const hint = 'Boss trait hint acquired';
-        negotiationRewards.push(hint);
+        addNegotiationReward(hint);
         logs.push('> BOSS TRAIT HINT RECEIVED');
       } else if (effect.type === 'recover') {
         applyResourceDelta(effect.resource, effect.amount);
         const sign = effect.amount >= 0 ? '+' : '';
         logs.push(`> ${effect.resource.toUpperCase()} ${sign}${effect.amount}`);
+        if (target.profile === 'pixie_shibuya_glow' && effect.amount > 0) {
+          addNegotiationReward(`Pixie: ${effect.resource} +${effect.amount}`);
+        }
       } else if (effect.type === 'enemyLeaves') {
         target.exit = 'fled';
         logs.push(`> TARGET LEFT: ${target.name.toUpperCase()}`);
@@ -1110,12 +1215,12 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
           story.recentRecoveredLogs = [effect.logId];
           story.previousDriverClues += 1;
           logs.push(`> STORY LOG RECOVERED: ${effect.logId}`);
-          negotiationRewards.push(`Story Log ${effect.logId}`);
+          addNegotiationReward(`Story Log ${effect.logId}`);
         }
       } else if (effect.type === 'moeSync') {
         newMoeSyncBank = Math.max(0, newMoeSyncBank + effect.amount);
         logs.push(`> M.O.E. SYNC +${effect.amount}`);
-        negotiationRewards.push(`M.O.E. Sync +${effect.amount}`);
+        addNegotiationReward(`M.O.E. Sync +${effect.amount}`);
       }
     }
     if (success && target.profile === 'roadside_phone') {
@@ -1147,11 +1252,30 @@ export const resolveTalkChoice = (state: State, action: Action, deps: any): Stat
       logs.push(`> ${choice.successText}`);
       const previousIntent = target.intent;
       applyEffects(choice.effectsOnSuccess, true);
+      if (target.profile === 'pixie_shibuya_glow' && choice.id === 'listen') {
+        logs.push('> ACTION RESULT: Pixie listened. Contract Window opened.');
+      }
+      if (target.profile === 'pixie_shibuya_glow' && choice.id === 'offer_signal') {
+        logs.push('> ACTION RESULT: Pixie accepted the signal. Contract Window opened.');
+      }
+      if (target.profile === 'toll_gate_saint' && choice.id === 'pay_fuel') {
+        addNegotiationReward('Paid Passage');
+        logs.push('> ACTION RESULT: Toll paid. Boss passage resolved.');
+      }
+      if (target.profile === 'toll_gate_saint' && choice.id === 'present_signal') {
+        logs.push('> ACTION RESULT: Toll token recognized. Contract Window opened.');
+      }
+      if (affinityType === 'talk' && affinityRating === 'weak') {
+        logs.push('> WEAK RESPONSE: TALK');
+      }
       logs.push(`> ${getConversationLine('talk.effect.intent_softened', 'TALK DISRUPTION: INTENT SOFTENED')}`);
       target.intent = softenIntentByTemperament(target);
       applyTalkBreak(target, previousIntent);
       const talkKey = `talk.success.${target.temperament}`;
       moeLine = getConversationLine(talkKey, getConversationLine('talk.success.default', choice.successText));
+      if (affinityType === 'talk' && affinityRating === 'weak') {
+        moeLine = '会話に乗った。撃つよりずっと得だったね';
+      }
     } else {
       logs.push('> NEGOTIATION RESPONSE: REJECTED');
       logs.push(`> ${choice.failText}`);

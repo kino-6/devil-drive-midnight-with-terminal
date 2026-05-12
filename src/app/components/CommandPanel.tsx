@@ -159,6 +159,7 @@ export const CommandPanel = ({
 
     {(gamePhase === 'result' || gamePhase === 'game_over') && (
       <ResultCommands
+        isFunTest={!!state.funTestMode}
         onStartNextRun={onStartNextRun}
         onOpenGarage={onOpenGarage}
         onRetry={onRetry}

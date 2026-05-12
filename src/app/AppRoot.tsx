@@ -465,7 +465,7 @@ const tacticalLinesCompact = tacticalLines
     || state.gamePhase === 'reward'
     || state.gamePhase === 'return_gate';
 
-  return <div className={`dashboard-shell ${isEncounterActive ? 'is-encounter' : ''} ${shellClassName}`.trim()}>
+  return <div className={`dashboard-shell ${isEncounterActive ? 'is-encounter' : ''} ${state.funTestMode ? 'is-fun-test' : ''} ${shellClassName}`.trim()}>
     <div
       className="road-runner-bg"
       aria-hidden="true"
@@ -499,6 +499,12 @@ const tacticalLinesCompact = tacticalLines
     />
 
     <div className="cockpit-frame">
+      {state.funTestMode && <div className="fun-test-badge" aria-label={state.funTestMode.label}>
+        <span>FUN TEST MODE</span>
+        <strong>{state.funTestMode.target}</strong>
+        <small>{state.funTestMode.description}</small>
+        <button type="button" onClick={() => dispatch({ type: 'OPEN_GARAGE' })}>Exit Test Mode</button>
+      </div>}
       <RunBeatOverlay beat={activeBeat} onDismiss={dismissBeat} />
 
       <CockpitHeader
@@ -716,6 +722,7 @@ const tacticalLinesCompact = tacticalLines
             onSetAutoplayRuns: setAutoplayRuns,
             onSetAutoplayStrategy: setAutoplayStrategy,
             onRunAutoplay: runAutoplay,
+            onStartFunTest: (id) => dispatch({ type: 'START_FUN_TEST', id }),
           }}
           eventPanelsProps={{
             state,

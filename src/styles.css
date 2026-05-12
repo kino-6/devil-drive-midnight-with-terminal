@@ -453,6 +453,50 @@ body {
   z-index: 3;
 }
 
+.fun-test-badge {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 6;
+  display: grid;
+  gap: 2px;
+  min-width: 148px;
+  border: 1px solid rgba(222, 178, 102, 0.76);
+  background: rgba(9, 13, 18, 0.92);
+  padding: 6px 8px;
+  box-shadow: 0 0 18px rgba(222, 151, 70, 0.18);
+  pointer-events: auto;
+}
+
+.fun-test-badge span {
+  color: #f2bf67;
+  font-size: 0.62rem;
+  line-height: 1;
+}
+
+.fun-test-badge strong {
+  color: #f5e2be;
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.fun-test-badge small {
+  color: #9fb7c1;
+  font-size: 0.62rem;
+  line-height: 1.25;
+}
+
+.fun-test-badge button {
+  border: 1px solid rgba(121, 154, 167, 0.58);
+  background: rgba(20, 31, 40, 0.92);
+  color: #d7edf4;
+  padding: 4px 6px;
+  font: inherit;
+  font-size: 0.62rem;
+  text-align: left;
+  cursor: pointer;
+}
+
 .panel {
   border: 1px solid var(--line);
   background: linear-gradient(180deg, rgba(23, 27, 34, 0.95), rgba(13, 16, 21, 0.95));
@@ -1207,12 +1251,15 @@ body {
 .battle-view__route-preview {
   position: absolute;
   z-index: 5;
-  left: 8%;
-  right: 8%;
-  top: 14%;
-  display: grid;
-  gap: 7px;
+  inset: 4% 3% 3%;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
   pointer-events: none;
+}
+
+.battle-view.is-route-choice .battle-view__hud {
+  opacity: 0.42;
 }
 
 .route-map__signal-state {
@@ -1280,17 +1327,44 @@ body {
 .battle-view__route-map {
   position: relative;
   justify-self: center;
-  width: min(640px, 66%);
-  height: 310px;
+  width: min(560px, 74%);
+  height: 100%;
   margin: 0;
-  border: 1px solid rgba(123, 165, 188, 0.24);
+  border: 1px solid rgba(197, 177, 142, 0.46);
+  border-radius: 2px;
   background:
-    radial-gradient(ellipse at 50% 92%, rgba(211, 154, 74, 0.13), transparent 26%),
-    radial-gradient(ellipse at 50% 8%, rgba(218, 87, 78, 0.12), transparent 22%),
-    linear-gradient(180deg, rgba(13, 18, 25, 0.7), rgba(9, 13, 18, 0.38));
-  box-shadow: inset 0 0 30px rgba(91, 132, 157, 0.1), 0 10px 34px rgba(0, 0, 0, 0.18);
+    linear-gradient(90deg, rgba(62, 48, 39, 0.32) 0 8px, transparent 8px calc(100% - 8px), rgba(62, 48, 39, 0.32) calc(100% - 8px) 100%),
+    repeating-linear-gradient(0deg, rgba(43, 35, 30, 0.14) 0 1px, transparent 1px 18px),
+    radial-gradient(ellipse at 50% 10%, rgba(132, 39, 48, 0.18), transparent 24%),
+    radial-gradient(ellipse at 50% 88%, rgba(224, 168, 91, 0.16), transparent 28%),
+    linear-gradient(180deg, rgba(205, 199, 182, 0.9), rgba(159, 160, 150, 0.82));
+  box-shadow:
+    inset 0 0 0 8px rgba(30, 26, 23, 0.12),
+    inset 0 0 42px rgba(24, 21, 18, 0.35),
+    0 18px 42px rgba(0, 0, 0, 0.38);
   pointer-events: auto;
   overflow: hidden;
+  transform: perspective(760px) rotateX(4deg);
+  transform-origin: 50% 100%;
+}
+
+.battle-view__route-map::before,
+.battle-view__route-map::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  background: rgba(78, 70, 62, 0.28);
+}
+
+.battle-view__route-map::before {
+  top: 34%;
+}
+
+.battle-view__route-map::after {
+  top: 66%;
 }
 
 .route-map__edges {
@@ -1302,42 +1376,45 @@ body {
 }
 
 .route-map__edge {
-  stroke: rgba(127, 192, 207, 0.34);
-  stroke-width: 1.15;
-  stroke-dasharray: 1.8 2.4;
+  stroke: rgba(39, 45, 52, 0.62);
+  stroke-width: 1.45;
+  stroke-dasharray: 2 2.7;
   stroke-linecap: round;
 }
 
 .route-map__edge--selectable {
-  stroke: rgba(224, 168, 91, 0.82);
-  stroke-width: 1.55;
+  stroke: rgba(30, 41, 51, 0.9);
+  stroke-width: 1.8;
 }
 
 .route-map__edge--visited {
-  stroke: rgba(127, 192, 207, 0.62);
+  stroke: rgba(44, 93, 103, 0.8);
 }
 
 .route-map__edge--hidden {
-  stroke: rgba(115, 126, 139, 0.22);
+  stroke: rgba(78, 81, 83, 0.32);
 }
 
 .route-map__node {
   position: absolute;
   z-index: 2;
-  width: 38px;
-  height: 38px;
+  width: 54px;
+  height: 54px;
   min-width: 0;
   padding: 0;
-  border: 1px solid rgba(127, 192, 207, 0.56);
+  border: 2px solid rgba(238, 241, 225, 0.92);
   border-radius: 999px;
   background:
-    radial-gradient(circle at 50% 38%, rgba(238, 246, 247, 0.14), transparent 45%),
-    linear-gradient(180deg, rgba(22, 31, 42, 0.96), rgba(7, 11, 17, 0.96));
-  color: #9fb2bd;
+    radial-gradient(circle at 50% 37%, rgba(255, 255, 255, 0.28), transparent 42%),
+    linear-gradient(180deg, #f4f1df, #d7d5c6);
+  color: #2f3c48;
   display: grid;
   place-items: center;
   transform: translate(-50%, -50%);
-  box-shadow: 0 5px 0 rgba(3, 6, 10, 0.8), 0 0 18px rgba(91, 132, 157, 0.08);
+  box-shadow:
+    0 7px 0 rgba(31, 39, 48, 0.72),
+    0 10px 12px rgba(0, 0, 0, 0.22),
+    0 0 0 1px rgba(29, 37, 45, 0.2);
   pointer-events: auto;
 }
 
@@ -1348,46 +1425,55 @@ button.route-map__node {
 
 button.route-map__node:hover,
 button.route-map__node:focus-visible {
-  border-color: #e0a85b;
-  filter: brightness(1.24);
+  border-color: #ffffff;
+  filter: brightness(1.08);
   outline: none;
-  transform: translate(-50%, calc(-50% - 2px));
-  box-shadow: 0 6px 0 rgba(3, 6, 10, 0.82), 0 0 20px rgba(224, 168, 91, 0.28);
+  transform: translate(-50%, calc(-50% - 4px));
+  box-shadow:
+    0 9px 0 rgba(31, 39, 48, 0.72),
+    0 14px 16px rgba(0, 0, 0, 0.28),
+    0 0 24px rgba(255, 255, 255, 0.42);
 }
 
 .route-map__node--current {
-  width: 28px;
-  height: 24px;
-  border-radius: 3px;
-  border-color: rgba(224, 168, 91, 0.72);
-  color: #f0d3a4;
-  background: rgba(14, 17, 21, 0.96);
+  width: 44px;
+  height: 44px;
+  border-color: rgba(37, 45, 52, 0.72);
+  color: #f0ead2;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.16), transparent 45%),
+    linear-gradient(180deg, #3e4a55, #222b35);
 }
 
 .route-map__node--selectable {
-  border-color: rgba(224, 168, 91, 0.72);
-  color: #f0d3a4;
+  color: #273744;
+  box-shadow:
+    0 7px 0 rgba(31, 39, 48, 0.72),
+    0 10px 12px rgba(0, 0, 0, 0.22),
+    0 0 18px rgba(255, 255, 255, 0.58);
 }
 
 .route-map__node--visited {
-  color: #a9e9f3;
-  border-color: rgba(127, 192, 207, 0.72);
+  color: #ecf7f5;
+  border-color: rgba(95, 129, 134, 0.85);
+  background: linear-gradient(180deg, #78969c, #405963);
 }
 
 .route-map__node--hidden {
-  color: #8997a4;
-  border-color: rgba(115, 126, 139, 0.38);
-  opacity: 0.72;
+  color: #f6f2df;
+  border-color: rgba(238, 241, 225, 0.8);
+  background: linear-gradient(180deg, #58616b, #2c3743);
+  opacity: 0.92;
 }
 
 .route-map__node--boss {
-  width: 42px;
-  height: 42px;
-  color: #ffc7b8;
-  border-color: rgba(218, 87, 78, 0.78);
+  width: 58px;
+  height: 58px;
+  color: #f4f1df;
+  border-color: rgba(238, 241, 225, 0.92);
   background:
-    radial-gradient(circle at 50% 34%, rgba(218, 87, 78, 0.16), transparent 46%),
-    linear-gradient(180deg, rgba(32, 13, 18, 0.96), rgba(9, 10, 15, 0.96));
+    radial-gradient(circle at 50% 34%, rgba(255, 255, 255, 0.18), transparent 44%),
+    linear-gradient(180deg, #5a2831, #2d1620);
 }
 
 .route-map__map-icon {
@@ -1404,8 +1490,8 @@ button.route-map__node:focus-visible {
 }
 
 .route-map__node .route-map__map-icon {
-  width: 20px;
-  height: 20px;
+  width: 26px;
+  height: 26px;
 }
 
 .route-map__map-icon::before,
@@ -1606,6 +1692,21 @@ button.route-map__node:focus-visible {
 .route-map__boss-steps .route-map__map-icon {
   width: 12px;
   height: 12px;
+}
+
+.route-map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: #9fb2bd;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+}
+
+.route-map-legend span {
+  border: 1px solid rgba(123, 165, 188, 0.24);
+  background: rgba(8, 12, 18, 0.46);
+  padding: 3px 6px;
 }
 
 .battle-view__route-card {
@@ -3109,6 +3210,17 @@ button.route-map__node:focus-visible {
   align-content: start;
 }
 
+.garage-fun-test {
+  border-color: rgba(222, 178, 102, 0.58);
+  background: linear-gradient(180deg, rgba(34, 27, 20, 0.88), rgba(15, 19, 26, 0.94));
+}
+
+.garage-fun-test__buttons {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
 .garage-block h3 {
   margin: 0;
   color: #d6ae71;
@@ -4454,6 +4566,10 @@ button.route-map__node:focus-visible {
     grid-template-columns: 1fr;
   }
 
+  .garage-fun-test__buttons {
+    grid-template-columns: 1fr;
+  }
+
   .node-quickbar {
     grid-template-columns: 1fr;
   }
@@ -4484,18 +4600,17 @@ button.route-map__node:focus-visible {
   }
 
   .battle-view__route-preview {
-    left: 4%;
-    right: 4%;
-    gap: 6px;
+    inset: 5% 4% 4%;
   }
 
   .battle-view__route-map {
-    width: min(620px, 92%);
+    width: min(520px, 94%);
+    transform: none;
   }
 
   .route-map__node {
-    width: 42px;
-    height: 30px;
+    width: 44px;
+    height: 44px;
   }
 
   .battle-view__route-card {

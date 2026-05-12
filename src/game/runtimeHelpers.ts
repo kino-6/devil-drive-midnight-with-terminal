@@ -375,6 +375,7 @@ export const initState = (): State => {
     growthClaimed: false,
     analyzeSuccessCount: 0,
     story: createInitialStoryState(),
+    funTestMode: undefined,
   };
 };
 
@@ -459,6 +460,7 @@ export const initRunWithLoadout = (state: State, logsPrefix: string[] = []): Sta
     analyzeSuccessCount: 0,
     growthClaimed: false,
     story: { ...state.story, recentRecoveredLogs: [] },
+    funTestMode: undefined,
     logs,
     moeLine: scanSuccess
       ? getMoeLine('moe.run.scan_success', '先に見つけた。どう入る？', undefined, 'proud')

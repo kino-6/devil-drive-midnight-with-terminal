@@ -4,6 +4,7 @@ import {
   getConversationLineWithVars,
   getConversationLineWithVarsFromPool,
 } from '../conversationConfig';
+import { getConversationProfile } from './conversationCatalog';
 import { UNKNOWN_SIGN_LABEL } from './enemyReveal';
 import type {
   ActiveConversation,
@@ -384,6 +385,18 @@ export const buildTalkConversation = ({ target, state, analyzed }: TalkBuildInpu
   const persona = target.talkPersona ?? assignTalkPersona(target.profile, target.id);
   const mood = deriveTalkMood(target, analyzed);
   const targetName = analyzed ? target.name : UNKNOWN_SIGN_LABEL;
+  if (target.profile === 'pixie_shibuya_glow' || target.profile === 'road_reaper' || target.profile === 'toll_gate_saint') {
+    const profile = getConversationProfile(target.profile);
+    return {
+      enemyId: target.id,
+      enemyProfile: target.profile,
+      introLine: profile.introLine,
+      choices: profile.choices.slice(0, 3),
+      mood,
+      persona,
+      seed: `${target.id}:${persona}:${mood}:pixie-scripted`,
+    };
+  }
   const seed = `${target.id}:${persona}:${mood}:${target.trust}:${target.interest}:${target.pressure}:${target.hp}`;
   const demandNoise = (hashSeed(`${seed}:demand`) % 100) / 100;
   const demandLike = prefersDemand(target.temperament) && (mood === 'aggressive' || mood === 'desperate' || demandNoise < 0.48);

@@ -60,7 +60,15 @@ export type GamePhase =
   | 'garage'
   | 'game_over';
 
-export type ResultType = 'Early Return' | 'Boss Cleared' | 'Boss Avoided' | 'Vehicle Disabled';
+export type ResultType = 'Early Return' | 'Boss Cleared' | 'Boss Avoided' | 'Vehicle Disabled' | 'Fun Test Complete';
+export type FunTestId = 'pixie_talk' | 'road_reaper_combat' | 'toll_gate_boss';
+export type FunTestMode = {
+  id: FunTestId;
+  label: string;
+  target: string;
+  description: string;
+  returnLoadout: Loadout;
+};
 export type RewardTarget = 'encounter2' | 'boss';
 export type RewardScope = 'post_enc1' | 'post_enc2';
 
@@ -359,6 +367,7 @@ export type State = {
   growthClaimed: boolean;
   analyzeSuccessCount: number;
   story: StoryState;
+  funTestMode?: FunTestMode;
 };
 
 export type Action =
@@ -391,6 +400,7 @@ export type Action =
   | { type: 'GARAGE_SET_SUPPORT'; id: ContractSupportId }
   | { type: 'GARAGE_SET_STAGE'; stage: number }
   | { type: 'GARAGE_ENTER_RUN' }
+  | { type: 'START_FUN_TEST'; id: FunTestId }
   | { type: 'DEBUG_RESTORE'; snapshot: State }
   | { type: 'START_NEXT_RUN' }
   | { type: 'RETRY' };

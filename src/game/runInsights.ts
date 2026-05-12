@@ -35,6 +35,7 @@ export const buildMoeRunComment = (record: RunRecord): string => {
 
 export const buildResultDecisionLines = (state: State): string[] => {
   const returnLine = (() => {
+    if (state.funTestMode) return `Fun Test: ${state.funTestMode.label}`;
     if (state.resultType === 'Boss Cleared') return 'Extract: Boss toll clear';
     if (isWipeoutCarryback(state)) return 'Carryback: Partial growth';
     if (state.routeState?.returnIntent === 'backtracking') return 'Backtrack: Checkpoint reacquired';

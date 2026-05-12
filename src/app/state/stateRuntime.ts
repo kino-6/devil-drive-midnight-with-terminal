@@ -159,6 +159,7 @@ export const getScanChance = (state: State, kind: ApproachKind, lineup: Encounte
   const scan = getBalanceConfig().scan;
   let chance = scan.baseChance;
   if (state.selectedLoadout.contractSupportId === 'abandoned_ai_navi') chance += scan.aiSupportBonus;
+  if (state.contracts.some((module) => module.id === 'radio_voice')) chance += 5;
   if (state.signal >= scan.highSignalThreshold) chance += scan.highSignalBonus;
   if (kind === 'boss') chance -= scan.bossPenalty;
   if (lineup.includes('silent_shape')) chance -= scan.stealthPenalty;
@@ -529,6 +530,7 @@ export const initState = (): State => {
     growthClaimed: false,
     analyzeSuccessCount: 0,
     story: { ...saved.story, recentRecoveredLogs: [] },
+    funTestMode: undefined,
   };
 };
 
@@ -591,6 +593,7 @@ export const initRunWithLoadout = (state: State, logsPrefix: string[] = []): Sta
     analyzeSuccessCount: 0,
     growthClaimed: false,
     story: { ...state.story, recentRecoveredLogs: [] },
+    funTestMode: undefined,
     logs,
     moeLine: scanSuccess
       ? getMoeLine('moe.run.scan_success', '先に見つけた。どう入る？', undefined, 'proud')

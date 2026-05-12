@@ -57,13 +57,14 @@ export const pickEncounterLineup = (kind: EncounterState['kind'], stage: number)
 };
 
 export const getScanChance = (
-  state: { selectedLoadout: Loadout; signal: number; skillLevels: { scan_boost: number } },
+  state: { selectedLoadout: Loadout; signal: number; skillLevels: { scan_boost: number }; contracts?: ContractModule[] },
   kind: ApproachKind,
   lineup: EncounterId[],
 ): number => {
   const scan = getBalanceConfig().scan;
   let chance = scan.baseChance;
   if (state.selectedLoadout.contractSupportId === 'abandoned_ai_navi') chance += scan.aiSupportBonus;
+  if (state.contracts?.some((module) => module.id === 'radio_voice')) chance += 5;
   if (state.signal >= scan.highSignalThreshold) chance += scan.highSignalBonus;
   if (kind === 'boss') chance -= scan.bossPenalty;
   if (lineup.includes('silent_shape')) chance -= scan.stealthPenalty;

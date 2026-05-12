@@ -2,6 +2,7 @@ import type { Action, State } from '../../game/types';
 import { appendSupportDaemonDisconnectLogs } from '../../game/runtimeHelpers';
 import { getMoeLine } from '../../game/moeDialogue';
 import { initState } from './stateRuntime';
+import { startFunTest } from './funTestMode';
 import { claimRunGrowthIfNeeded, makePreviousRunSummary } from './storyProgression';
 
 const getGarageEntryMoeLine = (isFirstGarageEntry: boolean) =>
@@ -33,6 +34,19 @@ export function reduceRunLifecycle(state: State, action: Action): State {
 
   if (action.type === 'START_NEXT_RUN') {
     if (!(state.gamePhase === 'result' || state.gamePhase === 'game_over')) return state;
+    if (state.funTestMode) {
+      return {
+        ...state,
+        gamePhase: 'garage',
+        selectedLoadout: state.funTestMode.returnLoadout,
+        funTestMode: undefined,
+        resultType: undefined,
+        lastReport: undefined,
+        activeConversation: undefined,
+        logs: [...state.logs, '> FUN TEST CLOSED: GARAGE ONLINE'],
+        moeLine: getMoeLine('moe.garage.enter', '戻れたね。次は出る前に少し積み替えよっか。', undefined, 'soft'),
+      };
+    }
     const claimed = claimRunGrowthIfNeeded(state);
     const nextStage = claimed.resultType === 'Boss Cleared' ? 1 : claimed.stage;
     const disconnectLogs = appendSupportDaemonDisconnectLogs(
@@ -52,6 +66,19 @@ export function reduceRunLifecycle(state: State, action: Action): State {
   }
 
   if (action.type === 'OPEN_GARAGE') {
+    if (state.funTestMode) {
+      return {
+        ...state,
+        gamePhase: 'garage',
+        selectedLoadout: state.funTestMode.returnLoadout,
+        funTestMode: undefined,
+        resultType: undefined,
+        lastReport: undefined,
+        activeConversation: undefined,
+        logs: [...state.logs, '> FUN TEST CLOSED: GARAGE ONLINE'],
+        moeLine: getGarageEntryMoeLine(false),
+      };
+    }
     if (!(state.gamePhase === 'prologue' || state.gamePhase === 'result' || state.gamePhase === 'game_over' || state.gamePhase === 'garage')) return state;
     const isFirstGarageEntry = state.gamePhase === 'prologue' && !state.previousRun;
     const claimed = claimRunGrowthIfNeeded(state);
@@ -71,6 +98,11 @@ export function reduceRunLifecycle(state: State, action: Action): State {
       logs: [...disconnectLogs, '> GARAGE: MIDNIGHT BAY ONLINE'],
       moeLine: getGarageEntryMoeLine(isFirstGarageEntry),
     };
+  }
+
+  if (action.type === 'START_FUN_TEST') {
+    if (!(state.gamePhase === 'garage' || state.gamePhase === 'prologue' || state.gamePhase === 'result' || state.gamePhase === 'game_over')) return state;
+    return startFunTest(state, action.id);
   }
 
   return state;

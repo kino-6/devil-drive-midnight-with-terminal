@@ -18,6 +18,7 @@ export const makePreviousRunSummary = (state: State, resultType: ResultType): Pr
 });
 
 export const getRunGrowth = (state: State) => {
+  if (state.funTestMode) return { driverXp: 0, moeSync: 0, salvageCreditGain: 0 };
   const isReturned = state.gamePhase === 'result';
   const isAbyssLoopCleared = (state.resultType ?? 'Early Return') === 'Boss Cleared' && state.stage >= 4;
   const driverXp = state.runSummary.cleared + ((state.resultType ?? 'Early Return') === 'Boss Cleared' ? 2 : 0) + (isAbyssLoopCleared ? 2 : 0);
@@ -29,6 +30,7 @@ export const getRunGrowth = (state: State) => {
 
 export const claimRunGrowthIfNeeded = (state: State): State => {
   if (state.growthClaimed || !(state.gamePhase === 'result' || state.gamePhase === 'game_over')) return state;
+  if (state.funTestMode) return { ...state, growthClaimed: true };
   const growth = getRunGrowth(state);
   const unlockRewards = applyRunUnlockRewards(state);
   const unlockLogs = unlockRewards.newlyUnlocked.map(formatUnlockRewardLog);
@@ -45,6 +47,7 @@ export const claimRunGrowthIfNeeded = (state: State): State => {
 };
 
 export const resolveStoryFromRun = (state: State, resultType: ResultType): StoryState => {
+  if (state.funTestMode) return { ...state.story, recentRecoveredLogs: [] };
   const recovered = [...state.story.recoveredLogs];
   const newly: StoryLogId[] = [];
   const unlock = (id: StoryLogId) => {

@@ -320,49 +320,31 @@ export const getNaviRouteCandidates = (state: State): NaviRouteCandidate[] => {
 
   const intelLevel = getNaviIntelLevel(state);
   const events = currentNode.eventPool ? getEventsByPool(currentNode.eventPool) : [];
-  const fromEvents = events.reduce<NaviRouteCandidate[]>((out, event) => {
+  const eventByChoice = events.reduce<Partial<Record<RouteLaneChoice, typeof events[number]>>>((out, event) => {
     const choiceId = event.routeChoice ?? '';
-    if (!isRouteLaneChoice(choiceId)) return out;
-    const nodeId = currentNode.choices?.[choiceId];
-    if (!nodeId) return out;
-    const intel = routeIntelCatalog[choiceId];
-    out.push({
-      choiceId,
-      nodeId,
-      title: event.title || intel.label,
-      body: intelLevel === 'low' ? undefined : event.body,
-      tags: maskIntel(event.tags.join(' / '), intelLevel, 'medium', lowSignalRouteHints[choiceId].tags),
-      risk: maskIntel(intel.riskTags, intelLevel, 'medium', lowSignalRouteHints[choiceId].risk),
-      reward: maskIntel(intel.rewardTags, intelLevel, 'high', lowSignalRouteHints[choiceId].reward),
-      note: getRouteCandidateNote(state, choiceId, intelLevel),
-      forecast: getRouteForecast(route, nodeId),
-      bossSteps: getRouteBossSteps(route, nodeId),
-      effects: intelLevel === 'high' ? event.effects : undefined,
-      eventId: event.id,
-      resourceWarning: getRouteResourceWarning(state, choiceId, intelLevel),
-      intelLevel,
-    });
+    if (isRouteLaneChoice(choiceId) && !out[choiceId]) out[choiceId] = event;
     return out;
-  }, []);
-
-  if (fromEvents.length > 0) return fromEvents.slice(0, 3);
+  }, {});
 
   return Object.entries(currentNode.choices)
     .filter(([choiceId]) => isRouteLaneChoice(choiceId))
-    .slice(0, 3)
     .map(([choiceId, nodeId]) => {
       const lane = choiceId as RouteLaneChoice;
       const intel = routeIntelCatalog[lane];
+      const event = eventByChoice[lane];
       return {
         choiceId: lane,
         nodeId,
-        title: intel.label,
-        tags: maskIntel(intel.likelyEnemyTags, intelLevel, 'medium', lowSignalRouteHints[lane].tags),
+        title: event?.title || intel.label,
+        body: event && intelLevel !== 'low' ? event.body : undefined,
+        tags: maskIntel(event ? event.tags.join(' / ') : intel.likelyEnemyTags, intelLevel, 'medium', lowSignalRouteHints[lane].tags),
         risk: maskIntel(intel.riskTags, intelLevel, 'medium', lowSignalRouteHints[lane].risk),
         reward: maskIntel(intel.rewardTags, intelLevel, 'high', lowSignalRouteHints[lane].reward),
         note: getRouteCandidateNote(state, lane, intelLevel),
         forecast: getRouteForecast(route, nodeId),
         bossSteps: getRouteBossSteps(route, nodeId),
+        effects: event && intelLevel === 'high' ? event.effects : undefined,
+        eventId: event?.id,
         resourceWarning: getRouteResourceWarning(state, lane, intelLevel),
         intelLevel,
       };
